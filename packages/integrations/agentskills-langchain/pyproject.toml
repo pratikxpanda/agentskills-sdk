@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "agentskills-langchain"
+version = "0.1.0"
+description = "LangChain integration for the Agent Skills format (https://agentskills.io)"
+license = "MIT"
+authors = ["Pratik Panda"]
+readme = "README.md"
+homepage = "https://agentskills.io"
+repository = "https://github.com/pratikxpanda/agentskills-sdk"
+packages = [{include = "agentskills_langchain"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+agentskills-core = ">=0.1.0"
+langchain-core = ">=1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

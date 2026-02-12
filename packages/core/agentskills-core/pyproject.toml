@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "agentskills-core"
+version = "0.1.0"
+description = "Storage-agnostic abstractions for discovering, validating, and accessing Agent Skills (https://agentskills.io)"
+license = "MIT"
+authors = ["Pratik Panda"]
+readme = "README.md"
+homepage = "https://agentskills.io"
+repository = "https://github.com/pratikxpanda/agentskills-sdk"
+packages = [{include = "agentskills_core"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+pyyaml = ">=6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

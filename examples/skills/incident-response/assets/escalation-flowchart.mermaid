@@ -1,0 +1,23 @@
+graph TD
+    A[Alert Triggered] --> B{On-Call Acknowledges?}
+    B -->|Yes| C{Assess Severity}
+    B -->|No — 15 min| D[Page Secondary On-Call]
+    D --> E{Secondary Acknowledges?}
+    E -->|Yes| C
+    E -->|No — 30 min| F[Page Engineering Manager]
+    F --> C
+
+    C -->|SEV1| G[Declare Incident — All Hands]
+    C -->|SEV2| H[Declare Incident — IC + Tech Lead]
+    C -->|SEV3| I[Assign to Team Queue]
+    C -->|SEV4| J[Track in Backlog]
+
+    G --> K[Open Incident Channel]
+    H --> K
+    K --> L[Notify Stakeholders]
+    L --> M[Begin Investigation]
+    M --> N{Mitigated?}
+    N -->|No| O[Escalate per Policy]
+    O --> M
+    N -->|Yes| P[Verify Resolution]
+    P --> Q[Schedule Postmortem]

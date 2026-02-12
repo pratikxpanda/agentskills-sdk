@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "agentskills-sdk"
+version = "0.1.0"
+description = "Python SDK for the Agent Skills open format (https://agentskills.io)"
+license = "MIT"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+agentskills-core = { path = "packages/core/agentskills-core", develop = true }
+agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
+agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
+agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
+agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
+agentskills-modelcontextprotocol = { path = "packages/integrations/agentskills-mcp", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=9.0"
+pytest-asyncio = ">=0.24"
+respx = ">=0.22"
+ruff = ">=0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp"]
