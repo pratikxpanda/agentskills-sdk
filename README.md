@@ -16,12 +16,12 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 
 | Package | Description | Install |
 | --- | --- | --- |
-| [`agentskills-core`](packages/core/agentskills-core) | Core abstractions for registering, discovering, and retrieving skills | `pip install agentskills-core` |
-| [`agentskills-fs`](packages/providers/agentskills-fs) | Load skills from the local filesystem | `pip install agentskills-fs` |
-| [`agentskills-http`](packages/providers/agentskills-http) | Load skills from a static HTTP server | `pip install agentskills-http` |
-| [`agentskills-langchain`](packages/integrations/agentskills-langchain) | Integrate skills with LangChain agents | `pip install agentskills-langchain` |
-| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework) | Integrate skills with Microsoft Agent Framework agents | `pip install agentskills-agentframework` |
-| [`agentskills-modelcontextprotocol`](packages/integrations/agentskills-mcp) | Expose skills over the Model Context Protocol (MCP) | `pip install agentskills-modelcontextprotocol` |
+| [`agentskills-core`](packages/core/agentskills-core/README.md) | Core abstractions — `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
+| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | Load skills from the local filesystem — `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
+| [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server — `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
+| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
+| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
+| [`agentskills-modelcontextprotocol`](packages/integrations/agentskills-mcp/README.md) | Expose skills over the Model Context Protocol (MCP) — `create_mcp_server` | `pip install agentskills-modelcontextprotocol` |
 
 ## How It Works
 
@@ -147,17 +147,6 @@ await registry.register([
 ```
 
 Batch registration is atomic — if any skill fails validation, none are registered.
-
-## Package Documentation
-
-Each package has its own README with detailed API reference and usage examples:
-
-- [agentskills-core](packages/core/agentskills-core/README.md) — `SkillProvider`, `Skill`, `SkillRegistry`, validation
-- [agentskills-fs](packages/providers/agentskills-fs/README.md) — `LocalFileSystemSkillProvider`
-- [agentskills-http](packages/providers/agentskills-http/README.md) — `HTTPStaticFileSkillProvider`
-- [agentskills-langchain](packages/integrations/agentskills-langchain/README.md) — `get_tools`, `get_tools_usage_instructions`
-- [agentskills-agentframework](packages/integrations/agentskills-agentframework/README.md) — `get_tools`, `get_tools_usage_instructions` (Agent Framework)
-- [agentskills-modelcontextprotocol](packages/integrations/agentskills-mcp/README.md) — `create_mcp_server`, MCP resources
 
 ## Development
 
