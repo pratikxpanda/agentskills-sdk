@@ -16,7 +16,7 @@ Flow:
     5. Run a LangChain ReAct agent
 
 Requirements:
-    pip install agentskills-http agentskills-modelcontextprotocol langgraph langchain-openai langchain-mcp-adapters
+    pip install agentskills-http agentskills-modelcontextprotocol langchain langchain-openai langchain-mcp-adapters
     export AZURE_OPENAI_API_KEY=...
     export AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com
     export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
@@ -91,9 +91,9 @@ async def main() -> None:
     # 4. Initialize LangChain agent
     # ------------------------------------------------------------------
     try:
+        from langchain.agents import create_agent
         from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
         from langchain_openai import AzureChatOpenAI
-        from langgraph.prebuilt import create_react_agent
 
         llm = AzureChatOpenAI(
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
@@ -113,7 +113,7 @@ async def main() -> None:
         f"{tool_usage_instructions}"
     )
 
-    agent = create_react_agent(llm, tools, prompt=system_prompt)
+    agent = create_agent(llm, tools, system_prompt=system_prompt)
 
     # ------------------------------------------------------------------
     # 5. Ask a question

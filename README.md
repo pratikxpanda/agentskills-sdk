@@ -62,7 +62,7 @@ asyncio.run(main())
 ### With LangChain
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from langchain_openai import AzureChatOpenAI
 from agentskills_langchain import get_tools, get_tools_usage_instructions
 
@@ -75,10 +75,10 @@ llm = AzureChatOpenAI(
     api_version=os.environ["AZURE_OPENAI_API_VERSION"],
     temperature=0,
 )
-agent = create_react_agent(
+agent = create_agent(
     llm,
     tools,
-    prompt=f"{skills_catalog}\n\n{tool_usage_instructions}",
+    system_prompt=f"{skills_catalog}\n\n{tool_usage_instructions}",
 )
 ```
 
