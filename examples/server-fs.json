@@ -1,0 +1,12 @@
+{
+    "name": "Skills Server",
+    "skills": [
+        {
+            "id": "incident-response",
+            "provider": "fs",
+            "options": {
+                "root": "./examples/skills"
+            }
+        }
+    ]
+}

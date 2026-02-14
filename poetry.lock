@@ -579,7 +579,7 @@ type = "directory"
 url = "packages/integrations/agentskills-langchain"
 
 [[package]]
-name = "agentskills-modelcontextprotocol"
+name = "agentskills-mcp-server"
 version = "0.1.0"
 description = "MCP server integration for the Agent Skills format — expose skills as MCP tools and resources (https://agentskills.io)"
 optional = false
@@ -591,10 +591,15 @@ develop = true
 [package.dependencies]
 agentskills-core = ">=0.1.0"
 mcp = ">=1.0"
+pydantic = ">=2.0"
+
+[package.extras]
+fs = []
+http = []
 
 [package.source]
 type = "directory"
-url = "packages/integrations/agentskills-mcp"
+url = "packages/integrations/agentskills-mcp-server"
 
 [[package]]
 name = "aiofiles"
@@ -6045,4 +6050,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "1e9a29587ed7bed8e88ebebebf54b71ca34a453b1e61e09f4a72877f09fa4641"
+content-hash = "5ca831fce9e759094247694f2c810f925701bcd4dbb53192137949589421751c"

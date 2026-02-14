@@ -157,6 +157,22 @@ class TestClientLifecycle:
         with pytest.raises(ValueError, match="Cannot specify both"):
             HTTPStaticFileSkillProvider(BASE, client=client, headers={"X-Key": "v"})
 
+    def test_params_and_client_conflict(self):
+        client = httpx.AsyncClient()
+        with pytest.raises(ValueError, match="Cannot specify both"):
+            HTTPStaticFileSkillProvider(BASE, client=client, params={"sig": "abc"})
+
+    @respx.mock
+    async def test_custom_params(self):
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        async with HTTPStaticFileSkillProvider(
+            BASE, params={"sv": "2020", "sig": "abc"}
+        ) as provider:
+            await provider.get_metadata("test-skill")
+        request_url = str(route.calls[0].request.url)
+        assert "sv=2020" in request_url
+        assert "sig=abc" in request_url
+
 
 class TestHTTPErrors:
     """Tests for non-404 HTTP errors and connection failures."""

@@ -21,7 +21,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server — `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
-| [`agentskills-modelcontextprotocol`](packages/integrations/agentskills-mcp/README.md) | Expose skills over the Model Context Protocol (MCP) — `create_mcp_server` | `pip install agentskills-modelcontextprotocol` |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) — `create_mcp_server` | `pip install agentskills-mcp-server` |
 
 ## How It Works
 
@@ -113,7 +113,7 @@ See [examples/agent-framework/](examples/agent-framework/) for full working demo
 ### With MCP
 
 ```python
-from agentskills_mcp import create_mcp_server
+from agentskills_mcp_server import create_mcp_server
 
 server = create_mcp_server(registry, name="My Agent")
 server.run()  # stdio by default

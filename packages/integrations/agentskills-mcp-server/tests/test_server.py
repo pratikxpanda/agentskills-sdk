@@ -7,7 +7,7 @@ import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 
 from agentskills_core import SkillProvider, SkillRegistry
-from agentskills_mcp import create_mcp_server
+from agentskills_mcp_server import create_mcp_server
 
 
 def _tool_text(result) -> str:

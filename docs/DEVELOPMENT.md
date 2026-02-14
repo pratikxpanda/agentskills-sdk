@@ -31,7 +31,7 @@ poetry run pytest packages/providers/agentskills-fs -v
 poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/integrations/agentskills-langchain -v
 poetry run pytest packages/integrations/agentskills-agentframework -v
-poetry run pytest packages/integrations/agentskills-mcp -v
+poetry run pytest packages/integrations/agentskills-mcp-server -v
 ```
 
 ## Linting & Formatting
@@ -70,6 +70,6 @@ find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache 
 | `packages/providers/agentskills-http` | Load skills from a static HTTP server |
 | `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |
 | `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
-| `packages/integrations/agentskills-mcp` | MCP server for exposing skills as MCP tools and resources (`agentskills-modelcontextprotocol` on PyPI) |
+| `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
 
-Each package has its own `pyproject.toml` under `packages/` and can be published independently. `agentskills-fs`, `agentskills-http`, `agentskills-langchain`, `agentskills-agentframework`, and `agentskills-modelcontextprotocol` depend on `agentskills-core`. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.
+Each package has its own `pyproject.toml` under `packages/` and can be published independently. `agentskills-fs`, `agentskills-http`, `agentskills-langchain`, `agentskills-agentframework`, and `agentskills-mcp-server` depend on `agentskills-core`. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.

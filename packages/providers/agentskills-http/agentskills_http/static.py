@@ -62,6 +62,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             When provided, the caller is responsible for closing it.
         headers: Optional extra headers sent with every request (e.g.
             ``Authorization``).
+        params: Optional query parameters appended to every request
+            (e.g. SAS tokens for Azure Blob Storage).
 
     Example::
 
@@ -80,15 +82,16 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         *,
         client: httpx.AsyncClient | None = None,
         headers: dict[str, str] | None = None,
+        params: dict[str, str] | None = None,
     ) -> None:
-        if client is not None and headers is not None:
+        if client is not None and (headers is not None or params is not None):
             raise ValueError(
-                "Cannot specify both 'client' and 'headers'. "
-                "Configure headers on the client directly."
+                "Cannot specify both 'client' and 'headers'/'params'. "
+                "Configure headers and params on the client directly."
             )
         self._base_url = base_url.rstrip("/")
         self._owns_client = client is None
-        self._client = client or httpx.AsyncClient(headers=headers)
+        self._client = client or httpx.AsyncClient(headers=headers, params=params)
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client if it is owned by this provider."""

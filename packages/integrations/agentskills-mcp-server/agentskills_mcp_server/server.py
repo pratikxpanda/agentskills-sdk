@@ -36,7 +36,7 @@ interact with them.
 
 Example::
 
-    from agentskills_mcp import create_mcp_server
+    from agentskills_mcp_server import create_mcp_server
 
     server = create_mcp_server(registry, name="My Agent")
     server.run()  # stdio by default
@@ -45,10 +45,72 @@ Example::
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from agentskills_core import SkillRegistry
+from agentskills_core import SkillProvider, SkillRegistry
+
+# ------------------------------------------------------------------
+# Provider resolution
+# ------------------------------------------------------------------
+
+#: Provider types that are recognized by :func:`_resolve_provider`.
+SUPPORTED_PROVIDERS: frozenset[str] = frozenset({"fs", "http"})
+
+
+def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvider:
+    """Map a provider type string and options to a concrete provider.
+
+    Args:
+        provider_type: One of the :data:`SUPPORTED_PROVIDERS` keys.
+        options: Keyword arguments forwarded to the provider
+            constructor.  Unknown keys are silently ignored for
+            safety (e.g. a ``client`` key cannot be serialized
+            to JSON and must not be passed).
+
+    Returns:
+        A ready-to-use :class:`~agentskills_core.SkillProvider`.
+
+    Raises:
+        ImportError: If the required provider package is not installed.
+        ValueError: If *provider_type* is not recognized.
+    """
+    if provider_type == "fs":
+        try:
+            from agentskills_fs import LocalFileSystemSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'fs' requires the agentskills-fs package. "
+                "Install it with:  pip install agentskills-fs"
+            ) from exc
+        root = Path(options.get("root", "."))
+        return LocalFileSystemSkillProvider(root=root)
+
+    if provider_type == "http":
+        try:
+            from agentskills_http import HTTPStaticFileSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'http' requires the agentskills-http package. "
+                "Install it with:  pip install agentskills-http"
+            ) from exc
+        # Only pass constructor-safe keys; runtime objects like
+        # ``client`` cannot be serialized to a config file.
+        safe_http_keys = {"base_url", "headers", "params"}
+        filtered = {k: v for k, v in options.items() if k in safe_http_keys}
+        return HTTPStaticFileSkillProvider(**filtered)
+
+    raise ValueError(
+        f"Unknown provider type: {provider_type!r}. "
+        f"Supported types: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
+    )
+
+
+# ------------------------------------------------------------------
+# Server builder
+# ------------------------------------------------------------------
 
 
 def create_mcp_server(

@@ -1,7 +1,7 @@
 """LangChain agent with MCP tools — filesystem provider.
 
-This script demonstrates running an MCP server backed by a filesystem
-skill provider, then connecting to it from a LangChain agent using
+This script demonstrates connecting to an MCP server backed by a
+filesystem skill provider from a LangChain agent using
 langchain-mcp-adapters.
 
 The client never imports providers or registries — it only talks to the
@@ -9,14 +9,14 @@ MCP server over stdio.  The server exposes skill content as MCP tools
 and the catalog / usage instructions as MCP resources.
 
 Flow:
-    1. Spawn an MCP server subprocess (backed by LocalFileSystemSkillProvider)
+    1. Spawn an MCP server subprocess via ``python -m agentskills_mcp_server``
     2. Connect via MultiServerMCPClient
     3. Read MCP resources for the system prompt (catalog + instructions)
     4. Get LangChain tools from the MCP session
     5. Run a LangChain ReAct agent
 
 Requirements:
-    pip install agentskills-fs agentskills-modelcontextprotocol langchain langchain-openai langchain-mcp-adapters
+    pip install agentskills-fs agentskills-mcp-server langchain langchain-openai langchain-mcp-adapters
     export AZURE_OPENAI_API_KEY=...
     export AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com
     export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
@@ -31,6 +31,9 @@ import os
 import sys
 from pathlib import Path
 
+# Path to the skills config file (relative to repo root)
+_CONFIG_FILE = Path(__file__).resolve().parent.parent.parent / "server-fs.json"
+
 
 async def main() -> None:
     # ------------------------------------------------------------------
@@ -43,14 +46,13 @@ async def main() -> None:
         print("  pip install langchain-mcp-adapters")
         return
 
-    skills_root = Path(__file__).resolve().parent.parent.parent / "skills"
     python = sys.executable
 
     client = MultiServerMCPClient(
         {
             "skills": {
                 "command": python,
-                "args": ["-c", _mcp_server_script(skills_root)],
+                "args": ["-m", "agentskills_mcp_server", "--config", str(_CONFIG_FILE)],
                 "transport": "stdio",
             }
         }
@@ -142,22 +144,6 @@ async def main() -> None:
                 elif isinstance(msg, AIMessage) and msg.content:
                     print(msg.content)
     print()
-
-
-def _mcp_server_script(skills_root: Path) -> str:
-    """Return a Python snippet that starts the MCP server over stdio."""
-    return (
-        "import asyncio; "
-        "from pathlib import Path; "
-        "from agentskills_core import SkillRegistry; "
-        "from agentskills_fs import LocalFileSystemSkillProvider; "
-        "from agentskills_mcp import create_mcp_server; "
-        f"provider = LocalFileSystemSkillProvider(Path(r'{skills_root}')); "
-        "registry = SkillRegistry(); "
-        "asyncio.run(registry.register('incident-response', provider)); "
-        "server = create_mcp_server(registry, name='Skills Server'); "
-        "server.run()"
-    )
 
 
 if __name__ == "__main__":

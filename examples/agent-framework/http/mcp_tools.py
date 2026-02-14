@@ -1,41 +1,41 @@
 """Agent Framework agent with MCP tools — HTTP provider.
 
-This script demonstrates running an MCP server backed by an HTTP
-static-file skill provider, then connecting to it from an Agent
-Framework agent using the built-in MCPStdioTool.
+This script demonstrates connecting to an MCP server backed by an HTTP
+static-file skill provider from an Agent Framework agent using the
+built-in MCPStdioTool.
 
 The client never imports providers or registries — it only talks to the
 MCP server over stdio.  The server exposes skill content as MCP tools
 and the catalog / usage instructions as MCP resources.
 
 Flow:
-    1. Spawn an MCP server subprocess (backed by HTTPStaticFileSkillProvider)
+    1. Spawn an MCP server subprocess via ``python -m agentskills_mcp_server``
     2. Connect via MCPStdioTool (built into Agent Framework)
     3. Read MCP resources for the system prompt (catalog + instructions)
     4. Get tools automatically via MCPStdioTool
     5. Run an Agent Framework agent with streaming
 
 Requirements:
-    pip install agentskills-http agentskills-modelcontextprotocol agent-framework --pre
+    pip install agentskills-http agentskills-mcp-server agent-framework --pre
     export AZURE_OPENAI_API_KEY=...
     export AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com
     export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
     export AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 Usage:
-    # Set the base URL to your skill host
-    export SKILLS_BASE_URL=https://cdn.example.com/skills
     python examples/agent-framework/http/mcp_tools.py
 """
 
 import asyncio
 import os
 import sys
+from pathlib import Path
+
+# Path to the skills config file (relative to repo root)
+_CONFIG_FILE = Path(__file__).resolve().parent.parent.parent / "server-http.json"
 
 
 async def main() -> None:
-    base_url = os.environ.get("SKILLS_BASE_URL", "https://cdn.example.com/skills")
-
     # ------------------------------------------------------------------
     # 1. Connect to MCP server via MCPStdioTool
     # ------------------------------------------------------------------
@@ -52,7 +52,7 @@ async def main() -> None:
     mcp_tool = MCPStdioTool(
         name="skills",
         command=python,
-        args=["-c", _mcp_server_script(base_url)],
+        args=["-m", "agentskills_mcp_server", "--config", str(_CONFIG_FILE)],
         description="Agent Skills MCP server (HTTP provider)",
     )
 
@@ -155,21 +155,6 @@ async def main() -> None:
         for pc in pending_calls.values():
             print(f"[tool_call] {pc.name}({pc.arguments})")
         print("\n")
-
-
-def _mcp_server_script(base_url: str) -> str:
-    """Return a Python snippet that starts the MCP server over stdio."""
-    return (
-        "import asyncio; "
-        "from agentskills_core import SkillRegistry; "
-        "from agentskills_http import HTTPStaticFileSkillProvider; "
-        "from agentskills_mcp import create_mcp_server; "
-        f"provider = HTTPStaticFileSkillProvider('{base_url}'); "
-        "registry = SkillRegistry(); "
-        "asyncio.run(registry.register('incident-response', provider)); "
-        "server = create_mcp_server(registry, name='HTTP Skills Server'); "
-        "server.run()"
-    )
 
 
 if __name__ == "__main__":

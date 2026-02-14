@@ -17,7 +17,7 @@ PACKAGES=(
     "packages/providers/agentskills-http"
     "packages/integrations/agentskills-langchain"
     "packages/integrations/agentskills-agentframework"
-    "packages/integrations/agentskills-mcp"
+    "packages/integrations/agentskills-mcp-server"
 )
 
 TEST_PYPI=false

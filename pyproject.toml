@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-sdk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python SDK for the Agent Skills open format (https://agentskills.io)"
 license = "MIT"
 package-mode = false
@@ -12,7 +12,7 @@ agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
 agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
 agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
-agentskills-modelcontextprotocol = { path = "packages/integrations/agentskills-mcp", develop = true }
+agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0"
@@ -47,4 +47,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp"]
+known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server"]

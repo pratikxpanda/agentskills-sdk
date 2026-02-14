@@ -28,7 +28,7 @@ LangChain and Microsoft Agent Framework examples organized by **provider** and *
 package converts skills into framework-native tool instances directly. Simplest
 setup; no server process needed.
 
-**MCP tools** — The `agentskills-modelcontextprotocol` package exposes skills through an MCP
+**MCP tools** — The `agentskills-mcp-server` package exposes skills through an MCP
 server. LangChain uses `langchain-mcp-adapters` to bridge those MCP tools;
 Agent Framework uses its built-in `MCPStdioTool`. Useful when you want a
 standard MCP server that any MCP client can connect to.
@@ -47,7 +47,7 @@ pip install agentskills-core agentskills-fs agentskills-langchain
 pip install agentskills-http
 
 # For MCP examples
-pip install agentskills-modelcontextprotocol langchain-mcp-adapters
+pip install agentskills-mcp-server langchain-mcp-adapters
 
 # For the LLM agent (optional — demos degrade gracefully)
 pip install langchain langchain-openai
@@ -63,7 +63,7 @@ pip install agentskills-core agentskills-fs agentskills-agentframework
 pip install agentskills-http
 
 # For MCP examples
-pip install agentskills-modelcontextprotocol
+pip install agentskills-mcp-server
 
 # Agent Framework (required)
 pip install agent-framework --pre

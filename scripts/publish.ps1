@@ -6,7 +6,7 @@
     Builds and publishes packages in the correct order:
       1. agentskills-core (no internal deps)
       2. agentskills-fs, agentskills-http (depend on core)
-      3. agentskills-langchain, agentskills-agentframework, agentskills-modelcontextprotocol (depend on core)
+      3. agentskills-langchain, agentskills-agentframework, agentskills-mcp-server (depend on core)
 
 .PARAMETER TestPyPI
     Publish to TestPyPI instead of PyPI.
@@ -35,7 +35,7 @@ $packages = @(
     "packages/providers/agentskills-http",
     "packages/integrations/agentskills-langchain",
     "packages/integrations/agentskills-agentframework",
-    "packages/integrations/agentskills-mcp"
+    "packages/integrations/agentskills-mcp-server"
 )
 
 $publishArgs = @()
