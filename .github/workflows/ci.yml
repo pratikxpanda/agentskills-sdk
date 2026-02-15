@@ -28,17 +28,17 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Check formatting
-        run: poetry run ruff format --check packages/
+        run: poetry run ruff format --check packages/ examples/
 
       - name: Lint
-        run: poetry run ruff check packages/
+        run: poetry run ruff check packages/ examples/
 
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12", "3.13", "3.14"]
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 

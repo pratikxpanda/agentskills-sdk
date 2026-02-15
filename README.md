@@ -11,6 +11,8 @@
 
 This project helps you **integrate skills into your own agents**. Retrieve skills from any source — filesystem, database, API — validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
 
+> **Note:** Python 3.12 and 3.13 are fully tested. Python 3.14 is not yet supported due to upstream dependency limitations (`agentskills-langchain` and `agentskills-agentframework`).
+
 ---
 
 ## Packages

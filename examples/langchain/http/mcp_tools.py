@@ -16,7 +16,8 @@ Flow:
     5. Run a LangChain ReAct agent
 
 Requirements:
-    pip install agentskills-http agentskills-mcp-server langchain langchain-openai langchain-mcp-adapters
+    pip install agentskills-http agentskills-mcp-server \
+        langchain langchain-openai langchain-mcp-adapters
     export AZURE_OPENAI_API_KEY=...
     export AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com
     export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
