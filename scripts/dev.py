@@ -38,23 +38,23 @@ _PY = sys.executable
 
 def lint() -> None:
     """Run ruff linter (check only, no fixes)."""
-    _run([_PY, "-m", "ruff", "check", "packages/"])
+    _run([_PY, "-m", "ruff", "check", "packages/", "examples/"])
 
 
 def lint_fix() -> None:
     """Run ruff linter with auto-fix."""
-    _run([_PY, "-m", "ruff", "check", "--fix", "packages/"])
+    _run([_PY, "-m", "ruff", "check", "--fix", "packages/", "examples/"])
 
 
 def fmt() -> None:
     """Auto-format code with ruff."""
-    _run([_PY, "-m", "ruff", "format", "packages/"])
+    _run([_PY, "-m", "ruff", "format", "packages/", "examples/"])
     lint_fix()
 
 
 def fmt_check() -> None:
     """Check formatting without changing files."""
-    _run([_PY, "-m", "ruff", "format", "--check", "packages/"])
+    _run([_PY, "-m", "ruff", "format", "--check", "packages/", "examples/"])
 
 
 def typecheck() -> None:

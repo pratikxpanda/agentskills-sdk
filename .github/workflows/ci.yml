@@ -28,10 +28,10 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Check formatting
-        run: poetry run ruff format --check packages/
+        run: poetry run ruff format --check packages/ examples/
 
       - name: Lint
-        run: poetry run ruff check packages/
+        run: poetry run ruff check packages/ examples/
 
   test:
     name: Test (Python ${{ matrix.python-version }})
