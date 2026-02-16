@@ -19,6 +19,7 @@ pytest = ">=9.0"
 pytest-asyncio = ">=0.24"
 respx = ">=0.22"
 ruff = ">=0.4"
+pip-audit = ">=2.7"
 
 [build-system]
 requires = ["poetry-core"]
