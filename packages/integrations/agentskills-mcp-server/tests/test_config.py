@@ -352,3 +352,122 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         assert server.instructions is None
+
+
+# ------------------------------------------------------------------
+# CLI (__main__.py) tests
+# ------------------------------------------------------------------
+
+
+class TestCLI:
+    """Tests for the CLI entry point (__main__.py)."""
+
+    def test_argparse_requires_config(self):
+        """CLI exits with error when --config is missing."""
+        from agentskills_mcp_server.__main__ import main
+
+        with patch("sys.argv", ["agentskills_mcp_server"]), pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 2  # argparse exit code for missing args
+
+    def test_missing_config_file_exits(self, tmp_path):
+        """CLI exits with error for a non-existent config file."""
+        from agentskills_mcp_server.__main__ import main
+
+        missing = str(tmp_path / "nonexistent.json")
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", missing]),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            main()
+        assert exc_info.value.code == 1
+
+    def test_invalid_json_config_raises(self, tmp_path):
+        """CLI fails gracefully on invalid JSON."""
+        from agentskills_mcp_server.__main__ import main
+
+        config_file = tmp_path / "bad.json"
+        config_file.write_text("{invalid json", encoding="utf-8")
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
+            pytest.raises((json.JSONDecodeError, SystemExit)),
+        ):
+            main()
+
+    def test_json_config_loads(self, tmp_path):
+        """CLI loads valid JSON config and calls server.run()."""
+        from agentskills_mcp_server.__main__ import main
+
+        _write_skill(tmp_path, "cli-skill")
+        config_file = tmp_path / "server.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "CLI Server",
+                    "skills": [
+                        {
+                            "id": "cli-skill",
+                            "provider": "fs",
+                            "options": {"root": str(tmp_path)},
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def _fake_asyncio_run(coro):
+            """Close the coroutine to avoid 'never awaited' warning."""
+            coro.close()
+            return type("MockServer", (), {"run": lambda self, **kw: None})()
+
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
+            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+        ):
+            mock_asyncio.run.side_effect = _fake_asyncio_run
+            main()
+            mock_asyncio.run.assert_called_once()
+
+    def test_yaml_config_loads(self, tmp_path):
+        """CLI loads valid YAML config and calls server.run()."""
+        from agentskills_mcp_server.__main__ import main
+
+        _write_skill(tmp_path, "yaml-skill")
+        config_file = tmp_path / "server.yaml"
+        yaml_content = (
+            f"name: YAML Server\n"
+            f"skills:\n"
+            f"  - id: yaml-skill\n"
+            f"    provider: fs\n"
+            f"    options:\n"
+            f"      root: '{tmp_path}'\n"
+        )
+        config_file.write_text(yaml_content, encoding="utf-8")
+
+        def _fake_asyncio_run(coro):
+            """Close the coroutine to avoid 'never awaited' warning."""
+            coro.close()
+            return type("MockServer", (), {"run": lambda self, **kw: None})()
+
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
+            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+        ):
+            mock_asyncio.run.side_effect = _fake_asyncio_run
+            main()
+            mock_asyncio.run.assert_called_once()
+
+    def test_transport_argument(self, tmp_path):
+        """CLI accepts --transport argument."""
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--config", required=True, type=Path)
+        parser.add_argument(
+            "--transport",
+            default="stdio",
+            choices=["stdio", "streamable-http"],
+        )
+        args = parser.parse_args(["--config", "server.json", "--transport", "streamable-http"])
+        assert args.transport == "streamable-http"

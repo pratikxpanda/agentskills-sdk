@@ -124,3 +124,56 @@ class TestToolsUsageInstructions:
         result = get_tools_usage_instructions()
         assert "Workflow" in result
         assert "progressive disclosure" in result.lower()
+
+
+class TestToolsEdgeCases:
+    """Edge cases: binary content, multiple skills, empty registry, missing resources."""
+
+    async def test_binary_content_decoded_with_replacement(self):
+        """Non-UTF-8 bytes in scripts/assets/references produce replacement chars."""
+        provider = _mock_provider(
+            scripts={"binary.sh": b"\x80\x81\xfe\xff valid"},
+        )
+        reg = SkillRegistry()
+        await reg.register("incident-response", provider)
+        tools = get_tools(reg)
+        tool = next(t for t in tools if t.name == "get_skill_script")
+        result = await tool.invoke(skill_id="incident-response", name="binary.sh")
+        assert "\ufffd" in result
+        assert "valid" in result
+
+    async def test_multiple_skills_registered(self):
+        """Tools work correctly with multiple skills in the registry."""
+        reg = SkillRegistry()
+        await reg.register("skill-a", _mock_provider("skill-a"))
+        await reg.register("skill-b", _mock_provider("skill-b"))
+        tools = get_tools(reg)
+        tool = next(t for t in tools if t.name == "get_skill_body")
+        a = await tool.invoke(skill_id="skill-a")
+        b = await tool.invoke(skill_id="skill-b")
+        assert "Incident Response" in a
+        assert "Incident Response" in b
+
+    async def test_empty_registry(self):
+        """Tools with empty registry return 5 tools (but lookups fail)."""
+        reg = SkillRegistry()
+        tools = get_tools(reg)
+        assert len(tools) == 5
+
+    async def test_missing_resource_raises(self):
+        """Requesting a non-existent resource raises an error."""
+        from agentskills_core import ResourceNotFoundError
+
+        provider = _mock_provider(
+            references={"exists.md": b"ok"},
+        )
+        provider.get_reference.side_effect = lambda sid, name: (
+            {"exists.md": b"ok"}.get(name)
+            or (_ for _ in ()).throw(ResourceNotFoundError(f"{name} not found"))
+        )
+        reg = SkillRegistry()
+        await reg.register("incident-response", provider)
+        tools = get_tools(reg)
+        tool = next(t for t in tools if t.name == "get_skill_reference")
+        with pytest.raises(ResourceNotFoundError):
+            await tool.invoke(skill_id="incident-response", name="nonexistent.md")

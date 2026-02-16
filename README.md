@@ -115,6 +115,44 @@ See [examples/agent-framework/](examples/agent-framework/) for full working demo
 
 ### With MCP
 
+#### Config-driven server (CLI)
+
+Create a `server.json` config file and run the built-in MCP server directly — any MCP-compatible client (Claude Desktop, VS Code, Cursor, etc.) can connect to it:
+
+```json
+{
+    "name": "My Skills Server",
+    "skills": [
+        {
+            "id": "incident-response",
+            "provider": "fs",
+            "options": { "root": "./skills" }
+        }
+    ]
+}
+```
+
+```bash
+# stdio transport (default — used by most MCP clients)
+python -m agentskills_mcp_server --config server.json
+
+# streamable-http transport
+python -m agentskills_mcp_server --config server.json --transport streamable-http
+```
+
+Point your MCP client at the server:
+
+```json
+{
+    "command": "python",
+    "args": ["-m", "agentskills_mcp_server", "--config", "server.json"]
+}
+```
+
+#### Programmatic server
+
+For custom setups, create the server in code:
+
 ```python
 from agentskills_mcp_server import create_mcp_server
 
@@ -122,7 +160,7 @@ server = create_mcp_server(registry, name="My Agent")
 server.run()  # stdio by default
 ```
 
-The server exposes tools (`get_skill_metadata`, `get_skill_body`, etc.) and resources (`skills://catalog/xml`, `skills://catalog/markdown`, `skills://tools-usage-instructions`). The MCP client reads the resources and injects them into the system prompt, then uses the tools for on-demand content retrieval.
+Both approaches expose the same tools (`get_skill_metadata`, `get_skill_body`, etc.) and resources (`skills://catalog/xml`, `skills://catalog/markdown`, `skills://tools-usage-instructions`).
 
 ## Custom Providers
 
@@ -139,12 +177,19 @@ class DatabaseSkillProvider(SkillProvider):
     async def get_reference(self, skill_id: str, name: str) -> bytes: ...
 ```
 
-Register multiple providers together:
+Register a custom provider:
+
+```python
+registry = SkillRegistry()
+await registry.register("customer-onboarding", DatabaseSkillProvider(conn))
+```
+
+Register multiple providers at once:
 
 ```python
 registry = SkillRegistry()
 await registry.register([
-    ("db-skill", DatabaseSkillProvider(conn)),
+    ("customer-onboarding", DatabaseSkillProvider(conn)),
     ("incident-response", LocalFileSystemSkillProvider(path)),
 ])
 ```
@@ -153,24 +198,26 @@ Batch registration is atomic — if any skill fails validation, none are registe
 
 ## Development
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, and project structure.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, CI, releasing, and project structure.
 
 ## Related Resources
 
 - [Agent Skills specification](https://agentskills.io/specification)
 - [What are skills?](https://agentskills.io/what-are-skills)
 - [Integrate skills into your agent](https://agentskills.io/integrate-skills)
-- [Example skills](https://github.com/anthropics/skills) on GitHub
+- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md) — curated list of official skill repositories, awesome lists, and community resources
+
+## Security
+
+Agent Skills are **equivalent to executable code** — skill content is injected into an LLM agent's context verbatim. **Only load skills from sources you trust.**
+
+The SDK includes built-in protections: input validation, TLS enforcement options, response size limits, path-traversal guards, and safe XML generation. See each package's README for provider-specific security controls.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-Contributions are welcome! Please open an issue to discuss your idea before submitting a PR.
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Make your changes with tests
-4. Run `poetry run pytest packages/` and ensure all tests pass
-5. Open a pull request
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setup, code style, testing, and pull requests.
 
 ## License
 

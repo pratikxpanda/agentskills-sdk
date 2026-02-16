@@ -1,11 +1,14 @@
 """Tests for HTTPStaticFileSkillProvider."""
 
+import warnings
+
 import httpx
 import pytest
 import respx
 
 from agentskills_core import AgentSkillsError, ResourceNotFoundError, SkillNotFoundError
 from agentskills_http import HTTPStaticFileSkillProvider
+from agentskills_http.static import DEFAULT_TIMEOUT_SECONDS
 
 BASE = "https://skills.example.com"
 
@@ -240,3 +243,165 @@ class TestIntegration:
             # References
             ref_data = await provider.get_reference("test-skill", "sev.md")
             assert b"SEV1" in ref_data
+
+
+class TestSecurity:
+    """Tests for security hardening features."""
+
+    def test_require_tls_rejects_http(self):
+        with pytest.raises(ValueError, match="require_tls"):
+            HTTPStaticFileSkillProvider("http://example.com/skills", require_tls=True)
+
+    def test_require_tls_allows_https(self):
+        provider = HTTPStaticFileSkillProvider(BASE, require_tls=True)
+        assert provider._base_url == BASE
+        provider._owns_client = False
+
+    def test_http_url_emits_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            provider = HTTPStaticFileSkillProvider("http://example.com/skills")
+            assert len(w) == 1
+            assert "unencrypted HTTP" in str(w[0].message)
+            # Provider owns an AsyncClient — mark it as not-owned so
+            # garbage collection doesn't warn about unclosed resources.
+            provider._owns_client = False
+
+    def test_https_url_no_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            provider = HTTPStaticFileSkillProvider(BASE)
+            assert len(w) == 0
+            provider._owns_client = False
+
+    def test_default_timeout_set(self):
+        provider = HTTPStaticFileSkillProvider(BASE)
+        timeout = provider._client.timeout
+        assert timeout.connect == DEFAULT_TIMEOUT_SECONDS
+        assert timeout.read == DEFAULT_TIMEOUT_SECONDS
+        provider._owns_client = False
+
+    def test_follow_redirects_disabled(self):
+        provider = HTTPStaticFileSkillProvider(BASE)
+        assert provider._client.follow_redirects is False
+        provider._owns_client = False
+
+    def test_custom_max_response_bytes(self):
+        provider = HTTPStaticFileSkillProvider(BASE, max_response_bytes=1024)
+        assert provider._max_response_bytes == 1024
+        provider._owns_client = False
+
+    @respx.mock
+    async def test_oversized_response_rejected_text(self):
+        huge = "x" * 100
+        respx.get(f"{BASE}/big/SKILL.md").respond(text=huge)
+        async with HTTPStaticFileSkillProvider(BASE, max_response_bytes=50) as provider:
+            with pytest.raises(AgentSkillsError, match="exceeds maximum size"):
+                await provider.get_metadata("big")
+
+    @respx.mock
+    async def test_oversized_response_rejected_bytes(self):
+        respx.get(f"{BASE}/test-skill/scripts/big.sh").respond(content=b"x" * 100)
+        async with HTTPStaticFileSkillProvider(BASE, max_response_bytes=50) as provider:
+            with pytest.raises(AgentSkillsError, match="exceeds maximum size"):
+                await provider.get_script("test-skill", "big.sh")
+
+    async def test_invalid_skill_id_rejected(self):
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ValueError, match="Invalid skill_id"):
+                await provider.get_metadata("../../etc")
+
+    async def test_invalid_resource_name_rejected(self):
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ValueError, match="Invalid resource name"):
+                await provider.get_script("test-skill", "../../../etc/passwd")
+
+    async def test_path_separator_in_skill_id_rejected(self):
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ValueError, match="Invalid skill_id"):
+                await provider.get_metadata("foo/bar")
+
+    @respx.mock
+    async def test_error_messages_do_not_leak_url(self):
+        respx.get(f"{BASE}/secret-skill/SKILL.md").respond(status_code=403)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(AgentSkillsError, match="403") as exc_info:
+                await provider.get_metadata("secret-skill")
+            # Error message should NOT contain the base URL
+            assert BASE not in str(exc_info.value)
+
+
+class TestSecurityEdgeCases:
+    """Additional edge-case and boundary tests for HTTP provider security."""
+
+    @respx.mock
+    async def test_aclose_idempotent(self):
+        """Calling aclose() twice should not raise."""
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        provider = HTTPStaticFileSkillProvider(BASE)
+        await provider.get_metadata("test-skill")
+        await provider.aclose()
+        await provider.aclose()  # Second call should not raise
+
+    @respx.mock
+    async def test_async_context_manager(self):
+        """async with enters and exits cleanly."""
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            meta = await provider.get_metadata("test-skill")
+            assert meta["name"] == "test-skill"
+        # After exit, the owned client should be closed
+        assert provider._client.is_closed
+
+    @respx.mock
+    async def test_response_exactly_at_max_passes(self):
+        """Response exactly at max_response_bytes boundary should pass."""
+        limit = 100
+        content = "x" * limit
+        respx.get(f"{BASE}/exact/SKILL.md").respond(text=content)
+        async with HTTPStaticFileSkillProvider(BASE, max_response_bytes=limit) as provider:
+            # Should not raise — exactly at the limit
+            text = await provider.get_body("exact")
+            assert len(text) == limit
+
+    async def test_empty_string_identifier_rejected(self):
+        """Empty string skill_id is rejected by _validate_identifier."""
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ValueError, match="Invalid skill_id"):
+                await provider.get_metadata("")
+
+    @pytest.mark.parametrize(
+        "bad_id",
+        [
+            ".hidden",
+            "-leading-hyphen",
+            "has space",
+            "has/slash",
+            "has\\backslash",
+            "\u00fcnicode",
+        ],
+    )
+    async def test_invalid_identifier_patterns(self, bad_id: str):
+        """Various invalid identifier patterns are all rejected."""
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ValueError, match="Invalid skill_id"):
+                await provider.get_metadata(bad_id)
+
+    @respx.mock
+    async def test_valid_identifier_with_dots_and_hyphens(self):
+        """Identifiers with dots and hyphens (like 'my-skill.v2') should be accepted."""
+        respx.get(f"{BASE}/my-skill.v2/SKILL.md").respond(
+            text="---\nname: my-skill.v2\ndescription: Desc.\n---\n# Body"
+        )
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            meta = await provider.get_metadata("my-skill.v2")
+            assert meta["name"] == "my-skill.v2"
+
+    def test_https_url_does_not_warn_or_raise(self):
+        """HTTPS URL with require_tls should not warn or raise."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            provider = HTTPStaticFileSkillProvider(BASE, require_tls=True)
+            assert len(w) == 0
+            assert provider._base_url == BASE
+            provider._owns_client = False

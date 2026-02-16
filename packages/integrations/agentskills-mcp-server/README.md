@@ -98,6 +98,8 @@ Each skill entry:
 - **`fs`**: `root` (path to skills directory, default `"."`)
 - **`http`**: `base_url` (required), `headers` (optional), `params` (optional query string parameters)
 
+Only `"fs"` and `"http"` are supported as provider types.
+
 ## Programmatic Usage
 
 For custom providers or advanced setups, use the Python API directly:
@@ -148,6 +150,8 @@ The MCP client reads these resources and injects them into the system prompt, gi
 | `instructions` | `str \| None` | Optional server-level instructions sent to clients |
 
 Returns a configured `FastMCP` instance ready for `server.run()`.
+
+Supported transport modes: `stdio` (default), `streamable-http`.
 
 ## License
 

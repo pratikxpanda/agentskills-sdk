@@ -28,8 +28,10 @@ for non-blocking HTTP requests.
 
 from __future__ import annotations
 
+import re
+import warnings
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -40,6 +42,18 @@ from agentskills_core import (
     SkillProvider,
     split_frontmatter,
 )
+
+# Input validation: identifiers (skill_id, resource name) must be safe
+# URL path segments.  Allows alphanumeric, hyphens, dots, underscores.
+# Must start with an alphanumeric character.  No path separators or
+# traversal sequences (e.g. ``../``).
+_SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+
+#: Default maximum HTTP response size in bytes (10 MB).
+DEFAULT_MAX_RESPONSE_BYTES: int = 10 * 1024 * 1024
+
+#: Default HTTP request timeout in seconds.
+DEFAULT_TIMEOUT_SECONDS: float = 30.0
 
 
 class HTTPStaticFileSkillProvider(SkillProvider):
@@ -60,10 +74,20 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             slash is stripped automatically.
         client: Optional pre-configured :class:`httpx.AsyncClient`.
             When provided, the caller is responsible for closing it.
+            The provider will still enforce *max_response_bytes* but
+            will **not** override the client's timeout or redirect
+            settings.
         headers: Optional extra headers sent with every request (e.g.
             ``Authorization``).
         params: Optional query parameters appended to every request
             (e.g. SAS tokens for Azure Blob Storage).
+        require_tls: If ``True``, reject ``http://`` base URLs with
+            a :class:`ValueError`.  Defaults to ``False``, which
+            allows HTTP but emits a :class:`UserWarning`.
+        max_response_bytes: Maximum allowed response size in bytes.
+            Responses exceeding this limit raise
+            :class:`~agentskills_core.AgentSkillsError`.  Defaults to
+            10 MB.
 
     Example::
 
@@ -83,15 +107,40 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         client: httpx.AsyncClient | None = None,
         headers: dict[str, str] | None = None,
         params: dict[str, str] | None = None,
+        require_tls: bool = False,
+        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
     ) -> None:
         if client is not None and (headers is not None or params is not None):
             raise ValueError(
                 "Cannot specify both 'client' and 'headers'/'params'. "
                 "Configure headers and params on the client directly."
             )
+
+        # TLS enforcement
+        parsed = urlparse(base_url)
+        if parsed.scheme == "http":
+            if require_tls:
+                raise ValueError(
+                    "require_tls is enabled but base_url uses plain HTTP. "
+                    "Use an HTTPS URL or set require_tls=False."
+                )
+            warnings.warn(
+                "base_url uses unencrypted HTTP. "
+                "Skill content fetched over HTTP is vulnerable to "
+                "man-in-the-middle attacks. Use HTTPS in production.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         self._base_url = base_url.rstrip("/")
+        self._max_response_bytes = max_response_bytes
         self._owns_client = client is None
-        self._client = client or httpx.AsyncClient(headers=headers, params=params)
+        self._client = client or httpx.AsyncClient(
+            headers=headers,
+            params=params,
+            timeout=httpx.Timeout(DEFAULT_TIMEOUT_SECONDS),
+            follow_redirects=False,
+        )
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client if it is owned by this provider."""
@@ -103,6 +152,24 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
     async def __aexit__(self, *exc: object) -> None:
         await self.aclose()
+
+    # ------------------------------------------------------------------
+    # Input validation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _validate_identifier(value: str, label: str) -> None:
+        """Raise :class:`ValueError` if *value* is not a safe URL path segment.
+
+        Prevents path-traversal attacks (e.g. ``../``) and other
+        injection via ``skill_id`` or resource ``name``.
+        """
+        if not _SAFE_IDENTIFIER_RE.match(value):
+            raise ValueError(
+                f"Invalid {label}: {value!r} — must start with an "
+                f"alphanumeric character and contain only alphanumeric "
+                f"characters, hyphens, dots, and underscores"
+            )
 
     # ------------------------------------------------------------------
     # Metadata & body
@@ -203,50 +270,90 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # Internal helpers
     # ------------------------------------------------------------------
 
+    async def _stream_bytes(self, url: str, not_found_error: type[Exception]) -> bytes:
+        """Stream a GET request and return the response bytes.
+
+        Uses ``httpx.AsyncClient.stream`` so that overly large
+        responses are detected **during** download rather than after
+        the entire body has been buffered into memory.
+
+        Args:
+            url: The URL to fetch.
+            not_found_error: Exception type to raise on HTTP 404
+                (e.g. :class:`SkillNotFoundError` or
+                :class:`ResourceNotFoundError`).
+
+        Raises:
+            not_found_error: On 404.
+            AgentSkillsError: On other HTTP/connection errors or if
+                the response exceeds *max_response_bytes*.
+        """
+        try:
+            async with self._client.stream("GET", url) as resp:
+                if resp.status_code == 404:
+                    raise not_found_error("Skill content not found")
+                try:
+                    resp.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise AgentSkillsError(f"HTTP {resp.status_code} error") from exc
+
+                # Check Content-Length header for an early reject when
+                # the server advertises the size up-front.
+                cl = resp.headers.get("content-length")
+                if cl is not None and int(cl) > self._max_response_bytes:
+                    raise AgentSkillsError(
+                        f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
+                    )
+
+                # Stream chunks and enforce the byte limit
+                # incrementally to avoid buffering the full body.
+                chunks: list[bytes] = []
+                received = 0
+                async for chunk in resp.aiter_bytes():
+                    received += len(chunk)
+                    if received > self._max_response_bytes:
+                        raise AgentSkillsError(
+                            f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
+                        )
+                    chunks.append(chunk)
+
+        except (SkillNotFoundError, ResourceNotFoundError, AgentSkillsError):
+            raise
+        except httpx.HTTPError as exc:
+            raise AgentSkillsError("HTTP request failed") from exc
+
+        return b"".join(chunks)
+
     async def _get_text(self, url: str) -> str:
         """GET a URL and return the response text.
 
         Raises:
             SkillNotFoundError: On 404.
-            AgentSkillsError: On other HTTP or connection errors.
+            AgentSkillsError: On other HTTP or connection errors,
+                or if the response exceeds *max_response_bytes*.
         """
-        try:
-            resp = await self._client.get(url)
-        except httpx.HTTPError as exc:
-            raise AgentSkillsError(f"HTTP request failed: {url}") from exc
-        if resp.status_code == 404:
-            raise SkillNotFoundError(f"Not found: {url}")
-        try:
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise AgentSkillsError(f"HTTP {resp.status_code} error for {url}") from exc
-        return resp.text
+        data = await self._stream_bytes(url, SkillNotFoundError)
+        return data.decode("utf-8")
 
     async def _get_bytes(self, url: str) -> bytes:
         """GET a URL and return the response bytes.
 
         Raises:
             ResourceNotFoundError: On 404.
-            AgentSkillsError: On other HTTP or connection errors.
+            AgentSkillsError: On other HTTP or connection errors,
+                or if the response exceeds *max_response_bytes*.
         """
-        try:
-            resp = await self._client.get(url)
-        except httpx.HTTPError as exc:
-            raise AgentSkillsError(f"HTTP request failed: {url}") from exc
-        if resp.status_code == 404:
-            raise ResourceNotFoundError(f"Not found: {url}")
-        try:
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise AgentSkillsError(f"HTTP {resp.status_code} error for {url}") from exc
-        return resp.content
+        return await self._stream_bytes(url, ResourceNotFoundError)
 
     async def _get_skill_md(self, skill_id: str) -> str:
         """Fetch the full text of a skill's ``SKILL.md``."""
-        url = f"{self._base_url}/{quote(skill_id)}/SKILL.md"
+        self._validate_identifier(skill_id, "skill_id")
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/SKILL.md"
         return await self._get_text(url)
 
     async def _get_resource(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Fetch a single resource file from a skill subdirectory."""
-        url = f"{self._base_url}/{quote(skill_id)}/{subdir}/{quote(name)}"
+        self._validate_identifier(skill_id, "skill_id")
+        self._validate_identifier(name, "resource name")
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/{subdir}/{quote(name, safe='')}"
         return await self._get_bytes(url)

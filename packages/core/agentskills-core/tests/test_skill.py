@@ -88,3 +88,30 @@ class TestSkillGuardClauses:
     def test_rejects_none_provider(self):
         with pytest.raises(TypeError, match="SkillProvider"):
             Skill("my-skill", None)  # type: ignore[arg-type]
+
+
+class TestSkillErrorPropagation:
+    """Tests for error propagation through Skill delegation."""
+
+    def test_rejects_none_skill_id(self):
+        """None skill_id hits the non-string guard."""
+        with pytest.raises(ValueError, match="non-empty string"):
+            Skill(None, _make_mock_provider())  # type: ignore[arg-type]
+
+    async def test_provider_exception_propagates(self):
+        """Exceptions from provider methods propagate through Skill."""
+        provider = _make_mock_provider()
+        provider.get_body.side_effect = RuntimeError("network fail")
+        skill = Skill("incident-response", provider)
+        with pytest.raises(RuntimeError, match="network fail"):
+            await skill.get_body()
+
+    async def test_provider_exception_on_metadata(self):
+        """Exception from get_metadata propagates correctly."""
+        from agentskills_core import SkillNotFoundError
+
+        provider = _make_mock_provider()
+        provider.get_metadata.side_effect = SkillNotFoundError("not found")
+        skill = Skill("incident-response", provider)
+        with pytest.raises(SkillNotFoundError, match="not found"):
+            await skill.get_metadata()

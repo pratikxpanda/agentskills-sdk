@@ -190,3 +190,108 @@ class TestIntegration:
         # Assets
         asset_content = await skill.get_asset("escalation-flowchart.mermaid")
         assert len(asset_content) > 0
+
+
+class TestSecurityFS:
+    """Tests for filesystem provider security features."""
+
+    async def test_oversized_skill_md_rejected(self, tmp_path: Path):
+        skill_dir = tmp_path / "big-skill"
+        skill_dir.mkdir()
+        # Create a SKILL.md larger than the limit
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: big-skill\ndescription: Test.\n---\n" + "x" * 200,
+            encoding="utf-8",
+        )
+        provider = LocalFileSystemSkillProvider(tmp_path, max_file_bytes=100)
+        with pytest.raises(SkillNotFoundError, match="exceeds maximum size"):
+            await provider.get_metadata("big-skill")
+
+    async def test_oversized_resource_rejected(self, tmp_path: Path):
+        _create_skill(tmp_path, scripts={"big.sh": "x" * 200})
+        provider = LocalFileSystemSkillProvider(tmp_path, max_file_bytes=100)
+        with pytest.raises(ResourceNotFoundError, match="exceeds maximum size"):
+            await provider.get_script("test-skill", "big.sh")
+
+    async def test_error_message_does_not_leak_path(self, tmp_path: Path):
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError) as exc_info:
+            await provider.get_metadata("nonexistent")
+        # Error should reference skill_id, not full filesystem path
+        assert str(tmp_path) not in str(exc_info.value)
+
+
+class TestSecurityFSBoundary:
+    """Additional boundary and edge-case tests for the filesystem provider."""
+
+    async def test_file_exactly_at_max_bytes_passes(self, tmp_path: Path):
+        """File at exactly max_file_bytes should be accepted."""
+        limit = 200
+        raw = b"---\nname: test-skill\ndescription: Test.\n---\n"
+        # Pad to exactly the limit
+        raw += b"x" * (limit - len(raw))
+        skill_dir = tmp_path / "test-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_bytes(raw)
+        provider = LocalFileSystemSkillProvider(tmp_path, max_file_bytes=limit)
+        meta = await provider.get_metadata("test-skill")
+        assert meta["name"] == "test-skill"
+
+    async def test_skill_dir_exists_but_no_skill_md(self, tmp_path: Path):
+        """Directory exists with other files but no SKILL.md raises SkillNotFoundError."""
+        skill_dir = tmp_path / "empty-skill"
+        skill_dir.mkdir()
+        (skill_dir / "README.md").write_text("# Not a skill")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError, match=r"SKILL\.md not found"):
+            await provider.get_metadata("empty-skill")
+
+    @pytest.mark.parametrize(
+        "traversal_id",
+        [
+            "../etc",
+            "..\\etc",
+            "../../etc",
+            "./../../etc",
+            "skill/../../../etc",
+        ],
+    )
+    async def test_path_traversal_patterns(self, tmp_path: Path, traversal_id: str):
+        """Various path-traversal patterns are all rejected."""
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError):
+            await provider.get_metadata(traversal_id)
+
+    async def test_non_utf8_skill_md(self, tmp_path: Path):
+        """Non-UTF-8 encoded SKILL.md raises an appropriate error."""
+        skill_dir = tmp_path / "binary-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_bytes(b"\x80\x81\x82\xff")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(UnicodeDecodeError):
+            await provider.get_metadata("binary-skill")
+
+    async def test_max_file_bytes_zero_rejects_all(self, tmp_path: Path):
+        """max_file_bytes=0 rejects all non-empty files."""
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path, max_file_bytes=0)
+        with pytest.raises(SkillNotFoundError, match="exceeds maximum size"):
+            await provider.get_metadata("test-skill")
+
+    async def test_symlink_outside_root(self, tmp_path: Path):
+        """Symlink pointing outside root directory is rejected."""
+        import os
+
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "SKILL.md").write_text("---\nname: evil\ndescription: Evil.\n---\n# Evil")
+        skill_link = tmp_path / "root" / "evil"
+        (tmp_path / "root").mkdir()
+        try:
+            os.symlink(outside, skill_link)
+        except OSError:
+            pytest.skip("symlink creation requires elevated privileges on Windows")
+        provider = LocalFileSystemSkillProvider(tmp_path / "root")
+        with pytest.raises(SkillNotFoundError):
+            await provider.get_metadata("evil")

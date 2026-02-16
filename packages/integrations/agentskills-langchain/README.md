@@ -63,6 +63,18 @@ Returns a markdown string explaining the progressive-disclosure workflow — rea
 
 See [examples/langchain/](../../examples/langchain/) for a full working demo.
 
+## Error Handling
+
+| Scenario | Exception |
+| --- | --- |
+| Skill not found in registry | `SkillNotFoundError` |
+| Resource not found in skill | `ResourceNotFoundError` |
+| Provider errors (HTTP, filesystem) | `AgentSkillsError` |
+
+All exceptions inherit from `AgentSkillsError` (from `agentskills-core`).
+
+> **Note:** Binary content (scripts, assets, references) is decoded as UTF-8 with `errors="replace"`. Non-decodable bytes are replaced with the Unicode replacement character (�).
+
 ## License
 
 MIT

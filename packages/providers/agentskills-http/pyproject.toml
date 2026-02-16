@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-http"
-version = "0.2.0"
+version = "0.2.1"
 description = "HTTP-based skill providers for the Agent Skills format (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
@@ -18,9 +18,9 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.1.0"
-httpx = ">=0.27"
-pyyaml = ">=6.0"
+agentskills-core = ">=0.1.0,<1.0"
+httpx = ">=0.27,<1.0"
+pyyaml = ">=6.0,<7.0"
 
 [build-system]
 requires = ["poetry-core"]

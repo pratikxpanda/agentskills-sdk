@@ -29,6 +29,9 @@ from agentskills_core import (
     split_frontmatter,
 )
 
+#: Default maximum file size in bytes (10 MB).
+DEFAULT_MAX_FILE_BYTES: int = 10 * 1024 * 1024
+
 
 class LocalFileSystemSkillProvider(SkillProvider):
     """Skill provider backed by a local directory tree.
@@ -61,6 +64,10 @@ class LocalFileSystemSkillProvider(SkillProvider):
     Args:
         root: Path to the top-level directory containing skill
             subdirectories.
+        max_file_bytes: Maximum allowed file size in bytes.
+            Files exceeding this limit raise
+            :class:`~agentskills_core.AgentSkillsError`.  Defaults
+            to 10 MB.
 
     Raises:
         NotADirectoryError: If *root* does not exist or is not a
@@ -77,10 +84,11 @@ class LocalFileSystemSkillProvider(SkillProvider):
         print(f"{meta['name']}: {meta['description']}")
     """
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> None:
         self._root = Path(root)
         if not self._root.is_dir():
             raise NotADirectoryError(f"Skill root does not exist: {self._root}")
+        self._max_file_bytes = max_file_bytes
 
     # ------------------------------------------------------------------
     # Metadata & body — parsed lazily from SKILL.md
@@ -201,7 +209,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
         if not path.is_relative_to(self._root.resolve()):
             raise SkillNotFoundError(f"Invalid skill_id: {skill_id!r}")
         if not path.is_dir():
-            raise SkillNotFoundError(f"Skill directory not found: {path}")
+            raise SkillNotFoundError(f"Skill not found: {skill_id!r}")
         return path
 
     def _read_skill_md(self, skill_id: str) -> str:
@@ -218,7 +226,13 @@ class LocalFileSystemSkillProvider(SkillProvider):
         """
         skill_md = self._skill_dir(skill_id) / "SKILL.md"
         if not skill_md.is_file():
-            raise SkillNotFoundError(f"SKILL.md not found for skill '{skill_id}'")
+            raise SkillNotFoundError(f"SKILL.md not found for skill {skill_id!r}")
+        size = skill_md.stat().st_size
+        if size > self._max_file_bytes:
+            raise SkillNotFoundError(
+                f"SKILL.md for skill {skill_id!r} exceeds maximum size "
+                f"({self._max_file_bytes} bytes)"
+            )
         return skill_md.read_text(encoding="utf-8")
 
     def _read_subdir_file(self, skill_id: str, subdir: str, name: str) -> bytes:
@@ -240,6 +254,12 @@ class LocalFileSystemSkillProvider(SkillProvider):
             raise ResourceNotFoundError(f"Invalid resource name: {name!r}")
         if not path.is_file():
             raise ResourceNotFoundError(
-                f"File '{name}' not found in {subdir}/ for skill '{skill_id}'"
+                f"Resource {name!r} not found in {subdir}/ for skill {skill_id!r}"
+            )
+        size = path.stat().st_size
+        if size > self._max_file_bytes:
+            raise ResourceNotFoundError(
+                f"Resource {name!r} for skill {skill_id!r} exceeds maximum size "
+                f"({self._max_file_bytes} bytes)"
             )
         return path.read_bytes()

@@ -1,0 +1,22 @@
+version: 2
+
+updates:
+  # Python dependencies (Poetry)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps:"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - ci/cd
+    commit-message:
+      prefix: "ci:"

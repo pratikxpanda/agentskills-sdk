@@ -173,3 +173,37 @@ class TestBatchRegistration:
         registry = SkillRegistry()
         with pytest.raises(ValueError, match="provider is required"):
             await registry.register("incident-response")
+
+
+class TestRegistryEdgeCases:
+    """Tests for registry edge cases and uncovered branches."""
+
+    async def test_register_invalid_type_raises(self):
+        """register() with non-string, non-list first arg raises ValueError."""
+        registry = SkillRegistry()
+        with pytest.raises(ValueError, match="Expected a skill_id string or a list"):
+            await registry.register(123)  # type: ignore[arg-type]
+
+    async def test_batch_with_provider_raises(self):
+        """register() batch call with provider arg raises ValueError."""
+        registry = SkillRegistry()
+        with pytest.raises(ValueError, match="provider must not be passed"):
+            await registry.register(
+                [("alpha", _mock_provider("alpha"))],
+                _mock_provider("alpha"),
+            )
+
+    async def test_repr_empty(self):
+        registry = SkillRegistry()
+        assert repr(registry) == "SkillRegistry(0 skills)"
+
+    async def test_repr_singular(self):
+        registry = SkillRegistry()
+        await registry.register("alpha", _mock_provider("alpha"))
+        assert repr(registry) == "SkillRegistry(1 skill)"
+
+    async def test_repr_plural(self):
+        registry = SkillRegistry()
+        await registry.register("alpha", _mock_provider("alpha"))
+        await registry.register("bravo", _mock_provider("bravo"))
+        assert repr(registry) == "SkillRegistry(2 skills)"
