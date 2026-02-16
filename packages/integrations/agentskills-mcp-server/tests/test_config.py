@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from agentskills_core import SkillProvider, SkillRegistry
-from agentskills_mcp_server.config import ServerConfig, SkillConfig
+from agentskills_mcp_server.config import ServerConfig, SkillConfig, resolve_env_vars
 from agentskills_mcp_server.server import (
     SUPPORTED_PROVIDERS,
     _resolve_provider,
@@ -355,6 +355,104 @@ class TestConfigDrivenServer:
 
 
 # ------------------------------------------------------------------
+# Environment variable resolution
+# ------------------------------------------------------------------
+
+
+class TestResolveEnvVars:
+    """Tests for ${VAR} placeholder resolution in config data."""
+
+    def test_simple_string_replacement(self, monkeypatch):
+        monkeypatch.setenv("MY_TOKEN", "secret123")
+        assert resolve_env_vars("Bearer ${MY_TOKEN}") == "Bearer secret123"
+
+    def test_multiple_vars_in_one_string(self, monkeypatch):
+        monkeypatch.setenv("HOST", "example.com")
+        monkeypatch.setenv("PORT", "8080")
+        result = resolve_env_vars("https://${HOST}:${PORT}/api")
+        assert result == "https://example.com:8080/api"
+
+    def test_unset_var_resolves_to_empty(self, monkeypatch):
+        monkeypatch.delenv("NONEXISTENT_VAR_XYZ", raising=False)
+        assert resolve_env_vars("prefix-${NONEXISTENT_VAR_XYZ}-suffix") == "prefix--suffix"
+
+    def test_nested_dict(self, monkeypatch):
+        monkeypatch.setenv("SECRET", "s3cret")
+        data = {
+            "headers": {"Authorization": "Bearer ${SECRET}"},
+            "other": "no-vars-here",
+        }
+        result = resolve_env_vars(data)
+        assert result["headers"]["Authorization"] == "Bearer s3cret"
+        assert result["other"] == "no-vars-here"
+
+    def test_list_values(self, monkeypatch):
+        monkeypatch.setenv("ITEM", "resolved")
+        data = ["${ITEM}", "plain", "${ITEM}-suffix"]
+        result = resolve_env_vars(data)
+        assert result == ["resolved", "plain", "resolved-suffix"]
+
+    def test_non_string_scalars_unchanged(self):
+        assert resolve_env_vars(42) == 42
+        assert resolve_env_vars(3.14) == 3.14
+        assert resolve_env_vars(True) is True
+        assert resolve_env_vars(None) is None
+
+    def test_no_placeholders_unchanged(self):
+        assert resolve_env_vars("no variables here") == "no variables here"
+
+    def test_empty_string_unchanged(self):
+        assert resolve_env_vars("") == ""
+
+    def test_full_config_structure(self, monkeypatch):
+        monkeypatch.setenv("CDN_TOKEN", "tok-abc")
+        monkeypatch.setenv("SAS_SIG", "sig-xyz")
+        data = {
+            "name": "Server",
+            "skills": [
+                {
+                    "id": "my-skill",
+                    "provider": "http",
+                    "options": {
+                        "base_url": "https://cdn.example.com",
+                        "headers": {"Authorization": "Bearer ${CDN_TOKEN}"},
+                        "params": {"sig": "${SAS_SIG}"},
+                    },
+                }
+            ],
+        }
+        result = resolve_env_vars(data)
+        opts = result["skills"][0]["options"]
+        assert opts["headers"]["Authorization"] == "Bearer tok-abc"
+        assert opts["params"]["sig"] == "sig-xyz"
+        # Non-templated values untouched
+        assert result["name"] == "Server"
+        assert opts["base_url"] == "https://cdn.example.com"
+
+    def test_entire_value_is_var(self, monkeypatch):
+        monkeypatch.setenv("BASE", "https://example.com")
+        assert resolve_env_vars("${BASE}") == "https://example.com"
+
+    def test_deeply_nested(self, monkeypatch):
+        monkeypatch.setenv("DEEP", "found")
+        data = {"a": {"b": {"c": [{"d": "${DEEP}"}]}}}
+        result = resolve_env_vars(data)
+        assert result["a"]["b"]["c"][0]["d"] == "found"
+
+    def test_dollar_without_braces_not_replaced(self):
+        """Plain $VAR (without braces) is NOT treated as a placeholder."""
+        assert resolve_env_vars("$VAR") == "$VAR"
+
+    def test_warning_logged_for_unset_var(self, monkeypatch, caplog):
+        monkeypatch.delenv("MISSING_VAR", raising=False)
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="agentskills_mcp_server.config"):
+            resolve_env_vars("${MISSING_VAR}")
+        assert "MISSING_VAR" in caplog.text
+
+
+# ------------------------------------------------------------------
 # CLI (__main__.py) tests
 # ------------------------------------------------------------------
 
@@ -471,3 +569,38 @@ class TestCLI:
         )
         args = parser.parse_args(["--config", "server.json", "--transport", "streamable-http"])
         assert args.transport == "streamable-http"
+
+    def test_env_vars_resolved_in_json_config(self, tmp_path, monkeypatch):
+        """CLI resolves ${VAR} placeholders in JSON config before building."""
+        from agentskills_mcp_server.__main__ import main
+
+        monkeypatch.setenv("SKILL_ROOT", str(tmp_path))
+        _write_skill(tmp_path, "env-skill")
+        config_file = tmp_path / "server.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "Env Server",
+                    "skills": [
+                        {
+                            "id": "env-skill",
+                            "provider": "fs",
+                            "options": {"root": "${SKILL_ROOT}"},
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def _fake_asyncio_run(coro):
+            coro.close()
+            return type("MockServer", (), {"run": lambda self, **kw: None})()
+
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
+            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+        ):
+            mock_asyncio.run.side_effect = _fake_asyncio_run
+            main()
+            mock_asyncio.run.assert_called_once()

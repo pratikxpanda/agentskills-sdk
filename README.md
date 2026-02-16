@@ -127,10 +127,20 @@ Create a `server.json` config file and run the built-in MCP server directly — 
             "id": "incident-response",
             "provider": "fs",
             "options": { "root": "./skills" }
+        },
+        {
+            "id": "cloud-runbooks",
+            "provider": "http",
+            "options": {
+                "base_url": "https://cdn.example.com/skills",
+                "headers": { "Authorization": "Bearer ${API_TOKEN}" }
+            }
         }
     ]
 }
 ```
+
+> **Environment variables** — String values may contain `${VAR}` placeholders that are resolved from environment variables at load time. This keeps secrets out of the config file.
 
 ```bash
 # stdio transport (default — used by most MCP clients)

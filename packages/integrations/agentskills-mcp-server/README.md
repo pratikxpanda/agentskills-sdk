@@ -100,6 +100,29 @@ Each skill entry:
 
 Only `"fs"` and `"http"` are supported as provider types.
 
+### Environment Variable Substitution
+
+String values in the config file may contain `${VAR}` placeholders that are resolved from environment variables at load time:
+
+```json
+{
+    "name": "My Skills Server",
+    "skills": [
+        {
+            "id": "cloud-runbooks",
+            "provider": "http",
+            "options": {
+                "base_url": "https://cdn.example.com/skills",
+                "headers": { "Authorization": "Bearer ${API_TOKEN}" },
+                "params": { "sig": "${SAS_TOKEN}" }
+            }
+        }
+    ]
+}
+```
+
+Unset variables resolve to an empty string and a warning is logged.
+
 ## Programmatic Usage
 
 For custom providers or advanced setups, use the Python API directly:

@@ -17,6 +17,6 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - ci/cd
+      - ci
     commit-message:
       prefix: "ci:"
