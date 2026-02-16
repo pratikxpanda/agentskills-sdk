@@ -50,9 +50,9 @@ The provider reads files synchronously (local disk I/O is fast for small skill f
 
 ## Security
 
-- **Path-traversal protection** — Skill IDs and resource names are validated to stay within the root directory. Attempts to escape (e.g. `../../etc/passwd`) raise `SkillNotFoundError` or `ResourceNotFoundError`.
-- **File size limits** — Files exceeding 10 MB (default) are rejected before reading into memory. Configure via the `max_file_bytes` parameter.
-- **Error-message sanitization** — Error messages reference the `skill_id` rather than full filesystem paths, preventing internal path leakage.
+- **Path-traversal protection** - Skill IDs and resource names are validated to stay within the root directory. Attempts to escape (e.g. `../../etc/passwd`) raise `SkillNotFoundError` or `ResourceNotFoundError`.
+- **File size limits** - Files exceeding 10 MB (default) are rejected before reading into memory. Configure via the `max_file_bytes` parameter.
+- **Error-message sanitization** - Error messages reference the `skill_id` rather than full filesystem paths, preventing internal path leakage.
 
 For the full security policy, see [SECURITY.md](../../../SECURITY.md).
 
@@ -62,7 +62,7 @@ For the full security policy, see [SECURITY.md](../../../SECURITY.md).
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `root` | `Path` | — | Path to the directory containing skill subdirectories |
+| `root` | `Path` | - | Path to the directory containing skill subdirectories |
 | `max_file_bytes` | `int` | `10_485_760` (10 MB) | Maximum allowed file size in bytes |
 
 | Method | Returns | Description |

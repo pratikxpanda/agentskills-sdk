@@ -25,9 +25,9 @@ Instead, please use one of the following methods:
 ### What to expect
 
 - **Acknowledgement** within 48 hours.
-- **Assessment** within 7 days — we will confirm whether the issue is
+- **Assessment** within 7 days - we will confirm whether the issue is
   accepted and provide an estimated timeline for a fix.
-- **Fix and disclosure** — once a fix is ready, we will release a patch
+- **Fix and disclosure** - once a fix is ready, we will release a patch
   version and publish a GitHub Security Advisory crediting you (unless
   you prefer to remain anonymous).
 
@@ -42,19 +42,19 @@ author can embed prompt-injection payloads or misleading instructions.
 
 ### Security controls in this SDK
 
-- **Input validation** — Skill IDs and resource names are validated
+- **Input validation** - Skill IDs and resource names are validated
   against a safe-character pattern to prevent path-traversal and
   injection attacks.
-- **TLS warnings** — The HTTP provider warns when `base_url` uses
+- **TLS warnings** - The HTTP provider warns when `base_url` uses
   unencrypted HTTP and supports a `require_tls` flag.
-- **Redirect protection** — The internally-created HTTP client does not
+- **Redirect protection** - The internally-created HTTP client does not
   follow redirects by default.
-- **Timeouts** — Default 30-second timeout on HTTP requests.
-- **Response size limits** — Responses and files exceeding 10 MB are
+- **Timeouts** - Default 30-second timeout on HTTP requests.
+- **Response size limits** - Responses and files exceeding 10 MB are
   rejected by default.
-- **Frontmatter size limits** — YAML frontmatter blocks exceeding
+- **Frontmatter size limits** - YAML frontmatter blocks exceeding
   256 KB are rejected.
-- **Safe XML generation** — Catalog XML is built with
+- **Safe XML generation** - Catalog XML is built with
   `xml.etree.ElementTree`, not string concatenation.
-- **Path-traversal protection** — The filesystem provider validates
+- **Path-traversal protection** - The filesystem provider validates
   that resolved paths stay within the skill root directory.

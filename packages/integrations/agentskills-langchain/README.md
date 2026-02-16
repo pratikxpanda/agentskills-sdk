@@ -4,7 +4,7 @@
 [![Python 3.12+](https://img.shields.io/pypi/pyversions/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> LangChain integration for the [Agent Skills SDK](../../README.md) — turn a skill registry into LangChain tools.
+> LangChain integration for the [Agent Skills SDK](../../README.md) - turn a skill registry into LangChain tools.
 
 Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` instances from a `SkillRegistry`, ready to be passed to any LangChain agent.
 
@@ -57,7 +57,7 @@ Returns a list of LangChain structured tools bound to the given registry.
 
 ### `get_tools_usage_instructions() -> str`
 
-Returns a markdown string explaining the progressive-disclosure workflow — read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
+Returns a markdown string explaining the progressive-disclosure workflow - read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
 
 ## Example
 

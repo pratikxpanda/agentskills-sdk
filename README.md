@@ -9,7 +9,7 @@
 
 **Agent Skills** is an [open format](https://agentskills.io/specification) for giving AI agents new capabilities and expertise. Originally developed by Anthropic, the format is now supported by Claude Code, Cursor, GitHub, VS Code, Gemini CLI, and many others.
 
-This project helps you **integrate skills into your own agents**. Retrieve skills from any source — filesystem, database, API — validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
+This project helps you **integrate skills into your own agents**. Retrieve skills from any source - filesystem, database, API - validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
 
 > **Note:** Python 3.12 and 3.13 are fully tested. Python 3.14 is not yet supported due to upstream dependency limitations (`agentskills-langchain` and `agentskills-agentframework`).
 
@@ -19,22 +19,22 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 
 | Package | Description | Install |
 | --- | --- | --- |
-| [`agentskills-core`](packages/core/agentskills-core/README.md) | Core abstractions — `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
-| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | Load skills from the local filesystem — `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
-| [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server — `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
-| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
-| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents — `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) — `create_mcp_server` | `pip install agentskills-mcp-server` |
+| [`agentskills-core`](packages/core/agentskills-core/README.md) | Core abstractions - `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
+| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | Load skills from the local filesystem - `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
+| [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
+| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
+| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server` | `pip install agentskills-mcp-server` |
 
 ## How It Works
 
-The SDK uses **progressive disclosure** to deliver skill content efficiently — each step only fetches what's needed:
+The SDK uses **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
 
 1. **Register** skills from any source (filesystem, HTTP, database, etc.)
 2. **Inject** the skills catalog and tool usage instructions into the system prompt
-3. **Disclose on demand** — the agent uses tools (`get_skill_body`, `get_skill_reference`, etc.) to retrieve content as needed
+3. **Disclose on demand** - the agent uses tools (`get_skill_body`, `get_skill_reference`, etc.) to retrieve content as needed
 
-The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API — the agent fetches metadata, then the full body, then individual references, scripts, or assets, only when needed.
+The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API - the agent fetches metadata, then the full body, then individual references, scripts, or assets, only when needed.
 
 ## Quick Start
 
@@ -117,7 +117,7 @@ See [examples/agent-framework/](examples/agent-framework/) for full working demo
 
 #### Config-driven server (CLI)
 
-Create a `server.json` config file and run the built-in MCP server directly — any MCP-compatible client (Claude Desktop, VS Code, Cursor, etc.) can connect to it:
+Create a `server.json` config file and run the built-in MCP server directly - any MCP-compatible client (Claude Desktop, VS Code, Cursor, etc.) can connect to it:
 
 ```json
 {
@@ -140,10 +140,10 @@ Create a `server.json` config file and run the built-in MCP server directly — 
 }
 ```
 
-> **Environment variables** — String values may contain `${VAR}` placeholders that are resolved from environment variables at load time. This keeps secrets out of the config file.
+> **Environment variables** - String values may contain `${VAR}` placeholders that are resolved from environment variables at load time. This keeps secrets out of the config file.
 
 ```bash
-# stdio transport (default — used by most MCP clients)
+# stdio transport (default - used by most MCP clients)
 python -m agentskills_mcp_server --config server.json
 
 # streamable-http transport
@@ -204,7 +204,7 @@ await registry.register([
 ])
 ```
 
-Batch registration is atomic — if any skill fails validation, none are registered.
+Batch registration is atomic - if any skill fails validation, none are registered.
 
 ## Development
 
@@ -215,11 +215,11 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, CI, 
 - [Agent Skills specification](https://agentskills.io/specification)
 - [What are skills?](https://agentskills.io/what-are-skills)
 - [Integrate skills into your agent](https://agentskills.io/integrate-skills)
-- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md) — curated list of official skill repositories, awesome lists, and community resources
+- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md) - curated list of official skill repositories, awesome lists, and community resources
 
 ## Security
 
-Agent Skills are **equivalent to executable code** — skill content is injected into an LLM agent's context verbatim. **Only load skills from sources you trust.**
+Agent Skills are **equivalent to executable code** - skill content is injected into an LLM agent's context verbatim. **Only load skills from sources you trust.**
 
 The SDK includes built-in protections: input validation, TLS enforcement options, response size limits, path-traversal guards, and safe XML generation. See each package's README for provider-specific security controls.
 

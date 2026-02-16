@@ -20,9 +20,9 @@ _One-paragraph description of what happened, what was impacted, and how it was r
 
 | Time (UTC) | Event |
 | --- | --- |
-| HH:MM | Alert triggered — [description] |
+| HH:MM | Alert triggered - [description] |
 | HH:MM | On-call acknowledged |
-| HH:MM | Incident declared — severity assigned |
+| HH:MM | Incident declared - severity assigned |
 | HH:MM | Root cause identified |
 | HH:MM | Mitigation applied |
 | HH:MM | Service restored |

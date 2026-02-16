@@ -26,13 +26,13 @@ An incident should be declared when:
 
 ## General Triage Steps
 
-1. **Acknowledge** — Confirm you are responding to the alert
-2. **Assess** — Determine severity using the severity-levels reference
-3. **Communicate** — Open an incident channel and notify stakeholders
-4. **Escalate** — Follow the escalation policy based on severity
-5. **Mitigate** — Apply immediate fixes to restore service
-6. **Resolve** — Confirm the issue is fully resolved and monitoring is clean
-7. **Postmortem** — Schedule and complete a blameless postmortem within 48 hours
+1. **Acknowledge** - Confirm you are responding to the alert
+2. **Assess** - Determine severity using the severity-levels reference
+3. **Communicate** - Open an incident channel and notify stakeholders
+4. **Escalate** - Follow the escalation policy based on severity
+5. **Mitigate** - Apply immediate fixes to restore service
+6. **Resolve** - Confirm the issue is fully resolved and monitoring is clean
+7. **Postmortem** - Schedule and complete a blameless postmortem within 48 hours
 
 ## Communication Expectations
 
@@ -43,15 +43,15 @@ An incident should be declared when:
 
 ## Available References
 
-- `severity-levels.md` — Severity definitions (SEV1–SEV4) with impact and response times
-- `escalation-policy.md` — Who to page per severity level and escalation timelines
-- `postmortem-template.md` — Structured template for blameless postmortems
+- `severity-levels.md` - Severity definitions (SEV1-SEV4) with impact and response times
+- `escalation-policy.md` - Who to page per severity level and escalation timelines
+- `postmortem-template.md` - Structured template for blameless postmortems
 
 ## Available Scripts
 
-- `page-oncall.sh` — Page the on-call engineer via PagerDuty API
-- `create-incident-channel.sh` — Create a dedicated Slack incident channel
+- `page-oncall.sh` - Page the on-call engineer via PagerDuty API
+- `create-incident-channel.sh` - Create a dedicated Slack incident channel
 
 ## Available Assets
 
-- `escalation-flowchart.mermaid` — Visual flowchart of the escalation process
+- `escalation-flowchart.mermaid` - Visual flowchart of the escalation process

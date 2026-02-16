@@ -10,7 +10,7 @@
 
 ## Escalation by Severity
 
-### SEV1 — Critical
+### SEV1 - Critical
 
 1. **0 min**: Page primary on-call for the affected service
 2. **5 min**: If no acknowledgment, page secondary on-call
@@ -18,22 +18,22 @@
 4. **30 min**: Notify Engineering Director and VP Engineering
 5. **60 min**: Notify CTO
 
-### SEV2 — High
+### SEV2 - High
 
 1. **0 min**: Page primary on-call for the affected service
 2. **15 min**: If no acknowledgment, page secondary on-call
 3. **30 min**: If no acknowledgment, page Engineering Manager
 4. **2 hours**: Notify Engineering Director if unresolved
 
-### SEV3 — Medium
+### SEV3 - Medium
 
 1. **0 min**: Assign to team queue
 2. **4 hours**: If unacknowledged, notify team lead
 3. **24 hours**: If unresolved, escalate to Engineering Manager
 
-### SEV4 — Low
+### SEV4 - Low
 
-1. Track in backlog — no escalation required
+1. Track in backlog - no escalation required
 
 ## Management Notification Rules
 
