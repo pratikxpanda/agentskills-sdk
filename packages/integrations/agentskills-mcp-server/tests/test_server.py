@@ -188,3 +188,37 @@ class TestMCPResources:
             "get_skill_asset",
         ):
             assert name in text
+
+
+class TestMCPServerEdgeCases:
+    """Edge cases: empty registry, missing resources, resource non-emptiness."""
+
+    async def test_empty_registry(self):
+        """create_mcp_server with empty registry should work."""
+        registry = SkillRegistry()
+        server = create_mcp_server(registry, name="Empty Server")
+        tools = await server.list_tools()
+        assert len(tools) == 5
+        resources = await server.list_resources()
+        assert len(resources) == 3
+        # Catalog should show empty state
+        contents = await server.read_resource("skills://catalog/xml")
+        assert "available_skills" in contents[0].content
+
+    async def test_missing_resource_error_text(self, server):
+        """Tool invocation for missing resource returns error text."""
+        with pytest.raises(ToolError):
+            await server.call_tool(
+                "get_skill_reference",
+                {"skill_id": "incident-response", "name": "nonexistent.md"},
+            )
+
+    async def test_all_resources_non_empty(self, server):
+        """All 3 resources return non-empty strings."""
+        for uri in (
+            "skills://catalog/xml",
+            "skills://catalog/markdown",
+            "skills://tools-usage-instructions",
+        ):
+            contents = await server.read_resource(uri)
+            assert len(contents[0].content) > 0, f"Resource {uri} is empty"

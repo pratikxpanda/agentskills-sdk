@@ -16,6 +16,8 @@ pip install agentskills-agentframework
 
 Requires Python 3.12+. Installs `agentskills-core` and `agent-framework` as dependencies.
 
+> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0b1`). The constraint will be updated once a stable release is published.
+
 ## Usage
 
 ```python
@@ -62,6 +64,18 @@ Returns a markdown string explaining the progressive-disclosure workflow — rea
 ## Example
 
 See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos.
+
+## Error Handling
+
+| Scenario | Exception |
+| --- | --- |
+| Skill not found in registry | `SkillNotFoundError` |
+| Resource not found in skill | `ResourceNotFoundError` |
+| Provider errors (HTTP, filesystem) | `AgentSkillsError` |
+
+All exceptions inherit from `AgentSkillsError` (from `agentskills-core`).
+
+> **Note:** Binary content (scripts, assets, references) is decoded as UTF-8 with `errors="replace"`. Non-decodable bytes are replaced with the Unicode replacement character (�).
 
 ## License
 

@@ -18,8 +18,8 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.1.0"
-langchain-core = ">=1.0"
+agentskills-core = ">=0.1.0,<1.0"
+langchain-core = ">=1.0,<2.0"
 
 [build-system]
 requires = ["poetry-core"]

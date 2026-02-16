@@ -18,8 +18,10 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.1.0"
-agent-framework = {version = ">=1.0.0b1", allow-prereleases = true}
+agentskills-core = ">=0.1.0,<1.0"
+# agent-framework has no stable release yet; pin to pre-release range.
+# TODO: Remove allow-prereleases once a stable 1.0+ is available.
+agent-framework = {version = ">=1.0.0b1,<2.0", allow-prereleases = true}
 
 [build-system]
 requires = ["poetry-core"]

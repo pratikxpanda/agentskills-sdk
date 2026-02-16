@@ -108,3 +108,42 @@ class TestDefaultAndValidation:
         prompt = await registry.get_skills_catalog(format="markdown")
         assert "bare-skill" in prompt
         assert "No description available." in prompt
+
+
+class TestCatalogEdgeCases:
+    """Tests for catalog edge cases: Unicode, special chars, ordering."""
+
+    async def test_xml_with_unicode(self):
+        """Unicode in skill descriptions is encoded correctly in XML."""
+        p = _mock_provider(
+            name="unicode-skill",
+            description="\u00c9l\u00e8ve d'\u00e9cole \u2014 \u65e5\u672c\u8a9e",
+        )
+        registry = await _make_registry(("unicode-skill", p))
+        xml = await registry.get_skills_catalog(format="xml")
+        assert "unicode-skill" in xml
+        assert "\u00c9l\u00e8ve" in xml
+        assert "\u65e5\u672c\u8a9e" in xml
+
+    async def test_markdown_with_special_chars(self):
+        """Markdown special chars in descriptions don't break formatting."""
+        p = _mock_provider(
+            name="my-skill",
+            description="Uses `code` and *bold* and | pipe chars.",
+        )
+        registry = await _make_registry(("my-skill", p))
+        md = await registry.get_skills_catalog(format="markdown")
+        assert "Uses `code` and *bold* and | pipe chars." in md
+
+    async def test_large_catalog_ordering(self):
+        """Many skills are returned in alphabetical order."""
+        pairs = []
+        for i in range(10):
+            name = f"skill-{i:02d}"
+            pairs.append((name, _mock_provider(name=name)))
+        registry = await _make_registry(*pairs)
+        xml = await registry.get_skills_catalog(format="xml")
+        # Verify ordering: skill-00 appears before skill-09
+        pos_first = xml.index("skill-00")
+        pos_last = xml.index("skill-09")
+        assert pos_first < pos_last

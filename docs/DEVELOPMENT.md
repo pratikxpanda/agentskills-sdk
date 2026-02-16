@@ -87,6 +87,24 @@ GitHub Actions runs automatically on every push and pull request to `main`. The 
 
 All checks must pass before a PR can be merged. The CI status badge is shown on the root README.
 
+### Security CI
+
+- **pip-audit**: scans installed dependencies for known vulnerabilities (runs in the lint job)
+- **CodeQL**: static application security testing for Python (`.github/workflows/codeql.yml`)
+- **Dependabot**: automated dependency updates for `pip` and `github-actions` (`.github/dependabot.yml`)
+
+For the full security policy and threat model, see [SECURITY.md](../SECURITY.md).
+
+## Type Checking
+
+All packages ship `py.typed` markers for PEP 561 compatibility. Run mypy via the dev task runner:
+
+```bash
+python scripts/dev.py typecheck
+```
+
+Type annotations are expected on all public functions and methods.
+
 ## Releasing
 
 ### 1. Bump version
@@ -134,8 +152,8 @@ Packages are published in dependency order: core, then providers, then integrati
 Push a version tag to trigger the GitHub Release workflow (`.github/workflows/release.yml`):
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v<version>
+git push origin v<version>
 ```
 
 This automatically creates a GitHub Release with auto-generated notes from merged PRs and commits since the previous tag.

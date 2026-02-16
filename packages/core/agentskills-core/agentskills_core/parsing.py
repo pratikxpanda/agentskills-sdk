@@ -11,6 +11,10 @@ from typing import Any
 
 import yaml
 
+#: Maximum frontmatter size in bytes.  Frontmatter blocks larger than
+#: this are rejected to prevent memory-exhaustion attacks.
+MAX_FRONTMATTER_BYTES: int = 256 * 1024  # 256 KB
+
 
 def split_frontmatter(raw: str) -> tuple[dict[str, Any], str]:
     """Split ``SKILL.md`` content into YAML frontmatter and markdown body.
@@ -40,6 +44,10 @@ def split_frontmatter(raw: str) -> tuple[dict[str, Any], str]:
 
     fm_text = raw[3:end].strip()
     body = raw[end + 3 :].strip()
+
+    if len(fm_text.encode("utf-8", errors="replace")) > MAX_FRONTMATTER_BYTES:
+        return {}, raw
+
     try:
         metadata = yaml.safe_load(fm_text) or {}
     except yaml.YAMLError:

@@ -123,3 +123,122 @@ class TestValidateSkill:
         )
         # body empty + name mismatch + missing description = at least 3
         assert len(errors) >= 3
+
+
+class TestOptionalFieldValidation:
+    """Tests for optional metadata field type validation."""
+
+    async def test_valid_optional_fields(self):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "license": "MIT",
+                    "compatibility": {"ide": ["vscode"]},
+                    "metadata": {"author": "test"},
+                    "allowed-tools": ["read_file"],
+                },
+            ),
+        )
+        assert errors == []
+
+    async def test_license_wrong_type(self):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "license": 123,
+                },
+            ),
+        )
+        assert any("'license' must be str" in e for e in errors)
+
+    async def test_compatibility_wrong_type(self):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "compatibility": "vscode",
+                },
+            ),
+        )
+        assert any("'compatibility' must be dict" in e for e in errors)
+
+    async def test_allowed_tools_wrong_type(self):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "allowed-tools": "read_file",
+                },
+            ),
+        )
+        assert any("'allowed-tools' must be list" in e for e in errors)
+
+    async def test_unknown_keys_logged(self, caplog):
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            errors = await validate_skill(
+                _skill(
+                    metadata={
+                        "name": "my-skill",
+                        "description": "Desc.",
+                        "custom-field": "value",
+                    },
+                ),
+            )
+        # Unknown keys are warnings, not errors
+        assert errors == []
+        assert "unknown metadata keys" in caplog.text
+        assert "custom-field" in caplog.text
+
+
+class TestBoundaryValidation:
+    """Tests for boundary-length names and descriptions."""
+
+    async def test_metadata_wrong_type(self):
+        """metadata field with wrong type (str instead of dict) is rejected."""
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "metadata": "should-be-a-dict",
+                },
+            ),
+        )
+        assert any("'metadata' must be dict" in e for e in errors)
+
+    async def test_name_exactly_64_chars(self):
+        """Name at exactly 64 characters (boundary) should pass."""
+        name = "a" * 64
+        errors = await validate_skill(
+            _skill(
+                skill_id=name,
+                metadata={"name": name, "description": "Desc."},
+            ),
+        )
+        assert errors == []
+
+    async def test_description_exactly_1024_chars(self):
+        """Description at exactly 1024 characters (boundary) should pass."""
+        desc = "x" * 1024
+        errors = await validate_skill(
+            _skill(metadata={"name": "my-skill", "description": desc}),
+        )
+        assert errors == []
+
+    async def test_single_char_name(self):
+        """Single-character valid name should pass."""
+        errors = await validate_skill(
+            _skill(
+                skill_id="a",
+                metadata={"name": "a", "description": "Desc."},
+            ),
+        )
+        assert errors == []

@@ -22,17 +22,30 @@ Example::
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from agentskills_core.skill import Skill
 
+_logger = logging.getLogger(__name__)
+
 # Agent Skills spec: name must be 1-64 chars, lowercase alphanumeric + hyphens,
 # must not start/end with hyphen, must not contain consecutive hyphens.
 _NAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
 _NAME_MAX_LEN = 64
 _DESCRIPTION_MAX_LEN = 1024
+
+# Known optional fields with their expected types.
+_OPTIONAL_FIELDS: dict[str, type] = {
+    "license": str,
+    "compatibility": dict,
+    "metadata": dict,
+    "allowed-tools": list,
+}
+
+_KNOWN_KEYS: frozenset[str] = frozenset({"name", "description"} | _OPTIONAL_FIELDS.keys())
 
 
 async def validate_skill(skill: Skill) -> list[str]:
@@ -98,6 +111,24 @@ async def validate_skill(skill: Skill) -> list[str]:
         elif len(description) > _DESCRIPTION_MAX_LEN:
             errors.append(
                 f"Skill '{skill_id}': description exceeds {_DESCRIPTION_MAX_LEN} characters"
+            )
+
+        # optional field types
+        for key, expected_type in _OPTIONAL_FIELDS.items():
+            value = metadata.get(key)
+            if value is not None and not isinstance(value, expected_type):
+                errors.append(
+                    f"Skill '{skill_id}': field '{key}' must be "
+                    f"{expected_type.__name__}, got {type(value).__name__}"
+                )
+
+        # unknown keys
+        unknown = set(metadata.keys()) - _KNOWN_KEYS
+        if unknown:
+            _logger.warning(
+                "Skill '%s': unknown metadata keys: %s",
+                skill_id,
+                ", ".join(sorted(unknown)),
             )
 
     except Exception as exc:

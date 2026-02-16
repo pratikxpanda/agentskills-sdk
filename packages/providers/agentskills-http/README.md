@@ -71,7 +71,18 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 
 ## API
 
-### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None)`
+### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None, params=None, require_tls=False, max_response_bytes=10_485_760)`
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `base_url` | `str` | — | Root URL where the skill tree is hosted |
+| `client` | `AsyncClient \| None` | `None` | Pre-configured httpx client (caller manages lifecycle) |
+| `headers` | `dict \| None` | `None` | Extra headers sent with every request |
+| `params` | `dict \| None` | `None` | Query parameters appended to every request |
+| `require_tls` | `bool` | `False` | Reject `http://` URLs with `ValueError` |
+| `max_response_bytes` | `int` | `10_485_760` | Maximum allowed response size in bytes |
+
+> **Note:** `client` and `headers`/`params` are mutually exclusive. Configure headers and params on the client directly when providing your own.
 
 | Method | Returns | Description |
 | --- | --- | --- |
@@ -94,6 +105,26 @@ Supports `async with` for automatic cleanup.
 | Connection failures | `AgentSkillsError` |
 
 All exceptions inherit from `AgentSkillsError`.
+
+## Security
+
+- **Input validation** — Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
+- **TLS warnings** — A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
+- **Redirect protection** — The internally-created HTTP client does not follow redirects by default, preventing open-redirect SSRF.
+- **Timeouts** — Default 30-second timeout on all HTTP requests.
+- **Response size limits** — Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
+- **Error-message sanitization** — Error messages omit URLs and include only status codes and generic descriptions, preventing internal URL leakage.
+
+For the full security policy, see [SECURITY.md](../../../SECURITY.md).
+
+## Deployment Considerations
+
+- **Rate limiting** — The SDK does not enforce rate limits on MCP tool
+  calls or HTTP requests. Deploy behind a reverse proxy or API gateway
+  that provides rate limiting in production environments.
+- **Credential management** — Do not store secrets (API keys, SAS
+  tokens, Authorization headers) in config files committed to version
+  control. Use environment variables or a secret manager instead.
 
 ## License
 

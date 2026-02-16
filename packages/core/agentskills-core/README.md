@@ -84,6 +84,14 @@ class DatabaseSkillProvider(SkillProvider):
 
 All methods are `async` so implementations backed by network I/O can be non-blocking.
 
+## Security
+
+- **Frontmatter size limits** — `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
+- **Metadata validation** — `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`) and logs warnings for unknown top-level metadata keys.
+- **Safe XML generation** — `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
+
+For the full security policy, see [SECURITY.md](../../../SECURITY.md).
+
 ## License
 
 MIT

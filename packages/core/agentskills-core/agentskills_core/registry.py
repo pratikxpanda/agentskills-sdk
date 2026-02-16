@@ -23,7 +23,7 @@ Example::
 from __future__ import annotations
 
 from typing import Literal, overload
-from xml.sax.saxutils import escape as xml_escape
+from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from agentskills_core.exceptions import SkillNotFoundError
 from agentskills_core.provider import SkillProvider
@@ -226,17 +226,16 @@ class SkillRegistry:
         if not skills:
             return "<available_skills />"
 
-        lines: list[str] = ["<available_skills>"]
+        root = Element("available_skills")
         for skill in skills:
             meta = await skill.get_metadata()
-            name = xml_escape(meta.get("name", skill.get_id()))
-            description = xml_escape(meta.get("description", ""))
-            lines.append("  <skill>")
-            lines.append(f"    <name>{name}</name>")
-            lines.append(f"    <description>{description}</description>")
-            lines.append("  </skill>")
-        lines.append("</available_skills>")
-        return "\n".join(lines)
+            skill_el = SubElement(root, "skill")
+            name_el = SubElement(skill_el, "name")
+            name_el.text = meta.get("name", skill.get_id())
+            desc_el = SubElement(skill_el, "description")
+            desc_el.text = meta.get("description", "")
+        indent(root, space="  ")
+        return tostring(root, encoding="unicode")
 
     async def _build_markdown(self) -> str:
         """Return a Markdown-formatted skill catalog."""
