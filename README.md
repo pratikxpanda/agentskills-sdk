@@ -215,7 +215,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, CI, 
 - [Agent Skills specification](https://agentskills.io/specification)
 - [What are skills?](https://agentskills.io/what-are-skills)
 - [Integrate skills into your agent](https://agentskills.io/integrate-skills)
-- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md) - curated list of official skill repositories, awesome lists, and community resources
+- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md)
 
 ## Security
 
