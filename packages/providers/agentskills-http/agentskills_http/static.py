@@ -295,17 +295,14 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 try:
                     resp.raise_for_status()
                 except httpx.HTTPStatusError as exc:
-                    raise AgentSkillsError(
-                        f"HTTP {resp.status_code} error"
-                    ) from exc
+                    raise AgentSkillsError(f"HTTP {resp.status_code} error") from exc
 
                 # Check Content-Length header for an early reject when
                 # the server advertises the size up-front.
                 cl = resp.headers.get("content-length")
                 if cl is not None and int(cl) > self._max_response_bytes:
                     raise AgentSkillsError(
-                        f"Response exceeds maximum size "
-                        f"({self._max_response_bytes} bytes)"
+                        f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
                     )
 
                 # Stream chunks and enforce the byte limit
@@ -316,8 +313,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                     received += len(chunk)
                     if received > self._max_response_bytes:
                         raise AgentSkillsError(
-                            f"Response exceeds maximum size "
-                            f"({self._max_response_bytes} bytes)"
+                            f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
                         )
                     chunks.append(chunk)
 
