@@ -6,7 +6,7 @@
 
 > HTTP static-file skill provider for the [Agent Skills SDK](../../README.md).
 
-Serves [Agent Skills](https://agentskills.io) from any static HTTP file host — S3, Azure Blob, CDN, GitHub Pages, Nginx, etc. Expects the same directory-tree layout as the filesystem provider, served over HTTP.
+Serves [Agent Skills](https://agentskills.io) from any static HTTP file host - S3, Azure Blob, CDN, GitHub Pages, Nginx, etc. Expects the same directory-tree layout as the filesystem provider, served over HTTP.
 
 ## Installation
 
@@ -75,7 +75,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `base_url` | `str` | — | Root URL where the skill tree is hosted |
+| `base_url` | `str` | - | Root URL where the skill tree is hosted |
 | `client` | `AsyncClient \| None` | `None` | Pre-configured httpx client (caller manages lifecycle) |
 | `headers` | `dict \| None` | `None` | Extra headers sent with every request |
 | `params` | `dict \| None` | `None` | Query parameters appended to every request |
@@ -108,21 +108,21 @@ All exceptions inherit from `AgentSkillsError`.
 
 ## Security
 
-- **Input validation** — Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
-- **TLS warnings** — A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
-- **Redirect protection** — The internally-created HTTP client does not follow redirects by default, preventing open-redirect SSRF.
-- **Timeouts** — Default 30-second timeout on all HTTP requests.
-- **Response size limits** — Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
-- **Error-message sanitization** — Error messages omit URLs and include only status codes and generic descriptions, preventing internal URL leakage.
+- **Input validation** - Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
+- **TLS warnings** - A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
+- **Redirect protection** - The internally-created HTTP client does not follow redirects by default, preventing open-redirect SSRF.
+- **Timeouts** - Default 30-second timeout on all HTTP requests.
+- **Response size limits** - Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
+- **Error-message sanitization** - Error messages omit URLs and include only status codes and generic descriptions, preventing internal URL leakage.
 
 For the full security policy, see [SECURITY.md](../../../SECURITY.md).
 
 ## Deployment Considerations
 
-- **Rate limiting** — The SDK does not enforce rate limits on MCP tool
+- **Rate limiting** - The SDK does not enforce rate limits on MCP tool
   calls or HTTP requests. Deploy behind a reverse proxy or API gateway
   that provides rate limiting in production environments.
-- **Credential management** — Do not store secrets (API keys, SAS
+- **Credential management** - Do not store secrets (API keys, SAS
   tokens, Authorization headers) in config files committed to version
   control. Use environment variables or a secret manager instead.
 

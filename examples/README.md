@@ -24,11 +24,11 @@ LangChain and Microsoft Agent Framework examples organized by **provider** and *
 
 ## Local vs MCP Tools
 
-**Local tools** — The `agentskills-langchain` or `agentskills-agentframework`
+**Local tools** - The `agentskills-langchain` or `agentskills-agentframework`
 package converts skills into framework-native tool instances directly. Simplest
 setup; no server process needed.
 
-**MCP tools** — The `agentskills-mcp-server` package exposes skills through an MCP
+**MCP tools** - The `agentskills-mcp-server` package exposes skills through an MCP
 server. LangChain uses `langchain-mcp-adapters` to bridge those MCP tools;
 Agent Framework uses its built-in `MCPStdioTool`. Useful when you want a
 standard MCP server that any MCP client can connect to.
@@ -49,7 +49,7 @@ pip install agentskills-http
 # For MCP examples
 pip install agentskills-mcp-server langchain-mcp-adapters
 
-# For the LLM agent (optional — demos degrade gracefully)
+# For the LLM agent (optional - demos degrade gracefully)
 pip install langchain langchain-openai
 ```
 
@@ -119,37 +119,37 @@ $env:SKILLS_BASE_URL = "http://localhost:8000"
 ```
 
 The `HTTPStaticFileSkillProvider` expects `{base_url}/{skill_id}/SKILL.md`, which
-maps to `http://localhost:8000/incident-response/SKILL.md` — matching the
+maps to `http://localhost:8000/incident-response/SKILL.md` - matching the
 directory structure exactly.
 
 ### Run LangChain examples
 
 ```bash
-# Filesystem — local tools
+# Filesystem - local tools
 python examples/langchain/fs/local_tools.py
 
-# Filesystem — MCP tools
+# Filesystem - MCP tools
 python examples/langchain/fs/mcp_tools.py
 
-# HTTP — local tools (start the local HTTP server first, see above)
+# HTTP - local tools (start the local HTTP server first, see above)
 python examples/langchain/http/local_tools.py
 
-# HTTP — MCP tools
+# HTTP - MCP tools
 python examples/langchain/http/mcp_tools.py
 ```
 
 ### Run Agent Framework examples
 
 ```bash
-# Filesystem — local tools
+# Filesystem - local tools
 python examples/agent-framework/fs/local_tools.py
 
-# Filesystem — MCP tools
+# Filesystem - MCP tools
 python examples/agent-framework/fs/mcp_tools.py
 
-# HTTP — local tools (start the local HTTP server first, see above)
+# HTTP - local tools (start the local HTTP server first, see above)
 python examples/agent-framework/http/local_tools.py
 
-# HTTP — MCP tools
+# HTTP - MCP tools
 python examples/agent-framework/http/mcp_tools.py
 ```

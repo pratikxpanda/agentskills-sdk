@@ -51,7 +51,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 
 5. **Open a pull request** against `main`. Fill in the PR template and link any related issues.
 
-6. **Address review feedback** — maintainers may request changes before merging.
+6. **Address review feedback** - maintainers may request changes before merging.
 
 ### What makes a good PR
 
@@ -64,7 +64,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 
 - **Type hints**: Use type annotations on all public functions and methods.
 - **Docstrings**: Use Google-style docstrings for public APIs.
-- **`py.typed`**: All packages ship type information — maintain `py.typed` markers.
+- **`py.typed`**: All packages ship type information - maintain `py.typed` markers.
 
 This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full list of dev commands.
 
@@ -84,7 +84,7 @@ Prefix with `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, or `ci:` t
 
 ## Testing
 
-All tests must pass before a PR can be merged. Aim for meaningful test coverage — test edge cases and error paths, not just happy paths.
+All tests must pass before a PR can be merged. Aim for meaningful test coverage - test edge cases and error paths, not just happy paths.
 
 ```bash
 python scripts/dev.py check    # lint + format check + type check
@@ -95,7 +95,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for per-package test commands, co
 
 ## Project Structure
 
-This is a Python monorepo managed by Poetry. Each package under `packages/` has its own `pyproject.toml` and can be published independently to PyPI. When adding code, keep dependencies minimal — providers depend only on `agentskills-core`, integrations depend on `agentskills-core` + their framework.
+This is a Python monorepo managed by Poetry. Each package under `packages/` has its own `pyproject.toml` and can be published independently to PyPI. When adding code, keep dependencies minimal - providers depend only on `agentskills-core`, integrations depend on `agentskills-core` + their framework.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full package table, CI pipeline, and release process.
 

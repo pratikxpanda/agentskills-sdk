@@ -24,12 +24,16 @@ Example ``server.json``::
                 "provider": "http",
                 "options": {
                     "base_url": "https://cdn.example.com/skills",
-                    "headers": {"Authorization": "Bearer <token>"},
-                    "params": {"sv": "2020-08-04", "sig": "<sas-token>"}
+                    "headers": {"Authorization": "Bearer ${API_TOKEN}"},
+                    "params": {"sv": "2020-08-04", "sig": "${SAS_TOKEN}"}
                 }
             }
         ]
     }
+
+String values may contain ``${VAR}`` placeholders that are resolved
+from environment variables at load time.  This lets you keep secrets
+out of the config file.
 
 MCP client integration (stdio transport)::
 
@@ -99,6 +103,13 @@ def main() -> None:
         data = yaml.safe_load(raw)
     else:
         data = json.loads(raw)
+
+    # ------------------------------------------------------------------
+    # Resolve ${VAR} environment variable placeholders
+    # ------------------------------------------------------------------
+    from agentskills_mcp_server.config import resolve_env_vars
+
+    data = resolve_env_vars(data)
 
     # ------------------------------------------------------------------
     # Build and run

@@ -4,7 +4,7 @@
 [![Python 3.12+](https://img.shields.io/pypi/pyversions/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> Microsoft Agent Framework integration for the [Agent Skills SDK](../../../README.md) — turn a skill registry into Agent Framework tools.
+> Microsoft Agent Framework integration for the [Agent Skills SDK](../../../README.md) - turn a skill registry into Agent Framework tools.
 
 Generates a set of [Microsoft Agent Framework](https://pypi.org/project/agent-framework/) `FunctionTool` instances from a `SkillRegistry`, ready to be passed to any Agent Framework agent.
 
@@ -59,7 +59,7 @@ Returns a list of Agent Framework function tools bound to the given registry.
 
 ### `get_tools_usage_instructions() -> str`
 
-Returns a markdown string explaining the progressive-disclosure workflow — read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
+Returns a markdown string explaining the progressive-disclosure workflow - read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
 
 ## Example
 
