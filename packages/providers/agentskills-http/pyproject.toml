@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-http"
-version = "0.2.0"
+version = "0.2.1"
 description = "HTTP-based skill providers for the Agent Skills format (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
