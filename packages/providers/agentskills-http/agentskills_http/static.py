@@ -28,7 +28,6 @@ for non-blocking HTTP requests.
 
 from __future__ import annotations
 
-import logging
 import re
 import warnings
 from typing import Any
@@ -43,8 +42,6 @@ from agentskills_core import (
     SkillProvider,
     split_frontmatter,
 )
-
-_logger = logging.getLogger(__name__)
 
 # Input validation: identifiers (skill_id, resource name) must be safe
 # URL path segments.  Allows alphanumeric, hyphens, dots, underscores.
@@ -273,6 +270,64 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # Internal helpers
     # ------------------------------------------------------------------
 
+    async def _stream_bytes(self, url: str, not_found_error: type[Exception]) -> bytes:
+        """Stream a GET request and return the response bytes.
+
+        Uses ``httpx.AsyncClient.stream`` so that overly large
+        responses are detected **during** download rather than after
+        the entire body has been buffered into memory.
+
+        Args:
+            url: The URL to fetch.
+            not_found_error: Exception type to raise on HTTP 404
+                (e.g. :class:`SkillNotFoundError` or
+                :class:`ResourceNotFoundError`).
+
+        Raises:
+            not_found_error: On 404.
+            AgentSkillsError: On other HTTP/connection errors or if
+                the response exceeds *max_response_bytes*.
+        """
+        try:
+            async with self._client.stream("GET", url) as resp:
+                if resp.status_code == 404:
+                    raise not_found_error("Skill content not found")
+                try:
+                    resp.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise AgentSkillsError(
+                        f"HTTP {resp.status_code} error"
+                    ) from exc
+
+                # Check Content-Length header for an early reject when
+                # the server advertises the size up-front.
+                cl = resp.headers.get("content-length")
+                if cl is not None and int(cl) > self._max_response_bytes:
+                    raise AgentSkillsError(
+                        f"Response exceeds maximum size "
+                        f"({self._max_response_bytes} bytes)"
+                    )
+
+                # Stream chunks and enforce the byte limit
+                # incrementally to avoid buffering the full body.
+                chunks: list[bytes] = []
+                received = 0
+                async for chunk in resp.aiter_bytes():
+                    received += len(chunk)
+                    if received > self._max_response_bytes:
+                        raise AgentSkillsError(
+                            f"Response exceeds maximum size "
+                            f"({self._max_response_bytes} bytes)"
+                        )
+                    chunks.append(chunk)
+
+        except (SkillNotFoundError, ResourceNotFoundError, AgentSkillsError):
+            raise
+        except httpx.HTTPError as exc:
+            raise AgentSkillsError("HTTP request failed") from exc
+
+        return b"".join(chunks)
+
     async def _get_text(self, url: str) -> str:
         """GET a URL and return the response text.
 
@@ -281,21 +336,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             AgentSkillsError: On other HTTP or connection errors,
                 or if the response exceeds *max_response_bytes*.
         """
-        try:
-            resp = await self._client.get(url)
-        except httpx.HTTPError as exc:
-            raise AgentSkillsError("HTTP request failed") from exc
-        if resp.status_code == 404:
-            raise SkillNotFoundError("Skill content not found")
-        try:
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise AgentSkillsError(f"HTTP {resp.status_code} error") from exc
-        if len(resp.content) > self._max_response_bytes:
-            raise AgentSkillsError(
-                f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
-            )
-        return resp.text
+        data = await self._stream_bytes(url, SkillNotFoundError)
+        return data.decode("utf-8")
 
     async def _get_bytes(self, url: str) -> bytes:
         """GET a URL and return the response bytes.
@@ -305,21 +347,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             AgentSkillsError: On other HTTP or connection errors,
                 or if the response exceeds *max_response_bytes*.
         """
-        try:
-            resp = await self._client.get(url)
-        except httpx.HTTPError as exc:
-            raise AgentSkillsError("HTTP request failed") from exc
-        if resp.status_code == 404:
-            raise ResourceNotFoundError("Resource not found")
-        try:
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise AgentSkillsError(f"HTTP {resp.status_code} error") from exc
-        if len(resp.content) > self._max_response_bytes:
-            raise AgentSkillsError(
-                f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
-            )
-        return resp.content
+        return await self._stream_bytes(url, ResourceNotFoundError)
 
     async def _get_skill_md(self, skill_id: str) -> str:
         """Fetch the full text of a skill's ``SKILL.md``."""

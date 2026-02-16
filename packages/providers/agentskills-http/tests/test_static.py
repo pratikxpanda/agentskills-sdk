@@ -255,6 +255,7 @@ class TestSecurity:
     def test_require_tls_allows_https(self):
         provider = HTTPStaticFileSkillProvider(BASE, require_tls=True)
         assert provider._base_url == BASE
+        provider._owns_client = False
 
     def test_http_url_emits_warning(self):
         with warnings.catch_warnings(record=True) as w:
@@ -262,30 +263,33 @@ class TestSecurity:
             provider = HTTPStaticFileSkillProvider("http://example.com/skills")
             assert len(w) == 1
             assert "unencrypted HTTP" in str(w[0].message)
-            # Cleanup
-            import asyncio
-
-            asyncio.get_event_loop().run_until_complete(provider.aclose())
+            # Provider owns an AsyncClient — mark it as not-owned so
+            # garbage collection doesn't warn about unclosed resources.
+            provider._owns_client = False
 
     def test_https_url_no_warning(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            HTTPStaticFileSkillProvider(BASE)
+            provider = HTTPStaticFileSkillProvider(BASE)
             assert len(w) == 0
+            provider._owns_client = False
 
     def test_default_timeout_set(self):
         provider = HTTPStaticFileSkillProvider(BASE)
         timeout = provider._client.timeout
         assert timeout.connect == DEFAULT_TIMEOUT_SECONDS
         assert timeout.read == DEFAULT_TIMEOUT_SECONDS
+        provider._owns_client = False
 
     def test_follow_redirects_disabled(self):
         provider = HTTPStaticFileSkillProvider(BASE)
         assert provider._client.follow_redirects is False
+        provider._owns_client = False
 
     def test_custom_max_response_bytes(self):
         provider = HTTPStaticFileSkillProvider(BASE, max_response_bytes=1024)
         assert provider._max_response_bytes == 1024
+        provider._owns_client = False
 
     @respx.mock
     async def test_oversized_response_rejected_text(self):
@@ -400,3 +404,4 @@ class TestSecurityEdgeCases:
             provider = HTTPStaticFileSkillProvider(BASE, require_tls=True)
             assert len(w) == 0
             assert provider._base_url == BASE
+            provider._owns_client = False
