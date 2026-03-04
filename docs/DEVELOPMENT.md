@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Python 3.12+
+- Python 3.12 or 3.13
 - [Poetry](https://python-poetry.org/) 2.0+
 
 ## Setup

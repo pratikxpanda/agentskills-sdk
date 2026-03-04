@@ -71,13 +71,13 @@ async def main() -> None:
         instructions_result = await mcp_tool.session.read_resource(
             "skills://tools-usage-instructions"
         )
-        tool_usage_instructions = instructions_result.contents[0].text
+        tools_usage_instructions = instructions_result.contents[0].text
 
         print("=== Skills Catalog ===")
         print(skills_catalog)
         print()
         print("=== Tool Usage Instructions ===")
-        print(tool_usage_instructions)
+        print(tools_usage_instructions)
         print()
 
         # --------------------------------------------------------------
@@ -98,7 +98,7 @@ async def main() -> None:
             "and escalation policies. Always cite which reference document "
             "you used.\n\n"
             f"{skills_catalog}\n\n"
-            f"{tool_usage_instructions}"
+            f"{tools_usage_instructions}"
         )
 
         agent = Agent(

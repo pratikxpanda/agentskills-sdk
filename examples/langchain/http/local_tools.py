@@ -7,7 +7,7 @@ Flow:
     1. Create an HTTPStaticFileSkillProvider pointing at a remote host
     2. Register skills in a SkillRegistry
     3. Generate LangChain tools via get_tools()
-    4. Build a system prompt with the skill catalog + usage instructions
+    4. Build a system prompt with the skills catalog + tools usage instructions
     5. Run a LangChain ReAct agent
 
 Requirements:
@@ -55,7 +55,7 @@ async def main() -> None:
         # --------------------------------------------------------------
         tools = get_tools(registry)
         skills_catalog = await registry.get_skills_catalog(format="xml")
-        tool_usage_instructions = get_tools_usage_instructions()
+        tools_usage_instructions = get_tools_usage_instructions()
 
         system_prompt = (
             "You are an SRE assistant. Use the available skill tools to "
@@ -63,7 +63,7 @@ async def main() -> None:
             "and escalation policies. Always cite which reference document "
             "you used.\n\n"
             f"{skills_catalog}\n\n"
-            f"{tool_usage_instructions}"
+            f"{tools_usage_instructions}"
         )
 
         print(f"=== Tools ({len(tools)}) ===")

@@ -17,6 +17,8 @@ LangChain and Microsoft Agent Framework examples organized by **provider** and *
 
 | Path | Provider | Tools | Description |
 | --- | --- | --- | --- |
+| `agent-framework/fs/local_context_provider.py` | Filesystem | Context provider | Skills loaded from disk, injected automatically via `AgentSkillsContextProvider` |
+| `agent-framework/http/local_context_provider.py` | HTTP | Context provider | Skills fetched from a URL, injected automatically via `AgentSkillsContextProvider` |
 | `agent-framework/fs/local_tools.py` | Filesystem | Agent Framework native | Skills loaded from disk, converted to Agent Framework tools directly |
 | `agent-framework/fs/mcp_tools.py` | Filesystem | MCP via Agent Framework | Skills served by an MCP server, consumed through `MCPStdioTool` |
 | `agent-framework/http/local_tools.py` | HTTP | Agent Framework native | Skills fetched from a URL, converted to Agent Framework tools directly |
@@ -141,6 +143,12 @@ python examples/langchain/http/mcp_tools.py
 ### Run Agent Framework examples
 
 ```bash
+# Filesystem - context provider (recommended)
+python examples/agent-framework/fs/local_context_provider.py
+
+# HTTP - context provider (recommended, start the local HTTP server first)
+python examples/agent-framework/http/local_context_provider.py
+
 # Filesystem - local tools
 python examples/agent-framework/fs/local_tools.py
 

@@ -1,7 +1,7 @@
 # agentskills-langchain
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
-[![Python 3.12+](https://img.shields.io/pypi/pyversions/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
+[![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
 > LangChain integration for the [Agent Skills SDK](../../README.md) - turn a skill registry into LangChain tools.
@@ -14,7 +14,7 @@ Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` i
 pip install agentskills-langchain
 ```
 
-Requires Python 3.12+. Installs `agentskills-core` and `langchain-core` as dependencies.
+Requires Python 3.12 or 3.13. Installs `agentskills-core` and `langchain-core` as dependencies.
 
 ## Usage
 

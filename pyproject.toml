@@ -6,7 +6,7 @@ license = "MIT"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4.0"
+python = ">=3.12,<3.14"
 agentskills-core = { path = "packages/core/agentskills-core", develop = true }
 agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }

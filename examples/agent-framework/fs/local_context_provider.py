@@ -1,15 +1,17 @@
-"""Agent Framework agent with local tools — filesystem provider.
+"""Agent Framework agent with context provider — filesystem provider.
 
-This script demonstrates using agentskills-agentframework to create Agent
-Framework tools directly in-process, backed by a local filesystem skill
-provider.
+This script demonstrates using :class:`AgentSkillsContextProvider` to
+automatically inject skill awareness into an Agent Framework agent.
+
+Unlike the manual ``local_tools.py`` approach, the context provider
+plugs into the agent lifecycle — no system-prompt assembly required.
 
 Flow:
     1. Create a LocalFileSystemSkillProvider
     2. Register skills in a SkillRegistry
-    3. Generate Agent Framework tools via get_tools()
-    4. Build a system prompt with the skills catalog + tools usage instructions
-    5. Run an Agent Framework agent with streaming
+    3. Create an AgentSkillsContextProvider
+    4. Pass it as a ``context_providers`` entry when building the agent
+    5. Run the agent — skills are injected automatically
 
 Requirements:
     pip install agentskills-fs agentskills-agentframework agent-framework --pre
@@ -19,14 +21,14 @@ Requirements:
     export AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 Usage:
-    python examples/agent-framework/fs/local_tools.py
+    python examples/agent-framework/fs/local_context_provider.py
 """
 
 import asyncio
 import os
 from pathlib import Path
 
-from agentskills_agentframework import get_tools, get_tools_usage_instructions
+from agentskills_agentframework import AgentSkillsContextProvider
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 
@@ -47,23 +49,12 @@ async def main() -> None:
     print()
 
     # ------------------------------------------------------------------
-    # 2. Build tools and system prompt
+    # 2. Create the context provider
     # ------------------------------------------------------------------
-    tools = get_tools(registry)
-    skills_catalog = await registry.get_skills_catalog(format="xml")
-    tools_usage_instructions = get_tools_usage_instructions()
+    skills_context_provider = AgentSkillsContextProvider(registry)
 
-    system_prompt = (
-        "You are an SRE assistant. Use the available skill tools to look up "
-        "incident response procedures, severity definitions, and escalation "
-        "policies. Always cite which reference document you used.\n\n"
-        f"{skills_catalog}\n\n"
-        f"{tools_usage_instructions}"
-    )
-
-    print(f"=== Tools ({len(tools)}) ===")
-    for t in tools:
-        print(f"  - {t.name}: {t.description[:80]}")
+    print("=== Skills Context Provider ===")
+    print(f"  source_id: {skills_context_provider.source_id}")
     print()
 
     # ------------------------------------------------------------------
@@ -81,11 +72,17 @@ async def main() -> None:
         print(f"[SKIP] LLM not available ({e})")
         return
 
+    # No manual system-prompt assembly or tools= list needed!
+    # The context provider injects both automatically via before_run().
     agent = Agent(
         client=client,
         name="SREAssistant",
-        instructions=system_prompt,
-        tools=tools,
+        instructions=(
+            "You are an SRE assistant. Use the available skill tools to look "
+            "up incident response procedures, severity definitions, and "
+            "escalation policies. Always cite which reference document you used."
+        ),
+        context_providers=[skills_context_provider],
     )
 
     # ------------------------------------------------------------------

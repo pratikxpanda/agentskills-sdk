@@ -10,7 +10,7 @@ Be respectful and constructive. Harassment, discrimination, and abusive behavior
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.12 or 3.13
 - [Poetry](https://python-poetry.org/) 2.0+
 
 ### Development Setup
