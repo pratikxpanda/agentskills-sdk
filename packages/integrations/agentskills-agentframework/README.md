@@ -20,6 +20,45 @@ Requires Python 3.12+. Installs `agentskills-core` and `agent-framework` as depe
 
 ## Usage
 
+### Context Provider (recommended)
+
+The simplest way to integrate is via `AgentSkillsContextProvider`. It plugs into the Agent Framework lifecycle and automatically injects the skill catalog and tools on every `agent.run()` call — no manual system-prompt assembly required.
+
+```python
+from agentskills_core import SkillRegistry
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_agentframework import AgentSkillsContextProvider
+
+# Set up registry
+provider = LocalFileSystemSkillProvider(Path("./skills"))
+registry = SkillRegistry()
+await registry.register("incident-response", provider)
+
+# Create context provider
+skills_context_provider = AgentSkillsContextProvider(registry)
+
+# Pass it to the agent — catalog + tools are injected automatically
+agent = Agent(
+    client=client,
+    name="SREAssistant",
+    instructions="You are an SRE assistant.",
+    context_providers=[skills_context_provider],
+)
+response = await agent.run("What severity is a full DB outage?")
+```
+
+#### Options
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `skills_instruction_prompt` | Built-in template | Custom prompt template. Must contain `{skills_catalog}` and `{tools_usage_instructions}` placeholders. |
+| `skills_catalog_format` | `"xml"` | Skills catalog format — `"xml"` or `"markdown"`. |
+| `source_id` | `"agentskills"` | Unique identifier for this provider instance. |
+
+### Manual Tools
+
+For full control over system-prompt construction, use `get_tools()` directly:
+
 ```python
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
@@ -52,6 +91,10 @@ Pass `tools` to your Agent Framework agent and inject `system_prompt` into the `
 All tools are async-compatible (`FunctionTool` with `@tool` decorator).
 
 ## API
+
+### `AgentSkillsContextProvider(registry, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
+
+A `BaseContextProvider` that injects skill catalog + tools into the agent session automatically via `before_run()`. Skips injection when the registry has no skills.
 
 ### `get_tools(registry: SkillRegistry) -> list[FunctionTool]`
 

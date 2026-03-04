@@ -23,7 +23,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | Load skills from the local filesystem - `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
-| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
+| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents - `AgentSkillsContextProvider`, `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server` | `pip install agentskills-mcp-server` |
 
 ## How It Works
@@ -71,7 +71,7 @@ from agentskills_langchain import get_tools, get_tools_usage_instructions
 
 tools = get_tools(registry)
 skills_catalog = await registry.get_skills_catalog(format="xml")
-tool_usage_instructions = get_tools_usage_instructions()
+tools_usage_instructions = get_tools_usage_instructions()
 
 llm = AzureChatOpenAI(
     azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
@@ -81,7 +81,7 @@ llm = AzureChatOpenAI(
 agent = create_agent(
     llm,
     tools,
-    system_prompt=f"{skills_catalog}\n\n{tool_usage_instructions}",
+    system_prompt=f"{skills_catalog}\n\n{tools_usage_instructions}",
 )
 ```
 
@@ -91,22 +91,34 @@ See [examples/langchain/](examples/langchain/) for full working demos with files
 
 ### With Microsoft Agent Framework
 
+**Context provider (recommended)** — plug into the agent lifecycle so skills are injected automatically:
+
 ```python
-from agent_framework import Agent
-from agent_framework.azure import AzureOpenAIChatClient
+from agentskills_agentframework import AgentSkillsContextProvider
+
+skills_context_provider = AgentSkillsContextProvider(registry)
+
+agent = Agent(
+    client=client,
+    name="SREAssistant",
+    instructions="You are an SRE assistant.",
+    context_providers=[skills_context_provider],
+)
+response = await agent.run("What severity is a full DB outage?")
+```
+
+**Manual tools** — build the system prompt yourself for full control:
+
+```python
 from agentskills_agentframework import get_tools, get_tools_usage_instructions
 
 tools = get_tools(registry)
 skills_catalog = await registry.get_skills_catalog(format="xml")
-tool_usage_instructions = get_tools_usage_instructions()
+tools_usage_instructions = get_tools_usage_instructions()
 
-client = AzureOpenAIChatClient(
-    deployment_name=os.environ["AZURE_OPENAI_DEPLOYMENT"],
-    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-)
 agent = Agent(
     client=client,
-    instructions=f"{skills_catalog}\n\n{tool_usage_instructions}",
+    instructions=f"{skills_catalog}\n\n{tools_usage_instructions}",
     tools=tools,
 )
 ```
