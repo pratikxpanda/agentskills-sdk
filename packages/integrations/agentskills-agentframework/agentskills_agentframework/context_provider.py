@@ -29,16 +29,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from agent_framework import FunctionTool
-from agent_framework._sessions import BaseContextProvider
+from agent_framework import BaseContextProvider, FunctionTool
 
 from agentskills_core import SkillRegistry
 
 from .tools import get_tools, get_tools_usage_instructions
 
 if TYPE_CHECKING:
-    from agent_framework._agents import SupportsAgentRun
-    from agent_framework._sessions import AgentSession, SessionContext
+    from agent_framework import AgentSession, SessionContext, SupportsAgentRun
 
 
 _DEFAULT_SKILLS_INSTRUCTION_PROMPT = """\
@@ -130,7 +128,7 @@ class AgentSkillsContextProvider(BaseContextProvider):
                     )
             try:
                 skills_instruction_prompt.format(skills_catalog="", tools_usage_instructions="")
-            except KeyError as exc:
+            except (KeyError, IndexError, ValueError) as exc:
                 raise ValueError(
                     "skills_instruction_prompt must contain {skills_catalog} and "
                     "{tools_usage_instructions} placeholders. "

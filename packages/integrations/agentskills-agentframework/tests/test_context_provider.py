@@ -127,6 +127,22 @@ class TestConstruction:
         )
         assert cp._skills_prompt_template is not None
 
+    def test_positional_placeholder_raises(self, registry):
+        """Positional {} in template triggers IndexError → re-raised as ValueError."""
+        with pytest.raises(ValueError, match="placeholders"):
+            AgentSkillsContextProvider(
+                registry,
+                skills_instruction_prompt="{} {skills_catalog} {tools_usage_instructions}",
+            )
+
+    def test_stray_opening_brace_raises(self, registry):
+        """Unmatched { in template triggers ValueError → re-raised as ValueError."""
+        with pytest.raises(ValueError, match="placeholders"):
+            AgentSkillsContextProvider(
+                registry,
+                skills_instruction_prompt="{ {skills_catalog} {tools_usage_instructions}",
+            )
+
 
 # ------------------------------------------------------------------
 # Tests: before_run — injection

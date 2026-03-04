@@ -25,6 +25,8 @@ Requires Python 3.12+. Installs `agentskills-core` and `agent-framework` as depe
 The simplest way to integrate is via `AgentSkillsContextProvider`. It plugs into the Agent Framework lifecycle and automatically injects the skill catalog and tools on every `agent.run()` call — no manual system-prompt assembly required.
 
 ```python
+from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_agentframework import AgentSkillsContextProvider
@@ -60,6 +62,8 @@ response = await agent.run("What severity is a full DB outage?")
 For full control over system-prompt construction, use `get_tools()` directly:
 
 ```python
+from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_agentframework import get_tools, get_tools_usage_instructions

@@ -4,7 +4,7 @@ This package bridges :mod:`agentskills_core` and `Microsoft Agent Framework
 <https://github.com/microsoft/agent-framework>`_, providing:
 
 * :class:`AgentSkillsContextProvider` -- a
-  :class:`~agent_framework.BaseContextProvider` that automatically
+  :class:`agent_framework.BaseContextProvider` that automatically
   injects skill awareness into an agent's session context.
 * :func:`get_tools` -- generates five
   :class:`~agent_framework.FunctionTool` instances that let an
