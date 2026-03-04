@@ -27,6 +27,7 @@ The simplest way to integrate is via `AgentSkillsContextProvider`. It plugs into
 ```python
 from pathlib import Path
 
+from agent_framework import Agent
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_agentframework import AgentSkillsContextProvider
@@ -41,7 +42,7 @@ skills_context_provider = AgentSkillsContextProvider(registry)
 
 # Pass it to the agent — catalog + tools are injected automatically
 agent = Agent(
-    client=client,
+    client=client,  # any Agent Framework chat client
     name="SREAssistant",
     instructions="You are an SRE assistant.",
     context_providers=[skills_context_provider],
@@ -49,7 +50,7 @@ agent = Agent(
 response = await agent.run("What severity is a full DB outage?")
 ```
 
-#### Options
+> See [examples/agent-framework/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/agent-framework) for full working demos including client setup.
 
 | Parameter | Default | Description |
 | --- | --- | --- |
@@ -64,6 +65,7 @@ For full control over system-prompt construction, use `get_tools()` directly:
 ```python
 from pathlib import Path
 
+from agent_framework import Agent
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_agentframework import get_tools, get_tools_usage_instructions
@@ -77,10 +79,19 @@ await registry.register("incident-response", provider)
 tools = get_tools(registry)
 catalog = await registry.get_skills_catalog(format="xml")
 instructions = get_tools_usage_instructions()
-system_prompt = f"{catalog}\n\n{instructions}"
+
+# Pass to agent
+agent = Agent(
+    client=client,  # any Agent Framework chat client
+    name="SREAssistant",
+    instructions=f"{catalog}\n\n{instructions}",
+    tools=tools,
+)
 ```
 
-Pass `tools` to your Agent Framework agent and inject `system_prompt` into the `instructions`. The catalog tells the agent *what* skills exist; the usage instructions tell it *how* to use the tools.
+The catalog tells the agent *what* skills exist; the usage instructions tell it *how* to use the tools.
+
+> See [examples/agent-framework/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/agent-framework) for full working demos including client setup.
 
 ## Generated Tools
 

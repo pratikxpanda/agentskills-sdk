@@ -94,12 +94,13 @@ See [examples/langchain/](examples/langchain/) for full working demos with files
 **Context provider (recommended)** — plug into the agent lifecycle so skills are injected automatically:
 
 ```python
+from agent_framework import Agent
 from agentskills_agentframework import AgentSkillsContextProvider
 
 skills_context_provider = AgentSkillsContextProvider(registry)
 
 agent = Agent(
-    client=client,
+    client=client,  # any Agent Framework chat client
     name="SREAssistant",
     instructions="You are an SRE assistant.",
     context_providers=[skills_context_provider],
@@ -110,6 +111,7 @@ response = await agent.run("What severity is a full DB outage?")
 **Manual tools** — build the system prompt yourself for full control:
 
 ```python
+from agent_framework import Agent
 from agentskills_agentframework import get_tools, get_tools_usage_instructions
 
 tools = get_tools(registry)
@@ -117,13 +119,14 @@ skills_catalog = await registry.get_skills_catalog(format="xml")
 tools_usage_instructions = get_tools_usage_instructions()
 
 agent = Agent(
-    client=client,
+    client=client,  # any Agent Framework chat client
+    name="SREAssistant",
     instructions=f"{skills_catalog}\n\n{tools_usage_instructions}",
     tools=tools,
 )
 ```
 
-See [examples/agent-framework/](examples/agent-framework/) for full working demos with filesystem and HTTP providers.
+See [examples/agent-framework/](examples/agent-framework/) for full working demos including client setup.
 
 ### With MCP
 
