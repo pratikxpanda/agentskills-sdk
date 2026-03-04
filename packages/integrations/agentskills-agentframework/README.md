@@ -20,6 +20,38 @@ Requires Python 3.12+. Installs `agentskills-core` and `agent-framework` as depe
 
 ## Usage
 
+### With `AgentSkillsContextProvider` (recommended)
+
+Use `AgentSkillsContextProvider` to automatically inject the skills catalog and tool usage instructions into the agent context each turn. Pass your domain-specific instructions directly to `Agent` and let the context provider handle the skills context:
+
+```python
+from agent_framework import Agent
+from agent_framework.azure import AzureOpenAIChatClient
+from agentskills_core import SkillRegistry
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_agentframework import get_tools, AgentSkillsContextProvider
+
+# Set up registry
+provider = LocalFileSystemSkillProvider(Path("./skills"))
+registry = SkillRegistry()
+await registry.register("incident-response", provider)
+
+client = AzureOpenAIChatClient(
+    deployment_name=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+)
+agent = Agent(
+    client=client,
+    instructions="You are an SRE assistant.",  # domain instructions only
+    tools=get_tools(registry),
+    ai_context_providers=[AgentSkillsContextProvider(registry)],
+)
+```
+
+> **Note:** `get_tools(registry)` still needs to be passed via `Agent(tools=...)` separately. `AgentSkillsContextProvider` handles context injection only (catalog and usage instructions); it does not register the tools.
+
+### Manual system prompt (alternative)
+
 ```python
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
@@ -60,6 +92,10 @@ Returns a list of Agent Framework function tools bound to the given registry.
 ### `get_tools_usage_instructions() -> str`
 
 Returns a markdown string explaining the progressive-disclosure workflow - read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
+
+### `AgentSkillsContextProvider(registry, *, source_id=None)`
+
+A :class:`~agent_framework.BaseContextProvider` that automatically injects the skills catalog (XML format) and tool usage instructions into the agent's context before each LLM invocation. The catalog is fetched once per session and cached to avoid redundant calls on every turn.
 
 ## Example
 
