@@ -1,7 +1,7 @@
 # agentskills-core
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
-[![Python 3.12+](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
+[![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
 > Core abstractions for the [Agent Skills SDK](../../README.md) - provider interface, registry, validation, and skill model.
@@ -14,7 +14,7 @@ This package provides the foundational building blocks for working with the [Age
 pip install agentskills-core
 ```
 
-Requires Python 3.12+.
+Requires Python 3.12 or 3.13.
 
 ## What's Included
 

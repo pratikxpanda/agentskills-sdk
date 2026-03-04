@@ -1,7 +1,7 @@
 # agentskills-agentframework
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
-[![Python 3.12+](https://img.shields.io/pypi/pyversions/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
+[![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
 > Microsoft Agent Framework integration for the [Agent Skills SDK](../../../README.md) - turn a skill registry into Agent Framework tools.
@@ -14,9 +14,9 @@ Generates a set of [Microsoft Agent Framework](https://pypi.org/project/agent-fr
 pip install agentskills-agentframework
 ```
 
-Requires Python 3.12+. Installs `agentskills-core` and `agent-framework` as dependencies.
+Requires Python 3.12 or 3.13. Installs `agentskills-core` and `agent-framework` as dependencies.
 
-> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0b1`). The constraint will be updated once a stable release is published.
+> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0rc2`). The constraint will be updated once a stable release is published.
 
 ## Usage
 

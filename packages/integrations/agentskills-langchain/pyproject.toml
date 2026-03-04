@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4.0"
+python = ">=3.12,<3.14"
 agentskills-core = ">=0.1.0,<1.0"
 langchain-core = ">=1.0,<2.0"
 

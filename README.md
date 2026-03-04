@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![GitHub repo](https://img.shields.io/github/stars/pratikxpanda/agentskills-sdk?style=social)](https://github.com/pratikxpanda/agentskills-sdk)
 
 > A Python SDK for discovering, retrieving, and serving [Agent Skills](https://agentskills.io) to LLM agents.
@@ -11,7 +11,7 @@
 
 This project helps you **integrate skills into your own agents**. Retrieve skills from any source - filesystem, database, API - validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
 
-> **Note:** Python 3.12 and 3.13 are fully tested. Python 3.14 is not yet supported due to upstream dependency limitations (`agentskills-langchain` and `agentskills-agentframework`).
+> **Note:** Python 3.12 and 3.13 are supported. Python 3.14 is not yet supported due to upstream dependency limitations.
 
 ---
 
