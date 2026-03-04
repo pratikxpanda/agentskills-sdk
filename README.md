@@ -120,6 +120,7 @@ tools_usage_instructions = get_tools_usage_instructions()
 
 agent = Agent(
     client=client,  # any Agent Framework chat client
+    name="SREAssistant",
     instructions=f"{skills_catalog}\n\n{tools_usage_instructions}",
     tools=tools,
 )

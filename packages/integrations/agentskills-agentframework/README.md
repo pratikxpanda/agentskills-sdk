@@ -50,9 +50,7 @@ agent = Agent(
 response = await agent.run("What severity is a full DB outage?")
 ```
 
-> See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos including client setup.
-
-#### Options
+> See [examples/agent-framework/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/agent-framework) for full working demos including client setup.
 
 | Parameter | Default | Description |
 | --- | --- | --- |
@@ -85,6 +83,7 @@ instructions = get_tools_usage_instructions()
 # Pass to agent
 agent = Agent(
     client=client,  # any Agent Framework chat client
+    name="SREAssistant",
     instructions=f"{catalog}\n\n{instructions}",
     tools=tools,
 )
@@ -92,7 +91,7 @@ agent = Agent(
 
 The catalog tells the agent *what* skills exist; the usage instructions tell it *how* to use the tools.
 
-> See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos including client setup.
+> See [examples/agent-framework/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/agent-framework) for full working demos including client setup.
 
 ## Generated Tools
 
