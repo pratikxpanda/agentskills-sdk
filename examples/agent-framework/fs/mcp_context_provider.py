@@ -1,29 +1,33 @@
-"""Agent Framework agent with MCP tools — filesystem provider.
+"""Agent Framework agent with MCP context provider — filesystem provider.
 
 This script demonstrates connecting to an MCP server backed by a
-filesystem skill provider from an Agent Framework agent using the
-built-in MCPStdioTool.
+filesystem skill provider using ``AgentSkillsMcpContextProvider`` to
+automatically inject skills catalog and usage instructions into each
+agent run.
 
-The client never imports providers or registries — it only talks to the
-MCP server over stdio.  The server exposes skill content as MCP tools
-and the catalog / usage instructions as MCP resources.
+Unlike the manual approach in ``mcp_tools.py`` (which reads MCP
+resources directly), this example delegates prompt construction to
+:class:`~agentskills_mcp_server.AgentSkillsMcpContextProvider`.  The
+context provider reads the catalog and usage-instruction resources from
+the MCP session and injects them as session instructions on every
+``agent.run()`` call.
 
 Flow:
     1. Spawn an MCP server subprocess via ``python -m agentskills_mcp_server``
     2. Connect via MCPStdioTool (built into Agent Framework)
-    3. Read MCP resources for the system prompt (catalog + instructions)
-    4. Get tools automatically via MCPStdioTool
+    3. Create an ``AgentSkillsMcpContextProvider`` from the MCP session
+    4. Pass the context provider to the Agent constructor
     5. Run an Agent Framework agent with streaming
 
 Requirements:
-    pip install agentskills-fs agentskills-mcp-server agent-framework --pre
+    pip install agentskills-fs agentskills-mcp-server[agentframework] --pre
     export AZURE_OPENAI_API_KEY=...
     export AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com
     export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
     export AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 Usage:
-    python examples/agent-framework/fs/mcp_tools.py
+    python examples/agent-framework/fs/mcp_context_provider.py
 """
 
 import asyncio
@@ -47,6 +51,13 @@ async def main() -> None:
         print("  pip install agent-framework --pre")
         return
 
+    try:
+        from agentskills_mcp_server import AgentSkillsMcpContextProvider
+    except ImportError:
+        print("[SKIP] agentskills-mcp-server[agentframework] not installed")
+        print("  pip install agentskills-mcp-server[agentframework]")
+        return
+
     python = sys.executable
 
     mcp_skills = MCPStdioTool(
@@ -63,22 +74,11 @@ async def main() -> None:
         print()
 
         # --------------------------------------------------------------
-        # 2. Read MCP resources for the system prompt
+        # 2. Create context provider from the MCP session
         # --------------------------------------------------------------
-        catalog_result = await mcp_skills.session.read_resource("skills://catalog/xml")
-        skills_catalog = catalog_result.contents[0].text
-
-        instructions_result = await mcp_skills.session.read_resource(
-            "skills://tools-usage-instructions"
+        skills_context = AgentSkillsMcpContextProvider(
+            session=mcp_skills.session,
         )
-        tools_usage_instructions = instructions_result.contents[0].text
-
-        print("=== Skills Catalog ===")
-        print(skills_catalog)
-        print()
-        print("=== Tool Usage Instructions ===")
-        print(tools_usage_instructions)
-        print()
 
         # --------------------------------------------------------------
         # 3. Initialize Agent Framework agent
@@ -92,20 +92,17 @@ async def main() -> None:
             print(f"[SKIP] LLM not available ({e})")
             return
 
-        system_prompt = (
-            "You are an SRE assistant. Use the available skill tools to "
-            "look up incident response procedures, severity definitions, "
-            "and escalation policies. Always cite which reference document "
-            "you used.\n\n"
-            f"{skills_catalog}\n\n"
-            f"{tools_usage_instructions}"
-        )
-
         agent = Agent(
             client=client,
             name="SREAssistant",
-            instructions=system_prompt,
+            instructions=(
+                "You are an SRE assistant. Use the available skill "
+                "tools to look up incident response procedures, "
+                "severity definitions, and escalation policies. "
+                "Always cite which reference document you used."
+            ),
             tools=mcp_skills,
+            context_providers=[skills_context],
         )
 
         # --------------------------------------------------------------

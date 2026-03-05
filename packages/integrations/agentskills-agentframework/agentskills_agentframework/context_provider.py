@@ -49,6 +49,23 @@ Use them when a task aligns with a skill's domain.
 {tools_usage_instructions}\
 """
 
+_PROMPT_VALIDATION_ERROR = (
+    "skills_instruction_prompt must contain {skills_catalog} and "
+    "{tools_usage_instructions} placeholders. "
+    "Escape literal braces by doubling them ({{ or }})."
+)
+
+
+def _validate_prompt_template(template: str) -> None:
+    """Validate that *template* contains the required placeholders."""
+    for placeholder in ("{skills_catalog}", "{tools_usage_instructions}"):
+        if placeholder not in template:
+            raise ValueError(_PROMPT_VALIDATION_ERROR)
+    try:
+        template.format(skills_catalog="", tools_usage_instructions="")
+    except (KeyError, IndexError, ValueError) as exc:
+        raise ValueError(_PROMPT_VALIDATION_ERROR) from exc
+
 
 class AgentSkillsContextProvider(BaseContextProvider):
     """Expose a :class:`~agentskills_core.SkillRegistry` to an Agent Framework agent.
@@ -116,24 +133,7 @@ class AgentSkillsContextProvider(BaseContextProvider):
         self._tools_usage_instructions = get_tools_usage_instructions()
 
         if skills_instruction_prompt is not None:
-            # Validate that the custom template has the required placeholders.
-            required = {"{skills_catalog}", "{tools_usage_instructions}"}
-            # Check presence of required placeholders (before format-escapes).
-            for placeholder in required:
-                if placeholder not in skills_instruction_prompt:
-                    raise ValueError(
-                        "skills_instruction_prompt must contain {skills_catalog} and "
-                        "{tools_usage_instructions} placeholders. "
-                        "Escape literal braces by doubling them ({{ or }})."
-                    )
-            try:
-                skills_instruction_prompt.format(skills_catalog="", tools_usage_instructions="")
-            except (KeyError, IndexError, ValueError) as exc:
-                raise ValueError(
-                    "skills_instruction_prompt must contain {skills_catalog} and "
-                    "{tools_usage_instructions} placeholders. "
-                    "Escape literal braces by doubling them ({{ or }})."
-                ) from exc
+            _validate_prompt_template(skills_instruction_prompt)
         self._skills_prompt_template = (
             skills_instruction_prompt or _DEFAULT_SKILLS_INSTRUCTION_PROMPT
         )

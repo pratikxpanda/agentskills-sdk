@@ -33,3 +33,14 @@ from agentskills_mcp_server.server import create_mcp_server
 __all__ = [
     "create_mcp_server",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Lazy-load optional extras to avoid hard dependencies at import time."""
+    if name == "AgentSkillsMcpContextProvider":
+        from agentskills_mcp_server.context_provider import AgentSkillsMcpContextProvider
+
+        globals()["AgentSkillsMcpContextProvider"] = AgentSkillsMcpContextProvider
+        __all__.append("AgentSkillsMcpContextProvider")  # type: ignore[attr-defined]
+        return AgentSkillsMcpContextProvider
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

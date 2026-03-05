@@ -20,9 +20,11 @@ LangChain and Microsoft Agent Framework examples organized by **provider** and *
 | `agent-framework/fs/local_context_provider.py` | Filesystem | Context provider | Skills loaded from disk, injected automatically via `AgentSkillsContextProvider` |
 | `agent-framework/http/local_context_provider.py` | HTTP | Context provider | Skills fetched from a URL, injected automatically via `AgentSkillsContextProvider` |
 | `agent-framework/fs/local_tools.py` | Filesystem | Agent Framework native | Skills loaded from disk, converted to Agent Framework tools directly |
-| `agent-framework/fs/mcp_tools.py` | Filesystem | MCP via Agent Framework | Skills served by an MCP server, consumed through `MCPStdioTool` |
+| `agent-framework/fs/mcp_tools.py` | Filesystem | MCP via Agent Framework | Skills served by an MCP server, consumed through `MCPStdioTool` (manual resource reading) |
+| `agent-framework/fs/mcp_context_provider.py` | Filesystem | MCP context provider | Skills served by an MCP server, injected automatically via `AgentSkillsMcpContextProvider` |
 | `agent-framework/http/local_tools.py` | HTTP | Agent Framework native | Skills fetched from a URL, converted to Agent Framework tools directly |
-| `agent-framework/http/mcp_tools.py` | HTTP | MCP via Agent Framework | Skills served by an MCP server (HTTP-backed), consumed through `MCPStdioTool` |
+| `agent-framework/http/mcp_tools.py` | HTTP | MCP via Agent Framework | Skills served by an MCP server (HTTP-backed), consumed through `MCPStdioTool` (manual resource reading) |
+| `agent-framework/http/mcp_context_provider.py` | HTTP | MCP context provider | Skills served by an MCP server (HTTP-backed), injected automatically via `AgentSkillsMcpContextProvider` |
 
 ## Local vs MCP Tools
 
@@ -34,6 +36,12 @@ setup; no server process needed.
 server. LangChain uses `langchain-mcp-adapters` to bridge those MCP tools;
 Agent Framework uses its built-in `MCPStdioTool`. Useful when you want a
 standard MCP server that any MCP client can connect to.
+
+**MCP context providers** (Agent Framework only) -
+`AgentSkillsMcpContextProvider` wraps an MCP session and automatically reads
+the skills catalog and usage instructions on every `agent.run()` call. This is
+the recommended MCP approach for Agent Framework — it removes the manual
+resource-reading boilerplate shown in the MCP tools examples.
 
 ## Prerequisites
 
@@ -66,6 +74,9 @@ pip install agentskills-http
 
 # For MCP examples
 pip install agentskills-mcp-server
+
+# For MCP context provider examples
+pip install agentskills-mcp-server[agentframework]
 
 # Agent Framework (required)
 pip install agent-framework --pre
@@ -152,12 +163,18 @@ python examples/agent-framework/http/local_context_provider.py
 # Filesystem - local tools
 python examples/agent-framework/fs/local_tools.py
 
-# Filesystem - MCP tools
+# Filesystem - MCP tools (manual resource reading)
 python examples/agent-framework/fs/mcp_tools.py
+
+# Filesystem - MCP context provider (recommended)
+python examples/agent-framework/fs/mcp_context_provider.py
 
 # HTTP - local tools (start the local HTTP server first, see above)
 python examples/agent-framework/http/local_tools.py
 
-# HTTP - MCP tools
+# HTTP - MCP tools (manual resource reading)
 python examples/agent-framework/http/mcp_tools.py
+
+# HTTP - MCP context provider (recommended, start the local HTTP server first)
+python examples/agent-framework/http/mcp_context_provider.py
 ```

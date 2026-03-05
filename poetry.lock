@@ -48,18 +48,18 @@ pydantic = ">=2.11.2,<3.0.0"
 
 [[package]]
 name = "agent-framework"
-version = "1.0.0rc2"
+version = "1.0.0rc3"
 description = "Microsoft Agent Framework for building AI Agents with Python. This package contains all the core and optional packages."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "agent_framework-1.0.0rc2-py3-none-any.whl", hash = "sha256:9c8235676adb26f2d2c512abe71efb305ca07453a5ae9f290400fff8a9a8f288"},
-    {file = "agent_framework-1.0.0rc2.tar.gz", hash = "sha256:aac7a8861bc310458d41e0143d4c2dd975e2cd7f3bc3cd420fca78a3c879ddff"},
+    {file = "agent_framework-1.0.0rc3-py3-none-any.whl", hash = "sha256:2bdb844028ce24521ac20a069ae4af8b8957be64edbed51f3353f3772aac8be2"},
+    {file = "agent_framework-1.0.0rc3.tar.gz", hash = "sha256:c55c2d701799716a428c40a728a5b6eada074bb333fce12ff635fd845c35057c"},
 ]
 
 [package.dependencies]
-agent-framework-core = {version = "1.0.0rc2", extras = ["all"]}
+agent-framework-core = {version = "1.0.0rc3", extras = ["all"]}
 
 [[package]]
 name = "agent-framework-a2a"
@@ -233,14 +233,14 @@ microsoft-agents-copilotstudio-client = ">=0.3.1"
 
 [[package]]
 name = "agent-framework-core"
-version = "1.0.0rc2"
+version = "1.0.0rc3"
 description = "Microsoft Agent Framework for building AI Agents with Python. This is the core package that has all the core abstractions and implementations."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "agent_framework_core-1.0.0rc2-py3-none-any.whl", hash = "sha256:71293776a29360620924663338816151226bfa06d1793148f39f23e0d74964db"},
-    {file = "agent_framework_core-1.0.0rc2.tar.gz", hash = "sha256:2dd38775c9274e448485aaf2aca064f4bbaa0248650ee65535c9495e1eefd9f0"},
+    {file = "agent_framework_core-1.0.0rc3-py3-none-any.whl", hash = "sha256:e21b1353fdd70291869caa7c089270144a749b50408bd9822f882d9ed7fc00de"},
+    {file = "agent_framework_core-1.0.0rc3.tar.gz", hash = "sha256:0c35638e6add1d5b07c90ec3dafb94cc0763dd3ec1f62de4fb6598ff224cfa71"},
 ]
 
 [package.dependencies]
@@ -265,7 +265,7 @@ agent-framework-ollama = {version = "*", optional = true, markers = "extra == \"
 agent-framework-orchestrations = {version = "*", optional = true, markers = "extra == \"all\""}
 agent-framework-purview = {version = "*", optional = true, markers = "extra == \"all\""}
 agent-framework-redis = {version = "*", optional = true, markers = "extra == \"all\""}
-azure-ai-projects = "2.0.0b3"
+azure-ai-projects = "2.0.0b4"
 azure-identity = ">=1,<2"
 mcp = {version = ">=1.24.0,<2", extras = ["ws"]}
 openai = ">=1.99.0"
@@ -483,7 +483,7 @@ files = []
 develop = true
 
 [package.dependencies]
-agent-framework = ">=1.0.0rc2,<2.0"
+agent-framework = ">=1.0.0rc3,<2.0"
 agentskills-core = ">=0.1.0,<1.0"
 
 [package.source]
@@ -578,6 +578,7 @@ mcp = ">=1.0"
 pydantic = ">=2.0"
 
 [package.extras]
+agentframework = ["agent-framework (>=1.0.0rc3,<2.0)"]
 fs = []
 http = []
 
@@ -868,22 +869,23 @@ typing-extensions = ">=4.6.0"
 
 [[package]]
 name = "azure-ai-projects"
-version = "2.0.0b3"
+version = "2.0.0b4"
 description = "Microsoft Corporation Azure AI Projects Client Library for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "azure_ai_projects-2.0.0b3-py3-none-any.whl", hash = "sha256:3b3048a3ba3904d556ba392b7bd20b6e84c93bb39df6d43a6470cdb0ad08af8c"},
-    {file = "azure_ai_projects-2.0.0b3.tar.gz", hash = "sha256:6d09ad110086e450a47b991ee8a3644f1be97fa3085d5981d543f900d78f4505"},
+    {file = "azure_ai_projects-2.0.0b4-py3-none-any.whl", hash = "sha256:f4cf1615bd815744ddce304b97eea9456b7f6f0bd8725547c4e54e3a67534635"},
+    {file = "azure_ai_projects-2.0.0b4.tar.gz", hash = "sha256:b6082eacf0a11db59ad4c48cb7962f5204b9a0391000bc22421236f229ff783a"},
 ]
 
 [package.dependencies]
-azure-core = ">=1.35.0"
+azure-core = ">=1.37.0"
 azure-identity = ">=1.15.0"
 azure-storage-blob = ">=12.15.0"
 isodate = ">=0.6.1"
 openai = ">=2.8.0"
+typing-extensions = ">=4.11"
 
 [[package]]
 name = "azure-common"
