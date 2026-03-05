@@ -49,26 +49,26 @@ async def main() -> None:
 
     python = sys.executable
 
-    mcp_tool = MCPStdioTool(
+    mcp_skills = MCPStdioTool(
         name="skills",
         command=python,
         args=["-m", "agentskills_mcp_server", "--config", str(_CONFIG_FILE)],
         description="Agent Skills MCP server (HTTP provider)",
     )
 
-    async with mcp_tool:
-        print(f"=== MCP Tools ({len(mcp_tool.functions)}) ===")
-        for fn in mcp_tool.functions:
+    async with mcp_skills:
+        print(f"=== MCP Tools ({len(mcp_skills.functions)}) ===")
+        for fn in mcp_skills.functions:
             print(f"  - {fn.name}: {fn.description[:80] if fn.description else ''}")
         print()
 
         # --------------------------------------------------------------
         # 2. Read MCP resources for the system prompt
         # --------------------------------------------------------------
-        catalog_result = await mcp_tool.session.read_resource("skills://catalog/xml")
+        catalog_result = await mcp_skills.session.read_resource("skills://catalog/xml")
         skills_catalog = catalog_result.contents[0].text
 
-        instructions_result = await mcp_tool.session.read_resource(
+        instructions_result = await mcp_skills.session.read_resource(
             "skills://tools-usage-instructions"
         )
         tools_usage_instructions = instructions_result.contents[0].text
@@ -105,7 +105,7 @@ async def main() -> None:
             client=client,
             name="SREAssistant",
             instructions=system_prompt,
-            tools=mcp_tool,
+            tools=mcp_skills,
         )
 
         # --------------------------------------------------------------

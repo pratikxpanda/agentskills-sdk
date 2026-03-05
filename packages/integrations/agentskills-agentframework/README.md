@@ -16,7 +16,7 @@ pip install agentskills-agentframework
 
 Requires Python 3.12 or 3.13. Installs `agentskills-core` and `agent-framework` as dependencies.
 
-> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0rc2`). The constraint will be updated once a stable release is published.
+> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0rc3`). The constraint will be updated once a stable release is published.
 
 ## Usage
 
