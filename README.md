@@ -3,7 +3,6 @@
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
-[![GitHub stars](https://img.shields.io/github/stars/pratikxpanda/agentskills-sdk)](https://github.com/pratikxpanda/agentskills-sdk/stargazers)
 
 > A Python SDK for discovering, retrieving, and serving [Agent Skills](https://agentskills.io) to LLM agents.
 
