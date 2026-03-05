@@ -21,7 +21,7 @@ python = ">=3.12,<3.14"
 agentskills-core = ">=0.1.0"
 mcp = ">=1.0"
 pydantic = ">=2.0"
-agent-framework = {version = ">=1.0.0rc3,<2.0", optional = true}
+agent-framework = {version = ">=1.0.0rc3,<2.0", optional = true, allow-prereleases = true}
 
 [tool.poetry.extras]
 agentframework = ["agent-framework"]
