@@ -21,6 +21,12 @@ pip install agentskills-mcp-server[fs]    # filesystem provider
 pip install agentskills-mcp-server[http]  # HTTP provider
 ```
 
+With Agent Framework integration:
+
+```bash
+pip install agentskills-mcp-server[agentframework]  # MCP context provider for Agent Framework
+```
+
 Requires Python 3.12 or 3.13. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
 
 ## Quick Start (CLI)
@@ -138,6 +144,49 @@ server = create_mcp_server(registry, name="My Skills Server")
 server.run()  # stdio by default
 ```
 
+## Agent Framework Context Provider
+
+If you're using [Microsoft Agent Framework](https://pypi.org/project/agent-framework/), `AgentSkillsMcpContextProvider` bridges an MCP session into the Agent Framework lifecycle. It reads the skills catalog and usage-instruction resources from the MCP server and injects them as session instructions on every `agent.run()` call.
+
+> **Note:** This adapter only injects instructions, not tools. Agent Framework's MCP tool classes (`MCPStdioTool`, `MCPStreamableHttpTool`, etc.) handle tool registration natively.
+
+```bash
+pip install agentskills-mcp-server[agentframework]
+```
+
+```python
+from agent_framework import Agent, MCPStdioTool
+from agentskills_mcp_server import AgentSkillsMcpContextProvider
+
+mcp_skills = MCPStdioTool(
+    name="skills",
+    command="python",
+    args=["-m", "agentskills_mcp_server", "--config", "server.json"],
+)
+
+async with mcp_skills:
+    skills_context = AgentSkillsMcpContextProvider(
+        session=mcp_skills.session,
+    )
+    agent = Agent(
+        client=client,  # any Agent Framework chat client
+        name="SREAssistant",
+        instructions="You are an SRE assistant.",
+        tools=mcp_skills,
+        context_providers=[skills_context],
+    )
+    response = await agent.run("What severity is a full DB outage?")
+```
+
+> See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos including client setup.
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `session` | *(required)* | An MCP `ClientSession`, typically from `mcp_tool.session` |
+| `skills_instruction_prompt` | Built-in template | Custom prompt template. Must contain `{skills_catalog}` and `{tools_usage_instructions}` placeholders. |
+| `skills_catalog_format` | `"xml"` | Skills catalog format — `"xml"` or `"markdown"`. |
+| `source_id` | `"agentskills_mcp"` | Unique identifier for this provider instance. |
+
 ## Tools
 
 The server exposes tools that let the LLM agent access skill content:
@@ -163,6 +212,10 @@ The server provides resources for system-prompt context:
 The MCP client reads these resources and injects them into the system prompt, giving the agent both *what* skills exist and *how* to interact with them.
 
 ## API
+
+### `AgentSkillsMcpContextProvider(session, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
+
+A `BaseContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
 ### `create_mcp_server(registry, *, name, instructions=None) -> FastMCP`
 

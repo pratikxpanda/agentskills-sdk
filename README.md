@@ -23,7 +23,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents - `AgentSkillsContextProvider`, `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server` | `pip install agentskills-mcp-server` |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server`, `AgentSkillsMcpContextProvider` | `pip install agentskills-mcp-server` |
 
 ## How It Works
 
@@ -185,6 +185,38 @@ server.run()  # stdio by default
 ```
 
 Both approaches expose the same tools (`get_skill_metadata`, `get_skill_body`, etc.) and resources (`skills://catalog/xml`, `skills://catalog/markdown`, `skills://tools-usage-instructions`).
+
+#### Agent Framework + MCP context provider
+
+If you're using Agent Framework with an MCP-based skill server, `AgentSkillsMcpContextProvider` bridges the MCP session into the agent lifecycle — skills are injected automatically on every `agent.run()` call:
+
+```bash
+pip install agentskills-mcp-server[agentframework]
+```
+
+```python
+from agent_framework import Agent, MCPStdioTool
+from agentskills_mcp_server import AgentSkillsMcpContextProvider
+
+mcp_skills = MCPStdioTool(
+    name="skills",
+    command="python",
+    args=["-m", "agentskills_mcp_server", "--config", "server.json"],
+)
+
+async with mcp_skills:
+    skills_context = AgentSkillsMcpContextProvider(session=mcp_skills.session)
+    agent = Agent(
+        client=client,
+        name="SREAssistant",
+        instructions="You are an SRE assistant.",
+        tools=mcp_skills,
+        context_providers=[skills_context],
+    )
+    response = await agent.run("What severity is a full DB outage?")
+```
+
+See [examples/agent-framework/](examples/agent-framework/) for full working demos.
 
 ## Custom Providers
 
