@@ -474,7 +474,7 @@ redisvl = ">=0.8.2"
 
 [[package]]
 name = "agentskills-agentframework"
-version = "0.2.2"
+version = "0.2.3"
 description = "Microsoft Agent Framework integration for the Agent Skills format (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
@@ -492,7 +492,7 @@ url = "packages/integrations/agentskills-agentframework"
 
 [[package]]
 name = "agentskills-core"
-version = "0.2.2"
+version = "0.2.3"
 description = "Storage-agnostic abstractions for discovering, validating, and accessing Agent Skills (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
@@ -509,7 +509,7 @@ url = "packages/core/agentskills-core"
 
 [[package]]
 name = "agentskills-fs"
-version = "0.2.2"
+version = "0.2.3"
 description = "Filesystem-based skill provider for the Agent Skills format (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
@@ -527,7 +527,7 @@ url = "packages/providers/agentskills-fs"
 
 [[package]]
 name = "agentskills-http"
-version = "0.2.2"
+version = "0.2.3"
 description = "HTTP-based skill providers for the Agent Skills format (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
@@ -546,7 +546,7 @@ url = "packages/providers/agentskills-http"
 
 [[package]]
 name = "agentskills-langchain"
-version = "0.2.2"
+version = "0.2.3"
 description = "LangChain integration for the Agent Skills format (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
@@ -564,7 +564,7 @@ url = "packages/integrations/agentskills-langchain"
 
 [[package]]
 name = "agentskills-mcp-server"
-version = "0.2.2"
+version = "0.2.3"
 description = "MCP server integration for the Agent Skills format — expose skills as MCP tools and resources (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<3.14"
