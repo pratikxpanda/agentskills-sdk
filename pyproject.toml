@@ -13,6 +13,7 @@ agentskills-http = { path = "packages/providers/agentskills-http", develop = tru
 agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
 agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
+pyjwt = ">=2.12.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0"
