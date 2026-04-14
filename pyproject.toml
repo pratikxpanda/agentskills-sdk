@@ -16,7 +16,7 @@ agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server"
 pyjwt = ">=2.12.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=9.0"
+pytest = ">=9.0.3"
 pytest-asyncio = ">=0.24"
 respx = ">=0.22"
 ruff = ">=0.4"
