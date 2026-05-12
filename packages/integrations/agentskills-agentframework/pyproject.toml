@@ -19,7 +19,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.12,<3.14"
 agentskills-core = ">=0.1.0,<1.0"
-# agent-framework-core >=1.0.0rc3 provides BaseContextProvider / context_providers support.
+# agent-framework-core >=1.0.0rc3 is required for BaseContextProvider / context_providers support.
 # TODO: Remove allow-prereleases once a stable 1.0+ is available.
 agent-framework-core = {version = ">=1.0.0rc3,<2.0", allow-prereleases = true}
 
