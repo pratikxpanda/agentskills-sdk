@@ -256,6 +256,10 @@ Batch registration is atomic - if any skill fails validation, none are registere
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, CI, releasing, and project structure.
 
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for planned themes, non-goals, and how work is tracked.
+
 ## Related Resources
 
 - [Agent Skills specification](https://agentskills.io/specification)

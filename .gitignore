@@ -37,8 +37,5 @@ htmlcov/
 # Environment
 .env
 
-# Backlog
-docs/backlog/
-
 # Distribution
 *.tar.gz

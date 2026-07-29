@@ -119,6 +119,21 @@ Returns a list of Agent Framework function tools bound to the given registry.
 
 Returns a markdown string explaining the progressive-disclosure workflow - read metadata, then body, then fetch resources on demand. Designed for system-prompt injection alongside the skill catalog.
 
+## Comparison with Agent Framework's built-in provider
+
+Agent Framework ships its own `FileAgentSkillsProvider`. Both plug into the same lifecycle, but they solve different problems:
+
+| | `FileAgentSkillsProvider` (built-in) | `AgentSkillsContextProvider` (this package) |
+| --- | --- | --- |
+| **Backends** | Filesystem only | Any `SkillProvider` - filesystem, HTTP, custom |
+| **Tool surface** | 2 generic tools (`load_skill`, `read_skill_resource`) | 5 typed tools (metadata, body, reference, script, asset) |
+| **Resource semantics** | Flat - all resources accessed by path | Typed - the agent knows the category of what it is reading |
+| **Discovery / parsing** | Built into the framework | Delegated to `agentskills-core` |
+| **Composability** | Single provider | Mix multiple providers in one registry |
+| **Setup** | Point at a folder | Register skills explicitly |
+
+If all you need is skills in a local folder, the built-in provider is already installed and is the simpler choice. Reach for this package when skills come from somewhere other than disk, when you need several sources in one catalog, or when you want the agent to distinguish a script from a reference document.
+
 ## Example
 
 See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos.
