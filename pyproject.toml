@@ -34,6 +34,7 @@ addopts = "--import-mode=importlib"
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = [
@@ -47,9 +48,6 @@ select = [
     "SIM",  # flake8-simplify
     "RUF",  # ruff-specific rules
 ]
-
-[tool.ruff.format]
-exclude = ["*.md"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server"]
