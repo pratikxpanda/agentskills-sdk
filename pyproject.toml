@@ -48,5 +48,8 @@ select = [
     "RUF",  # ruff-specific rules
 ]
 
+[tool.ruff.format]
+exclude = ["*.md"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server"]
