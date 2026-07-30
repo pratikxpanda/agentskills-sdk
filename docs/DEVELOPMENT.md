@@ -105,6 +105,56 @@ python scripts/dev.py typecheck
 
 Type annotations are expected on all public functions and methods.
 
+## Logging Conventions
+
+Every package logs into one `agentskills.*` namespace. Get a logger with the shared helper and
+pass `__name__` — the distribution prefix is rewritten, so `agentskills_http.static` logs as
+`agentskills.http.static`:
+
+```python
+from agentskills_core import get_logger
+
+_logger = get_logger(__name__)
+```
+
+Never call `logging.getLogger(__name__)` directly. It produces `agentskills_http.static`, which
+does **not** descend from `agentskills`, so a host that raises the level on the namespace root
+would silently miss that module.
+
+A host application controls output with a single call:
+
+```python
+logging.getLogger("agentskills").setLevel(logging.DEBUG)
+```
+
+### Levels
+
+| Level | Use for | Volume |
+|---|---|---|
+| `DEBUG` | Fetch, parse and cache events | Per request |
+| `INFO` | Registration outcomes | Once per skill |
+| `WARNING` | Degraded but recovered behaviour — a retried request, an unrecognised metadata key | Rare |
+
+There is no `ERROR` level in the SDK. Anything that fails raises, and the caller decides whether
+it was an error. Logging and raising the same failure reports it twice and takes that decision
+away.
+
+### Never log secrets
+
+The library attaches only a `NullHandler`, so it has no idea where records end up — assume a
+shared log aggregator.
+
+- **Never log a raw URL.** Pass it through `redact_url()` first. Credentials live in query
+  strings (SAS tokens, signed-URL signatures) and in userinfo. Providers with a configured base
+  URL should use `redact_url(url, relative_to=base_url)`, which drops the host as well.
+- **Never log request headers,** redacted or otherwise. There is no legitimate operational
+  question that a header value answers, and a redactor you have to remember to call is a trap.
+- **Never pass `exc_info` for a transport exception.** `httpx` exception reprs embed the full
+  request URL, query string included — the same leak fixed in the error paths.
+
+New log statements touching a URL or a request must be covered by a test asserting the secret
+does not appear in `caplog.text`. See `TestLogRecordsCarryNoSecrets` in the HTTP provider tests.
+
 ## Releasing
 
 ### 1. Bump version

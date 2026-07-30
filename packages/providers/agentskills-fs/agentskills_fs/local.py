@@ -29,8 +29,11 @@ from agentskills_core import (
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillProvider,
+    get_logger,
     split_frontmatter,
 )
+
+_logger = get_logger(__name__)
 
 #: Default maximum file size in bytes (10 MB).
 DEFAULT_MAX_FILE_BYTES: int = 10 * 1024 * 1024
@@ -114,6 +117,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
             self._skill_md_cache.clear()
         else:
             self._skill_md_cache.pop(skill_id, None)
+        _logger.debug("Invalidated SKILL.md cache for %s", skill_id or "all skills")
 
     # ------------------------------------------------------------------
     # Metadata & body — parsed lazily from SKILL.md
@@ -284,9 +288,11 @@ class LocalFileSystemSkillProvider(SkillProvider):
         """Read a skill's ``SKILL.md`` without blocking the event loop."""
         cached = self._skill_md_cache.get(skill_id)
         if cached is not None:
+            _logger.debug("Cache hit for SKILL.md of %r", skill_id)
             return cached
         text = await asyncio.to_thread(self._read_skill_md_sync, skill_id)
         self._skill_md_cache[skill_id] = text
+        _logger.debug("Read SKILL.md for %r from disk (%d bytes)", skill_id, len(text))
         return text
 
     def _read_skill_md_sync(self, skill_id: str) -> str:
@@ -314,7 +320,9 @@ class LocalFileSystemSkillProvider(SkillProvider):
 
     async def _read_subdir_file(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Read a skill resource without blocking the event loop."""
-        return await asyncio.to_thread(self._read_subdir_file_sync, skill_id, subdir, name)
+        data = await asyncio.to_thread(self._read_subdir_file_sync, skill_id, subdir, name)
+        _logger.debug("Read %s/%s for %r (%d bytes)", subdir, name, skill_id, len(data))
+        return data
 
     def _read_subdir_file_sync(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Read a single file from a skill's subdirectory.

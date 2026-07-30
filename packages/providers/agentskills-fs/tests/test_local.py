@@ -1,5 +1,6 @@
 """Tests for LocalFileSystemSkillProvider."""
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -295,6 +296,27 @@ class TestSecurityFSBoundary:
         provider = LocalFileSystemSkillProvider(tmp_path / "root")
         with pytest.raises(SkillNotFoundError):
             await provider.get_metadata("evil")
+
+
+class TestLogging:
+    async def test_logs_into_the_shared_namespace(self, tmp_path: Path, caplog):
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with caplog.at_level(logging.DEBUG, logger="agentskills"):
+            await provider.get_body("test-skill")
+            await provider.get_body("test-skill")
+
+        names = {r.name for r in caplog.records}
+        assert names == {"agentskills.fs.local"}
+        assert "Cache hit" in caplog.text
+
+    async def test_silent_when_the_namespace_is_not_enabled(self, tmp_path: Path, caplog):
+        """A library that logs unconditionally is a library that spams."""
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with caplog.at_level(logging.WARNING, logger="agentskills"):
+            await provider.get_body("test-skill")
+        assert caplog.records == []
 
 
 class TestSkillMdCaching:

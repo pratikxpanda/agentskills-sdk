@@ -22,14 +22,15 @@ Example::
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
+
+from agentskills_core.logging import get_logger
 
 if TYPE_CHECKING:
     from agentskills_core.skill import Skill
 
-_logger = logging.getLogger(__name__)
+_logger = get_logger(__name__)
 
 # Agent Skills spec: name must be 1-64 chars, lowercase alphanumeric + hyphens,
 # must not start/end with hyphen, must not contain consecutive hyphens.

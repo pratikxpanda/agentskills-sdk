@@ -1,5 +1,6 @@
 """Tests for HTTPStaticFileSkillProvider."""
 
+import logging
 import traceback
 import warnings
 from datetime import UTC, datetime, timedelta
@@ -22,6 +23,9 @@ from agentskills_http import static as static_module
 from agentskills_http.static import DEFAULT_TIMEOUT_SECONDS
 
 BASE = "https://skills.example.com"
+
+SECRET_HEADERS = {"Authorization": "Bearer SUPERSECRETBEARER"}
+SECRET_PARAMS = {"sv": "2024-01-01", "sig": "SUPERSECRETSAS"}
 
 SKILL_MD = """\
 ---
@@ -376,6 +380,72 @@ class TestSecurity:
             traceback.format_exception(type(exc_info.value), exc_info.value, exc_info.tb)
         )
         assert "SUPERSECRETTOKEN" not in rendered
+
+
+class TestLogRecordsCarryNoSecrets:
+    """A log file outlives a traceback, so it is the harder guarantee."""
+
+    @staticmethod
+    def _assert_clean(caplog):
+        assert "SUPERSECRETBEARER" not in caplog.text
+        assert "SUPERSECRETSAS" not in caplog.text
+        assert BASE not in caplog.text
+
+    @respx.mock
+    async def test_successful_fetch(self, caplog):
+        _mock_skill_routes(respx.mock)
+        with caplog.at_level(logging.DEBUG, logger="agentskills"):
+            async with HTTPStaticFileSkillProvider(
+                BASE, headers=SECRET_HEADERS, params=SECRET_PARAMS
+            ) as provider:
+                await provider.get_metadata("test-skill")
+                await provider.get_script("test-skill", "run.sh")
+        assert caplog.text  # the test is worthless if nothing was logged
+        self._assert_clean(caplog)
+
+    @respx.mock
+    async def test_retry_warning(self, caplog):
+        respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        with caplog.at_level(logging.DEBUG, logger="agentskills"):
+            async with HTTPStaticFileSkillProvider(
+                BASE,
+                headers=SECRET_HEADERS,
+                params=SECRET_PARAMS,
+                max_retries=2,
+                retry_backoff=0.001,
+            ) as provider:
+                with pytest.raises(SkillUnavailableError):
+                    await provider.get_metadata("flaky")
+        assert "Retrying" in caplog.text
+        self._assert_clean(caplog)
+
+    @respx.mock
+    async def test_transport_failure(self, caplog):
+        respx.get(f"{BASE}/fail/SKILL.md").mock(side_effect=httpx.ConnectError("refused"))
+        with caplog.at_level(logging.DEBUG, logger="agentskills"):
+            async with HTTPStaticFileSkillProvider(
+                BASE,
+                headers=SECRET_HEADERS,
+                params=SECRET_PARAMS,
+                max_retries=1,
+                retry_backoff=0.001,
+            ) as provider:
+                with pytest.raises(SkillUnavailableError):
+                    await provider.get_metadata("fail")
+        self._assert_clean(caplog)
+
+    @respx.mock
+    async def test_registration_and_catalog(self, caplog):
+        _mock_skill_routes(respx.mock)
+        with caplog.at_level(logging.DEBUG, logger="agentskills"):
+            async with HTTPStaticFileSkillProvider(
+                BASE, headers=SECRET_HEADERS, params=SECRET_PARAMS
+            ) as provider:
+                registry = SkillRegistry()
+                await registry.register("test-skill", provider)
+                await registry.get_skills_catalog()
+        assert "Registered skill" in caplog.text
+        self._assert_clean(caplog)
 
 
 class TestErrorClassification:

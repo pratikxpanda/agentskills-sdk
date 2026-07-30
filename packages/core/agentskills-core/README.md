@@ -25,6 +25,8 @@ Requires Python 3.12 or newer.
 | `SkillRegistry` | Unified index with explicit registration and catalog builder |
 | `validate_skill` | Validates a skill against the Agent Skills specification |
 | `validate_version` | Validates an optional semver `version` frontmatter value |
+| `get_logger` | Returns a logger in the shared `agentskills.*` namespace |
+| `redact_url` | Strips credentials from a URL before it is logged or raised |
 | `split_frontmatter` | Parses YAML frontmatter from `SKILL.md` content |
 | `AgentSkillsError` | Base exception for all library errors |
 | `SkillNotFoundError` | Raised when a skill does not exist |
@@ -168,11 +170,35 @@ text = encode_resource_content("architecture.png", raw_bytes)
 
 Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carrying the media type and base64 content, so binaries are never silently corrupted. Binaries above `max_inline_binary_bytes` (default 64 KiB) are described but not inlined.
 
+### Logging
+
+Every package in the SDK logs under one `agentskills.*` namespace, and the library attaches only a `NullHandler` — output is entirely the host's decision:
+
+```python
+import logging
+
+logging.getLogger("agentskills").setLevel(logging.DEBUG)
+```
+
+`DEBUG` covers fetch, parse and cache events; `INFO` covers registration outcomes; `WARNING` covers degraded-but-recovered behaviour such as a retried HTTP request. There is no `ERROR` level: anything that fails raises instead, so failures are never reported twice.
+
+Custom providers should join the namespace rather than creating their own. Pass `__name__` — the distribution prefix is rewritten, so `agentskills_http.static` logs as `agentskills.http.static`:
+
+```python
+from agentskills_core import get_logger, redact_url
+
+_logger = get_logger(__name__)
+_logger.debug("GET %s", redact_url(url, relative_to=base_url))
+```
+
+`redact_url()` drops the query string, fragment and userinfo, which is where credentials actually live — SAS tokens, signed-URL signatures, basic-auth passwords. With `relative_to` it drops the scheme and host as well, leaving only the path beneath that base.
+
 ## Security
 
 - **Frontmatter size limits** - `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
 - **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`, `version`) and logs warnings for unknown top-level metadata keys.
 - **Safe XML generation** - `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
+- **Credential-safe logging** - the SDK never logs request headers, and URLs pass through `redact_url()` before reaching a log record or an exception message.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
