@@ -10,7 +10,7 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 
 | Milestone | Items | State |
 |---|---|---|
-| [v0.3 — Foundations](./v0.3.md) | 10 | Specified |
+| [v0.3 — Foundations](./v0.3.md) | 12 | Specified |
 | [v0.4 — Developer Experience](./v0.4.md) | 11 | Specified |
 | [v0.5 — Agent Effectiveness](./v0.5.md) | 1 of 6 | Partly specified — the remaining items need design work first |
 | v0.6 — Trust & Operability | — | Not specified; see the [roadmap](../ROADMAP.md) |
