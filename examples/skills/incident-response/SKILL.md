@@ -1,6 +1,7 @@
 ---
 name: incident-response
 description: Standard operating procedures for production incident management including severity classification, escalation paths, communication protocols, and postmortem processes.
+version: "1.0.0"
 ---
 
 # Incident Response

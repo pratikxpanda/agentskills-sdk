@@ -82,6 +82,27 @@ The `description` is the only part the agent sees on every turn — it is what t
 decide whether to load the skill at all. Write it to say **when** the skill applies, not just what
 it contains.
 
+### Versioning a skill
+
+`version` is an **optional** field. When present it must be a quoted [semver](https://semver.org)
+string, and it appears in the skill catalog so an agent can tell versions apart:
+
+```yaml
+---
+name: incident-response
+description: Standard operating procedures for production incident management.
+version: "1.2.0"
+---
+```
+
+Quote it. Unquoted YAML reads `1.0` as a number and `2024-01-15` as a date, and registration will
+reject both. An invalid version fails registration rather than being silently ignored — a version
+nobody can rely on is worse than none.
+
+`version` is **not** part of the upstream Agent Skills specification. It is supported here because
+pinning and drift detection are not possible without it; the field is being raised upstream rather
+than kept as a permanent proprietary extension.
+
 See [examples/skills/incident-response/](examples/skills/incident-response/) for a complete skill
 with references, scripts, and assets.
 

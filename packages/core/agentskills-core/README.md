@@ -24,6 +24,7 @@ Requires Python 3.12 or newer.
 | `Skill` | Lightweight runtime handle to a single registered skill |
 | `SkillRegistry` | Unified index with explicit registration and catalog builder |
 | `validate_skill` | Validates a skill against the Agent Skills specification |
+| `validate_version` | Validates an optional semver `version` frontmatter value |
 | `split_frontmatter` | Parses YAML frontmatter from `SKILL.md` content |
 | `AgentSkillsError` | Base exception for all library errors |
 | `SkillNotFoundError` | Raised when a skill does not exist |
@@ -77,6 +78,41 @@ Metadata for every registered skill is fetched concurrently, which matters when 
 ```python
 registry = SkillRegistry(catalog_concurrency=4)   # default: 8
 ```
+
+### Skill Versions (optional, non-spec)
+
+A skill may declare a `version` in its frontmatter. It is optional — skills without one remain
+valid and behave exactly as before:
+
+```yaml
+---
+name: incident-response
+description: Standard operating procedures for production incident management.
+version: "1.2.0"
+---
+```
+
+When present, the value must be a **quoted** [semver](https://semver.org) string. Registration
+fails otherwise:
+
+```python
+from agentskills_core import validate_version
+
+validate_version("2.1.0-rc.1")   # None
+validate_version("1.0")          # "version '1.0' is not valid semver. ..."
+validate_version(1.0)            # "version must be a quoted string, got float ..."
+```
+
+The quoting requirement is not pedantry: YAML parses an unquoted `1.0` as a float and `2024-01-15`
+as a date, so the three most likely authoring mistakes never reach the validator as strings. The
+error message names the cause rather than reporting a bare type mismatch.
+
+Versions appear in both catalog formats when set, and are omitted entirely when not — unversioned
+skills cost no extra prompt tokens.
+
+> `version` is **not** part of the upstream Agent Skills specification. It is supported here
+> because consumers cannot pin, compare, or detect drift without it. The field is being raised
+> upstream rather than kept as a permanent proprietary extension.
 
 ### Implementing a Custom Provider
 
@@ -135,7 +171,7 @@ Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carr
 ## Security
 
 - **Frontmatter size limits** - `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
-- **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`) and logs warnings for unknown top-level metadata keys.
+- **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`, `version`) and logs warnings for unknown top-level metadata keys.
 - **Safe XML generation** - `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
