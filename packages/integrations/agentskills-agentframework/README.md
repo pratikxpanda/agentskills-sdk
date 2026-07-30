@@ -14,7 +14,7 @@ Generates a set of [Microsoft Agent Framework](https://pypi.org/project/agent-fr
 pip install agentskills-agentframework
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core` and `agent-framework` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `agent-framework` as dependencies.
 
 > **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0rc3`). The constraint will be updated once a stable release is published.
 

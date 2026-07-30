@@ -14,7 +14,7 @@ This package provides the foundational building blocks for working with the [Age
 pip install agentskills-core
 ```
 
-Requires Python 3.12 or 3.13.
+Requires Python 3.12 or newer.
 
 ## What's Included
 

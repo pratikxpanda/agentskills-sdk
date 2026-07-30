@@ -14,7 +14,7 @@ Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` i
 pip install agentskills-langchain
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core` and `langchain-core` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `langchain-core` as dependencies.
 
 ## Usage
 

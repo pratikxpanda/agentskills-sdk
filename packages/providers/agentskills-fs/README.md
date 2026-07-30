@@ -14,7 +14,7 @@ Serves [Agent Skills](https://agentskills.io) from a local directory tree. Each 
 pip install agentskills-fs
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core` and `pyyaml` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `pyyaml` as dependencies.
 
 ## Expected Directory Layout
 

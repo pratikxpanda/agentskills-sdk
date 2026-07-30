@@ -27,7 +27,7 @@ With Agent Framework integration:
 pip install agentskills-mcp-server[agentframework]  # MCP context provider for Agent Framework
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
 
 ## Quick Start (CLI)
 

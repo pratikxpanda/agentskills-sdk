@@ -14,7 +14,7 @@ Serves [Agent Skills](https://agentskills.io) from any static HTTP file host - S
 pip install agentskills-http
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core`, `httpx`, and `pyyaml` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core`, `httpx`, and `pyyaml` as dependencies.
 
 ## Expected URL Layout
 
