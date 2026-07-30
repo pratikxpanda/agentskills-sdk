@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://www.python.org/downloads/)
 
 > A Python SDK for discovering, retrieving, and serving [Agent Skills](https://agentskills.io) to LLM agents.
 
@@ -10,20 +10,28 @@
 
 This project helps you **integrate skills into your own agents**. Retrieve skills from any source - filesystem, database, API - validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
 
-> **Note:** Python 3.12 and 3.13 are supported. Python 3.14 is not yet supported due to upstream dependency limitations.
+> **Note:** Requires Python 3.12 or newer. Tested against 3.12, 3.13, and 3.14.
 
 ---
 
 ## Packages
 
-| Package | Description | Install |
-| --- | --- | --- |
-| [`agentskills-core`](packages/core/agentskills-core/README.md) | Core abstractions - `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
-| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | Load skills from the local filesystem - `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
-| [`agentskills-http`](packages/providers/agentskills-http/README.md) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
-| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
-| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | Integrate skills with Microsoft Agent Framework agents - `AgentSkillsContextProvider`, `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server`, `AgentSkillsMcpContextProvider` | `pip install agentskills-mcp-server` |
+| Package | Description | Version | Downloads |
+| --- | --- | --- | --- |
+| [`agentskills-core`](packages/core/agentskills-core/README.md) | The registry, the provider interface, and spec validation. Every other package depends on it. | [![PyPI](https://img.shields.io/pypi/v/agentskills-core?label=)](https://pypi.org/project/agentskills-core/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-core?label=)](https://pepy.tech/project/agentskills-core) |
+| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | **Provider** - read skills from a local directory. | [![PyPI](https://img.shields.io/pypi/v/agentskills-fs?label=)](https://pypi.org/project/agentskills-fs/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-fs?label=)](https://pepy.tech/project/agentskills-fs) |
+| [`agentskills-http`](packages/providers/agentskills-http/README.md) | **Provider** - read skills from a static HTTP server or CDN. | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-http?label=)](https://pepy.tech/project/agentskills-http) |
+| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | **Integration** - expose skills to a LangChain agent as tools. | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-langchain?label=)](https://pepy.tech/project/agentskills-langchain) |
+| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | **Integration** - expose skills to a Microsoft Agent Framework agent, injected automatically through the agent lifecycle. | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-agentframework?label=)](https://pepy.tech/project/agentskills-agentframework) |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve skills over the Model Context Protocol to any MCP client, such as Claude Desktop, VS Code, or Cursor. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
+
+**Which do I need?** One provider for wherever your skills live, plus the integration for your
+agent framework. Both pull in `agentskills-core`, so a LangChain app reading skills from disk
+needs only:
+
+```bash
+pip install agentskills-fs agentskills-langchain
+```
 
 ## How It Works
 
@@ -35,6 +43,48 @@ The SDK uses **progressive disclosure** to deliver skill content efficiently - e
 
 The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API - the agent fetches metadata, then the full body, then individual references, scripts, or assets, only when needed.
 
+## What a Skill Looks Like
+
+A skill is a folder containing a `SKILL.md`. Everything else is optional:
+
+```text
+my-skills/
+└── incident-response/
+    ├── SKILL.md                        # required - frontmatter + markdown instructions
+    ├── references/                     # optional - supporting documents
+    │   └── severity-levels.md
+    ├── scripts/                        # optional - retrieved for the agent, never executed by the SDK
+    │   └── page-oncall.sh
+    └── assets/                         # optional - diagrams, templates, other files
+        └── escalation-flowchart.mermaid
+```
+
+`SKILL.md` is YAML frontmatter followed by markdown. Only `name` and `description` are required:
+
+```markdown
+---
+name: incident-response
+description: Standard operating procedures for production incident management including severity classification, escalation paths, communication protocols, and postmortem processes.
+---
+
+# Incident Response
+
+This skill provides structured guidance for handling production incidents.
+
+## When to Declare an Incident
+
+- A production service is degraded or unavailable for users
+- Data integrity may be compromised
+...
+```
+
+The `description` is the only part the agent sees on every turn — it is what the agent uses to
+decide whether to load the skill at all. Write it to say **when** the skill applies, not just what
+it contains.
+
+See [examples/skills/incident-response/](examples/skills/incident-response/) for a complete skill
+with references, scripts, and assets.
+
 ## Quick Start
 
 ```python
@@ -44,26 +94,32 @@ from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 
 async def main():
-    provider = LocalFileSystemSkillProvider(Path("my-skills"))
     registry = SkillRegistry()
-    await registry.register("incident-response", provider)
+    await registry.register(
+        "incident-response",
+        LocalFileSystemSkillProvider(Path("my-skills")),
+    )
 
-    # Discover
-    for skill in registry.list_skills():
-        print(skill.get_id())                  # 'incident-response'
+    # What the agent sees on every turn: names and descriptions, nothing more.
+    print(await registry.get_skills_catalog(format="xml"))
 
-    # Retrieve
+    # What it fetches only after deciding the skill is relevant.
     skill = registry.get_skill("incident-response")
-    meta = await skill.get_metadata()
-    print(meta["description"])                 # SOPs for production incident management...
-    print(await skill.get_body())              # Full markdown instructions
+    print(await skill.get_body())
 
 asyncio.run(main())
+```
+
+Those two calls are the whole idea. The catalog is small and always present; the body is large and
+loaded on demand. Put the catalog in your system prompt, hand the agent the tools below, and it
+makes the second call itself, only when it needs to.
 ```
 
 ### With LangChain
 
 ```python
+import os
+
 from langchain.agents import create_agent
 from langchain_openai import AzureChatOpenAI
 from agentskills_langchain import get_tools, get_tools_usage_instructions
@@ -223,7 +279,7 @@ See [examples/agent-framework/](examples/agent-framework/) for full working demo
 The `SkillProvider` ABC is storage-agnostic. Implement it to back skills with any source:
 
 ```python
-from agentskills_core import SkillProvider
+from agentskills_core import SkillProvider, SkillRegistry
 
 class DatabaseSkillProvider(SkillProvider):
     async def get_metadata(self, skill_id: str) -> dict: ...
@@ -237,7 +293,7 @@ Register a custom provider:
 
 ```python
 registry = SkillRegistry()
-await registry.register("customer-onboarding", DatabaseSkillProvider(conn))
+await registry.register("customer-onboarding", DatabaseSkillProvider(conn))  # conn: your DB handle
 ```
 
 Register multiple providers at once:

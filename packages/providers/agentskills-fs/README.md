@@ -4,7 +4,7 @@
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> Local filesystem skill provider for the [Agent Skills SDK](../../README.md).
+> Local filesystem skill provider for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).
 
 Serves [Agent Skills](https://agentskills.io) from a local directory tree. Each subdirectory containing a `SKILL.md` file is a skill.
 
@@ -14,7 +14,7 @@ Serves [Agent Skills](https://agentskills.io) from a local directory tree. Each 
 pip install agentskills-fs
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core` and `pyyaml` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `pyyaml` as dependencies.
 
 ## Expected Directory Layout
 
@@ -54,7 +54,7 @@ The provider reads files synchronously (local disk I/O is fast for small skill f
 - **File size limits** - Files exceeding 10 MB (default) are rejected before reading into memory. Configure via the `max_file_bytes` parameter.
 - **Error-message sanitization** - Error messages reference the `skill_id` rather than full filesystem paths, preventing internal path leakage.
 
-For the full security policy, see [SECURITY.md](../../../SECURITY.md).
+For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
 ## API
 

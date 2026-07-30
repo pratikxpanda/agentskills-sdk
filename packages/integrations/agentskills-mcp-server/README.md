@@ -4,7 +4,7 @@
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-mcp-server)](https://pypi.org/project/agentskills-mcp-server/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> MCP server integration for the [Agent Skills SDK](../../README.md) - expose a skill registry as an MCP server.
+> MCP server integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - expose a skill registry as an MCP server.
 
 Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills as MCP tools and resources. Works with any MCP-compatible client (Claude Desktop, VS Code, custom clients, etc.).
 
@@ -27,7 +27,7 @@ With Agent Framework integration:
 pip install agentskills-mcp-server[agentframework]  # MCP context provider for Agent Framework
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
 
 ## Quick Start (CLI)
 
@@ -138,7 +138,7 @@ from agentskills_core import SkillRegistry
 from agentskills_mcp_server import create_mcp_server
 
 registry = SkillRegistry()
-await registry.register("incident-response", my_custom_provider)
+await registry.register("incident-response", my_custom_provider)  # any SkillProvider
 
 server = create_mcp_server(registry, name="My Skills Server")
 server.run()  # stdio by default
@@ -178,7 +178,7 @@ async with mcp_skills:
     response = await agent.run("What severity is a full DB outage?")
 ```
 
-> See [examples/agent-framework/](../../../examples/agent-framework/) for full working demos including client setup.
+> See [examples/agent-framework/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/agent-framework) for full working demos including client setup.
 
 | Parameter | Default | Description |
 | --- | --- | --- |

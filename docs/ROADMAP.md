@@ -58,6 +58,8 @@ Close the highest-severity correctness and performance gaps before the API surfa
 | Structured logging | Operability | all | Consistent `agentskills.*` logger namespace, no handlers attached by the library, never log secrets or URLs containing credentials. |
 | Coverage gate in CI | Project health | repo | `pytest-cov` with a floor, enforced in CI, badge in README. |
 | Automated PyPI publish | Project health | repo | Replace manual `publish.ps1` runs with GitHub Actions **Trusted Publishing** (OIDC, no long-lived tokens), triggered by the release tag. |
+| Agent Framework 1.x API rename | Correctness | `agentskills-agentframework`, `agentskills-mcp-server` | **Ships broken today.** `agent-framework-core` 1.12.1 renamed `BaseContextProvider` to `ContextProvider`; our constraint `>=1.0.0rc3,<2.0` admits it, so a fresh install raises `ImportError` on import. Masked locally because `poetry.lock` pins 1.0.0rc3. |
+| Python 3.14 support | Project health | all | **Merged, awaiting release.** Every package capped `python` at `<3.14`, so installs failed on current stable Python. Ceiling raised to `<4.0`; no dependency justified the old cap. |
 
 ---
 

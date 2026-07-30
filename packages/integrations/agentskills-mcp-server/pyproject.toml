@@ -14,10 +14,11 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.14"
+python = ">=3.12,<4.0"
 agentskills-core = ">=0.1.0"
 mcp = ">=1.28.1,<2"
 pydantic = ">=2.0"

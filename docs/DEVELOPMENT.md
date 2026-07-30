@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Python 3.12 or 3.13
+- Python 3.12 or newer
 - [Poetry](https://python-poetry.org/) 2.0+
 
 ## Setup
@@ -83,7 +83,7 @@ python scripts/dev.py all           # Format + lint + test
 GitHub Actions runs automatically on every push and pull request to `main`. The pipeline is defined in `.github/workflows/ci.yml` and includes two jobs:
 
 - **Lint**: checks formatting (`ruff format --check`) and linting (`ruff check`)
-- **Test**: runs `pytest` across Python 3.12 and 3.13
+- **Test**: runs `pytest` across Python 3.12, 3.13, and 3.14
 
 All checks must pass before a PR can be merged. The CI status badge is shown on the root README.
 

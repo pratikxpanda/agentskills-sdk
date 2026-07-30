@@ -4,7 +4,7 @@
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> Core abstractions for the [Agent Skills SDK](../../README.md) - provider interface, registry, validation, and skill model.
+> Core abstractions for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - provider interface, registry, validation, and skill model.
 
 This package provides the foundational building blocks for working with the [Agent Skills](https://agentskills.io) format. It is **storage-agnostic** - concrete providers (filesystem, HTTP, database, etc.) live in separate packages.
 
@@ -14,7 +14,7 @@ This package provides the foundational building blocks for working with the [Age
 pip install agentskills-core
 ```
 
-Requires Python 3.12 or 3.13.
+Requires Python 3.12 or newer.
 
 ## What's Included
 
@@ -36,6 +36,7 @@ Requires Python 3.12 or 3.13.
 ```python
 from agentskills_core import SkillRegistry
 
+# provider: any SkillProvider - agentskills-fs, agentskills-http, or your own
 registry = SkillRegistry()
 await registry.register("incident-response", provider)  # validates on registration
 ```
@@ -90,7 +91,7 @@ All methods are `async` so implementations backed by network I/O can be non-bloc
 - **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`) and logs warnings for unknown top-level metadata keys.
 - **Safe XML generation** - `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
 
-For the full security policy, see [SECURITY.md](../../../SECURITY.md).
+For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
 ## License
 

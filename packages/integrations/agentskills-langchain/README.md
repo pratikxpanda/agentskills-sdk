@@ -4,7 +4,7 @@
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> LangChain integration for the [Agent Skills SDK](../../README.md) - turn a skill registry into LangChain tools.
+> LangChain integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - turn a skill registry into LangChain tools.
 
 Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` instances from a `SkillRegistry`, ready to be passed to any LangChain agent.
 
@@ -14,11 +14,13 @@ Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` i
 pip install agentskills-langchain
 ```
 
-Requires Python 3.12 or 3.13. Installs `agentskills-core` and `langchain-core` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `langchain-core` as dependencies.
 
 ## Usage
 
 ```python
+from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_langchain import get_tools, get_tools_usage_instructions
@@ -61,7 +63,7 @@ Returns a markdown string explaining the progressive-disclosure workflow - read 
 
 ## Example
 
-See [examples/langchain/](../../examples/langchain/) for a full working demo.
+See [examples/langchain/](https://github.com/pratikxpanda/agentskills-sdk/tree/main/examples/langchain) for a full working demo.
 
 ## Error Handling
 
