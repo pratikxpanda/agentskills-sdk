@@ -19,6 +19,8 @@ Requires Python 3.12 or 3.13. Installs `agentskills-core` and `langchain-core` a
 ## Usage
 
 ```python
+from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_langchain import get_tools, get_tools_usage_instructions
