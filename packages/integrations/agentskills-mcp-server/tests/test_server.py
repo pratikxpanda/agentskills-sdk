@@ -49,6 +49,12 @@ def _mock_provider(
     provider.get_reference.side_effect = lambda sid, name: references[name]
     provider.get_script.side_effect = lambda sid, name: scripts[name]
     provider.get_asset.side_effect = lambda sid, name: assets[name]
+    provider.supports_resource_listing = True
+    provider.list_resources.return_value = {
+        "references": sorted(references),
+        "scripts": sorted(scripts),
+        "assets": sorted(assets),
+    }
     return provider
 
 
@@ -84,9 +90,9 @@ class TestCreateMCPServer:
     async def test_instructions_default_none(self, server):
         assert server.instructions is None
 
-    async def test_registers_5_tools(self, server):
+    async def test_registers_6_tools(self, server):
         tools = await server.list_tools()
-        assert len(tools) == 5
+        assert len(tools) == 6
 
     async def test_tool_names(self, server):
         tools = await server.list_tools()
@@ -94,6 +100,7 @@ class TestCreateMCPServer:
         expected = {
             "get_skill_metadata",
             "get_skill_body",
+            "list_skill_resources",
             "get_skill_reference",
             "get_skill_asset",
             "get_skill_script",
@@ -129,6 +136,29 @@ class TestMCPTools:
             {"skill_id": "incident-response", "name": "severity-levels.md"},
         )
         assert "SEV1" in _tool_text(result)
+
+    async def test_list_skill_resources(self, server):
+        result = await server.call_tool("list_skill_resources", {"skill_id": "incident-response"})
+        assert json.loads(_tool_text(result)) == {
+            "references": ["severity-levels.md"],
+            "scripts": ["page-oncall.sh"],
+            "assets": ["flowchart.mermaid"],
+        }
+
+    async def test_list_skill_resources_reports_unsupported(self, registry):
+        """An un-enumerable backend is reported, not raised."""
+        from agentskills_core import ResourceListingNotSupportedError
+
+        provider = _mock_provider("static-skill")
+        provider.supports_resource_listing = False
+        provider.list_resources.side_effect = ResourceListingNotSupportedError("no manifest")
+        await registry.register("static-skill", provider)
+
+        server = create_mcp_server(registry, name="Test Server")
+        result = await server.call_tool("list_skill_resources", {"skill_id": "static-skill"})
+        payload = json.loads(_tool_text(result))
+        assert payload["supported"] is False
+        assert "no manifest" in payload["note"]
 
     async def test_get_skill_script(self, server):
         result = await server.call_tool(
@@ -210,11 +240,16 @@ class TestMCPResources:
         for name in (
             "get_skill_metadata",
             "get_skill_body",
+            "list_skill_resources",
             "get_skill_reference",
             "get_skill_script",
             "get_skill_asset",
         ):
             assert name in text
+
+    async def test_skill_resources_template(self, server):
+        contents = await server.read_resource("skills://incident-response/resources")
+        assert json.loads(contents[0].content)["scripts"] == ["page-oncall.sh"]
 
 
 class TestMCPServerEdgeCases:
@@ -225,7 +260,7 @@ class TestMCPServerEdgeCases:
         registry = SkillRegistry()
         server = create_mcp_server(registry, name="Empty Server")
         tools = await server.list_tools()
-        assert len(tools) == 5
+        assert len(tools) == 6
         resources = await server.list_resources()
         assert len(resources) == 3
         # Catalog should show empty state

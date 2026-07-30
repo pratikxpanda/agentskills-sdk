@@ -45,11 +45,14 @@ Pass `tools` to your LangChain agent and inject `system_prompt` into the system 
 | --- | --- | --- |
 | `get_skill_metadata` | `skill_id` | Get structured metadata (name, description, etc.) |
 | `get_skill_body` | `skill_id` | Load the full markdown instructions |
+| `list_skill_resources` | `skill_id` | List bundled references, scripts and assets |
 | `get_skill_reference` | `skill_id`, `name` | Read a reference document |
 | `get_skill_script` | `skill_id`, `name` | Read a script |
 | `get_skill_asset` | `skill_id`, `name` | Read an asset |
 
 All tools are async-compatible (`StructuredTool` with `coroutine`).
+
+`list_skill_resources` returns a JSON object keyed by resource kind. Not every backend can enumerate resources — a plain static HTTP host cannot. Rather than surfacing an exception, the tool returns `{"supported": false, "note": "..."}` in that case: "this cannot be listed" is something the model can act on by falling back to the names in the skill body, not an error worth retrying.
 
 ## API
 

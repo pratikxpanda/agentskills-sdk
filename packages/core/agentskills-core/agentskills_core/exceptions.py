@@ -56,3 +56,26 @@ class ResourceNotFoundError(AgentSkillsError, LookupError):
         except ResourceNotFoundError:
             print("Reference not found")
     """
+
+
+class ResourceListingNotSupportedError(AgentSkillsError, NotImplementedError):
+    """The provider cannot enumerate a skill's resources.
+
+    Raised by the default
+    :meth:`SkillProvider.list_resources
+    <agentskills_core.SkillProvider.list_resources>` implementation, and
+    by providers whose backend offers no way to enumerate -- a static
+    HTTP host with no manifest, for instance.
+
+    This is deliberately **not** an empty result.  "Cannot enumerate"
+    and "enumerated, found nothing" lead a caller to different
+    behaviour, so they must be distinguishable.  Check
+    :attr:`SkillProvider.supports_resource_listing
+    <agentskills_core.SkillProvider.supports_resource_listing>` to avoid
+    the exception entirely.
+
+    Example::
+
+        if provider.supports_resource_listing:
+            resources = await provider.list_resources("incident-response")
+    """

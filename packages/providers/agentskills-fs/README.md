@@ -79,7 +79,19 @@ For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/
 | `get_script(skill_id, name)` | `bytes` | Raw content of a script file |
 | `get_asset(skill_id, name)` | `bytes` | Raw content of an asset file |
 | `get_reference(skill_id, name)` | `bytes` | Raw content of a reference file |
+| `list_resources(skill_id)` | `dict[str, list[str]]` | Resource filenames grouped by kind |
 | `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
+
+## Resource Discovery
+
+This provider sets `supports_resource_listing = True` and can enumerate a skill's bundled files:
+
+```python
+listing = await provider.list_resources("incident-response")
+# {"references": ["severity-levels.md"], "scripts": ["page-oncall.sh"], "assets": []}
+```
+
+All three keys are always present; unused categories are empty lists. Only regular files directly inside `references/`, `scripts/` and `assets/` are reported. Dotfiles, subdirectories, and symlinks resolving outside the skill root are skipped rather than raising, so one stray entry cannot make a whole skill unlistable — and listing can never offer a name that a subsequent read would reject.
 
 ## License
 

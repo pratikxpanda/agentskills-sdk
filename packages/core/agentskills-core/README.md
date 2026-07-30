@@ -91,6 +91,33 @@ class DatabaseSkillProvider(SkillProvider):
 
 All methods are `async` so implementations backed by network I/O can be non-blocking.
 
+### Resource Discovery (optional capability)
+
+Some backends can enumerate a skill's resources; a static file host generally cannot. `list_resources()` is therefore an *optional* capability, paired with a declared flag ([ADR 0002](../../../docs/adr/0002-optional-provider-capabilities.md)):
+
+```python
+class DatabaseSkillProvider(SkillProvider):
+    supports_resource_listing = True
+
+    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
+        return {"references": [...], "scripts": [...], "assets": [...]}
+```
+
+The default implementation **raises** `ResourceListingNotSupportedError` rather than returning `{}`. "I cannot enumerate this skill" and "this skill has no resources" are different facts, and conflating them would silently hide resources from the agent.
+
+Consumers should branch on the capability, not guess:
+
+```python
+from agentskills_core import ResourceListingNotSupportedError
+
+try:
+    listing = await skill.list_resources()
+except ResourceListingNotSupportedError:
+    listing = None   # fall back to names mentioned in the skill body
+```
+
+Providers that support listing always return all three keys — `references`, `scripts`, `assets` — with empty lists for unused categories, so callers need no key checks.
+
 ### Encoding Resources for Tool Output
 
 Resources are `bytes`, but tool interfaces return text. `encode_resource_content()` is the shared conversion used by every integration, so behaviour cannot drift between them:

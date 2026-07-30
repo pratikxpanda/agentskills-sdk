@@ -120,5 +120,26 @@ class Skill:
         """
         return await self._provider.get_reference(self._skill_id, name)
 
+    @property
+    def supports_resource_listing(self) -> bool:
+        """Whether the backing provider can enumerate this skill's resources."""
+        return self._provider.supports_resource_listing
+
+    async def list_resources(self) -> dict[str, list[str]]:
+        """Return this skill's resource names, grouped by kind.
+
+        Check :attr:`supports_resource_listing` first -- not every
+        backend can enumerate.
+
+        Returns:
+            Mapping of ``"references"`` / ``"scripts"`` / ``"assets"`` to
+            sorted resource names.
+
+        Raises:
+            ResourceListingNotSupportedError: If the provider cannot
+                enumerate resources.
+        """
+        return await self._provider.list_resources(self._skill_id)
+
     def __repr__(self) -> str:
         return f"Skill({self._skill_id!r})"

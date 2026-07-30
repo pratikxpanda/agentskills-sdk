@@ -85,6 +85,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `require_tls` | `bool` | `False` | Reject `http://` URLs with `ValueError` |
 | `max_response_bytes` | `int` | `10_485_760` | Maximum allowed response size in bytes |
 | `revalidate` | `bool` | `False` | Re-check cached `SKILL.md` on every access with `If-None-Match` / `If-Modified-Since` |
+| `resource_manifest` | `bool` | `False` | Enable `list_resources()` by reading a per-skill `index.json` |
 
 > **Note:** `client` and `headers`/`params` are mutually exclusive. Configure headers and params on the client directly when providing your own.
 
@@ -95,10 +96,34 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `get_script(skill_id, name)` | `bytes` | Raw script content |
 | `get_asset(skill_id, name)` | `bytes` | Raw asset content |
 | `get_reference(skill_id, name)` | `bytes` | Raw reference content |
+| `list_resources(skill_id)` | `dict[str, list[str]]` | Resource names from `index.json` (requires `resource_manifest=True`) |
 | `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 | `aclose()` | `None` | Close the HTTP client (if owned by the provider) |
 
 Supports `async with` for automatic cleanup.
+
+## Resource Discovery
+
+A static file host cannot be enumerated: there is no portable directory listing over plain HTTP. By default this provider therefore reports that it *cannot* list resources — `list_resources()` raises `ResourceListingNotSupportedError` — rather than returning an empty mapping that would look like a skill with no resources.
+
+If you control the host, publish a small manifest at `{base_url}/{skill_id}/index.json`:
+
+```json
+{
+  "references": ["severity-levels.md"],
+  "scripts": ["page-oncall.sh"],
+  "assets": ["flowchart.mermaid"]
+}
+```
+
+Then opt in:
+
+```python
+provider = HTTPStaticFileSkillProvider(BASE, resource_manifest=True)
+listing = await provider.list_resources("incident-response")
+```
+
+Missing categories default to empty lists. A manifest is host-supplied data whose entries are later interpolated into URLs, so names failing the identifier-safety check are dropped. If a given skill has no `index.json`, `list_resources()` raises `ResourceListingNotSupportedError` for that skill — again, not an empty result.
 
 ## Caching
 

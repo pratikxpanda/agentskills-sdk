@@ -15,6 +15,7 @@ Tool name                       Description
 ==============================  =============================================
 ``get_skill_metadata``          Read frontmatter (name, description, ...).
 ``get_skill_body``              Load full skill instructions.
+``list_skill_resources``        List bundled resource names by kind.
 ``get_skill_reference``         Read a single reference document.
 ``get_skill_script``            Read a single script.
 ``get_skill_asset``             Read a single asset.
@@ -38,6 +39,7 @@ from agent_framework import FunctionTool, tool
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    ResourceListingNotSupportedError,
     SkillRegistry,
     encode_resource_content,
 )
@@ -98,6 +100,24 @@ def get_tools(
         return await skill.get_body()
 
     @tool(
+        name="list_skill_resources",
+        description=(
+            "List the references, scripts, and assets a skill bundles. "
+            "Returns a JSON object keyed by resource kind. Some skill "
+            "backends cannot enumerate resources; those return "
+            '{"supported": false} and the resource names must be taken '
+            "from the skill body instead."
+        ),
+    )
+    async def list_skill_resources(skill_id: str) -> str:
+        """List the resources a skill bundles."""
+        skill = registry.get_skill(skill_id)
+        try:
+            return json.dumps(await skill.list_resources())
+        except ResourceListingNotSupportedError as exc:
+            return json.dumps({"supported": False, "note": str(exc)})
+
+    @tool(
         name="get_skill_reference",
         description=(
             "Get the full content of a specific reference document "
@@ -148,6 +168,7 @@ def get_tools(
     return [
         get_skill_metadata,
         get_skill_body,
+        list_skill_resources,
         get_skill_reference,
         get_skill_asset,
         get_skill_script,
@@ -203,7 +224,10 @@ other assets
 ### Important guidelines
 
 - **Do not guess resource names.** Only fetch resources that are \
-explicitly mentioned in the skill body.
+explicitly mentioned in the skill body, or that \
+`list_skill_resources(skill_id)` reports. That tool returns \
+`{"supported": false}` on backends that cannot be enumerated — when \
+it does, rely on the skill body alone.
 - **Follow progressive disclosure.** Read the skill body first, then \
 fetch only the resources you need for the current step.
 - **One skill at a time.** Focus on the most relevant skill for the \

@@ -67,6 +67,23 @@ class TestSkill:
         skill = Skill("incident-response", provider)
         assert repr(skill) == "Skill('incident-response')"
 
+    async def test_list_resources_delegates(self):
+        provider = _make_mock_provider()
+        provider.list_resources.return_value = {
+            "references": ["severity-levels.md"],
+            "scripts": [],
+            "assets": [],
+        }
+        skill = Skill("incident-response", provider)
+        listing = await skill.list_resources()
+        provider.list_resources.assert_called_once_with("incident-response")
+        assert listing["references"] == ["severity-levels.md"]
+
+    def test_supports_resource_listing_reflects_provider(self):
+        provider = _make_mock_provider()
+        provider.supports_resource_listing = True
+        assert Skill("incident-response", provider).supports_resource_listing is True
+
 
 class TestSkillGuardClauses:
     def test_rejects_empty_skill_id(self):
