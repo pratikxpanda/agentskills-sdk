@@ -14,6 +14,11 @@ The two most common exceptions are:
 Both inherit from :class:`LookupError` so that they are idiomatic
 Python lookup failures and can also be caught with
 ``except LookupError``.
+
+:class:`SkillUnavailableError` is the deliberate counterpart to those
+two: it means "this may well exist, but the backend could not answer
+right now".  Keeping it distinct from "not found" is what lets a caller
+retry or alert instead of concluding a skill was deleted.
 """
 
 
@@ -79,3 +84,39 @@ class ResourceListingNotSupportedError(AgentSkillsError, NotImplementedError):
         if provider.supports_resource_listing:
             resources = await provider.list_resources("incident-response")
     """
+
+
+class SkillUnavailableError(AgentSkillsError):
+    """A skill backend could not be reached, or failed transiently.
+
+    Raised for server-side failures (``5xx``), rate limiting (``429``),
+    timeouts, and connection errors -- anything where the skill may
+    well exist and the same request could succeed later.
+
+    This is deliberately **not** :class:`SkillNotFoundError`.  Mapping a
+    ``503`` onto "not found" tells the caller a skill was deleted when
+    the truth is that a server had a bad minute, which turns a
+    retryable blip into a permanent-looking failure.
+
+    Args:
+        message: Human-readable description.  Must not contain
+            credential material -- see the ``agentskills-http``
+            provider, which redacts URL query strings before they reach
+            an exception message.
+        retry_after: Server-advised delay in seconds, taken from a
+            ``Retry-After`` header when present.  ``None`` when the
+            server gave no advice.
+
+    Example::
+
+        try:
+            body = await skill.get_body()
+        except SkillNotFoundError:
+            ...        # genuinely gone; stop asking
+        except SkillUnavailableError as exc:
+            ...        # try again later, optionally after exc.retry_after
+    """
+
+    def __init__(self, message: str, *, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after

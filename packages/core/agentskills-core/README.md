@@ -28,6 +28,8 @@ Requires Python 3.12 or newer.
 | `AgentSkillsError` | Base exception for all library errors |
 | `SkillNotFoundError` | Raised when a skill does not exist |
 | `ResourceNotFoundError` | Raised when a resource within a skill does not exist |
+| `ResourceListingNotSupportedError` | Raised when a provider cannot enumerate a skill's resources |
+| `SkillUnavailableError` | Raised when a backend is unreachable or fails transiently |
 
 ## Usage
 

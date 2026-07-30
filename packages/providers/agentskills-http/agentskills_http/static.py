@@ -28,12 +28,16 @@ for non-blocking HTTP requests.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import random
 import re
 import warnings
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, urlsplit
 
 import httpx
 
@@ -44,6 +48,7 @@ from agentskills_core import (
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillProvider,
+    SkillUnavailableError,
     split_frontmatter,
 )
 
@@ -59,8 +64,40 @@ DEFAULT_MAX_RESPONSE_BYTES: int = 10 * 1024 * 1024
 #: Default HTTP request timeout in seconds.
 DEFAULT_TIMEOUT_SECONDS: float = 30.0
 
+#: Default number of retries after the initial attempt.
+DEFAULT_MAX_RETRIES: int = 2
+
+#: Default base delay for exponential backoff, in seconds.
+DEFAULT_RETRY_BACKOFF_SECONDS: float = 0.5
+
+#: Default ceiling on any single backoff sleep, in seconds.
+DEFAULT_MAX_RETRY_DELAY_SECONDS: float = 30.0
+
+#: Statuses treated as "gone" rather than "unreachable".
+_NOT_FOUND_STATUS_CODES: frozenset[int] = frozenset({404, 410})
+
+#: Non-5xx statuses worth retrying.
+_RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({408, 425, 429})
+
 #: Per-skill manifest filename used for resource listing.
 RESOURCE_MANIFEST_NAME: str = "index.json"
+
+
+def _parse_retry_after(value: str | None) -> float | None:
+    """Parse a ``Retry-After`` header in either delay-seconds or HTTP-date form."""
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
 @dataclass(frozen=True)
@@ -117,6 +154,19 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             plain static host cannot be enumerated and claiming
             otherwise would make missing manifests look like skills with
             no resources.
+        timeout: Request timeout in seconds.  Ignored when you supply
+            your own *client*.
+        max_retries: Retries after the initial attempt, for retryable
+            failures only (``5xx``, ``408``, ``425``, ``429``, timeouts,
+            connection errors).  ``0`` disables retrying.
+        retry_backoff: Base delay in seconds for exponential backoff.
+            Actual sleeps are jittered across ``[0, delay]`` so that
+            concurrent skill fetches do not retry in lockstep.
+        max_retry_delay: Ceiling on any single sleep.  A ``Retry-After``
+            longer than this is not waited out -- the error is raised
+            immediately with ``retry_after`` attached, because blocking
+            a request path for minutes is worse than failing fast and
+            letting the caller decide.
 
     ``SKILL.md`` responses are cached per provider instance, because a
     single skill is otherwise re-fetched up to five times in one agent
@@ -145,12 +195,22 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
         revalidate: bool = False,
         resource_manifest: bool = False,
+        timeout: float = DEFAULT_TIMEOUT_SECONDS,
+        max_retries: int = DEFAULT_MAX_RETRIES,
+        retry_backoff: float = DEFAULT_RETRY_BACKOFF_SECONDS,
+        max_retry_delay: float = DEFAULT_MAX_RETRY_DELAY_SECONDS,
     ) -> None:
         if client is not None and (headers is not None or params is not None):
             raise ValueError(
                 "Cannot specify both 'client' and 'headers'/'params'. "
                 "Configure headers and params on the client directly."
             )
+        if max_retries < 0:
+            raise ValueError("max_retries must not be negative")
+        if retry_backoff <= 0:
+            raise ValueError("retry_backoff must be positive")
+        if max_retry_delay <= 0:
+            raise ValueError("max_retry_delay must be positive")
 
         # TLS enforcement
         parsed = urlparse(base_url)
@@ -173,11 +233,14 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._revalidate = revalidate
         self._skill_md_cache: dict[str, _CachedSkillMd] = {}
         self.supports_resource_listing = resource_manifest
+        self._max_retries = max_retries
+        self._retry_backoff = retry_backoff
+        self._max_retry_delay = max_retry_delay
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(
             headers=headers,
             params=params,
-            timeout=httpx.Timeout(DEFAULT_TIMEOUT_SECONDS),
+            timeout=httpx.Timeout(timeout),
             follow_redirects=False,
         )
 
@@ -397,6 +460,16 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # Internal helpers
     # ------------------------------------------------------------------
 
+    def _describe(self, url: str) -> str:
+        """Describe *url* for an error message without leaking secrets.
+
+        Returns the path relative to *base_url*, so neither the host nor
+        any query string can reach a message, a log line, or a
+        traceback.  Query strings are where credentials actually live:
+        SAS tokens and signed-URL signatures are passed via ``params``.
+        """
+        return urlsplit(url.removeprefix(self._base_url)).path or url
+
     async def _stream_bytes(
         self,
         url: str,
@@ -404,15 +477,11 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         *,
         extra_headers: dict[str, str] | None = None,
     ) -> tuple[bytes | None, httpx.Headers]:
-        """Stream a GET request and return the response bytes and headers.
-
-        Uses ``httpx.AsyncClient.stream`` so that overly large
-        responses are detected **during** download rather than after
-        the entire body has been buffered into memory.
+        """Fetch *url*, retrying retryable failures with jittered backoff.
 
         Args:
             url: The URL to fetch.
-            not_found_error: Exception type to raise on HTTP 404
+            not_found_error: Exception type to raise on 404/410
                 (e.g. :class:`SkillNotFoundError` or
                 :class:`ResourceNotFoundError`).
             extra_headers: Additional request headers, used to send
@@ -423,20 +492,65 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             answered ``304 Not Modified``.
 
         Raises:
-            not_found_error: On 404.
-            AgentSkillsError: On other HTTP/connection errors or if
-                the response exceeds *max_response_bytes*.
+            not_found_error: On 404 or 410.
+            SkillUnavailableError: On 5xx, 408, 425, 429, timeouts and
+                connection errors, once retries are exhausted.
+            AgentSkillsError: On other HTTP errors, or if the response
+                exceeds *max_response_bytes*.
         """
+        delay = self._retry_backoff
+        for attempt in range(self._max_retries + 1):
+            try:
+                return await self._attempt_stream(url, not_found_error, extra_headers=extra_headers)
+            except SkillUnavailableError as exc:
+                if attempt >= self._max_retries:
+                    raise
+                if exc.retry_after is not None:
+                    if exc.retry_after > self._max_retry_delay:
+                        raise
+                    sleep_for = exc.retry_after
+                else:
+                    sleep_for = random.uniform(0, min(delay, self._max_retry_delay))
+                    delay *= 2
+                await asyncio.sleep(sleep_for)
+
+        raise AssertionError("unreachable: the loop either returns or raises")
+
+    async def _attempt_stream(
+        self,
+        url: str,
+        not_found_error: type[Exception],
+        *,
+        extra_headers: dict[str, str] | None = None,
+    ) -> tuple[bytes | None, httpx.Headers]:
+        """Make a single streaming GET and classify the outcome.
+
+        Uses ``httpx.AsyncClient.stream`` so that overly large
+        responses are detected **during** download rather than after
+        the entire body has been buffered into memory.
+        """
+        safe_url = self._describe(url)
         try:
             async with self._client.stream("GET", url, headers=extra_headers) as resp:
-                if resp.status_code == 404:
-                    raise not_found_error("Skill content not found")
-                if resp.status_code == 304:
+                status = resp.status_code
+                if status in _NOT_FOUND_STATUS_CODES:
+                    raise not_found_error(f"Skill content not found at {safe_url}")
+                if status == 304:
                     return None, resp.headers
-                try:
-                    resp.raise_for_status()
-                except httpx.HTTPStatusError as exc:
-                    raise AgentSkillsError(f"HTTP {resp.status_code} error") from exc
+                if status in _RETRYABLE_STATUS_CODES or status >= 500:
+                    raise SkillUnavailableError(
+                        f"HTTP {status} from {safe_url}",
+                        retry_after=_parse_retry_after(resp.headers.get("retry-after")),
+                    )
+                if status in (401, 403):
+                    # `from None`: httpx renders the full URL, query string included.
+                    raise AgentSkillsError(
+                        f"HTTP {status} from {safe_url}. The host rejected the "
+                        "request as unauthorised; check the credentials passed via "
+                        "'headers' or 'params'."
+                    ) from None
+                if status >= 400:
+                    raise AgentSkillsError(f"HTTP {status} from {safe_url}") from None
 
                 # Check Content-Length header for an early reject when
                 # the server advertises the size up-front.
@@ -461,8 +575,10 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
         except (SkillNotFoundError, ResourceNotFoundError, AgentSkillsError):
             raise
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as exc:
+            raise SkillUnavailableError(f"{type(exc).__name__} while fetching {safe_url}") from None
         except httpx.HTTPError as exc:
-            raise AgentSkillsError("HTTP request failed") from exc
+            raise AgentSkillsError(f"{type(exc).__name__} while fetching {safe_url}") from None
 
         return b"".join(chunks), headers
 

@@ -1,6 +1,9 @@
 """Tests for HTTPStaticFileSkillProvider."""
 
+import traceback
 import warnings
+from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 
 import httpx
 import pytest
@@ -12,8 +15,10 @@ from agentskills_core import (
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillRegistry,
+    SkillUnavailableError,
 )
 from agentskills_http import HTTPStaticFileSkillProvider
+from agentskills_http import static as static_module
 from agentskills_http.static import DEFAULT_TIMEOUT_SECONDS
 
 BASE = "https://skills.example.com"
@@ -189,8 +194,8 @@ class TestHTTPErrors:
     @respx.mock
     async def test_server_error_on_skill_md_raises_agentskills_error(self):
         respx.get(f"{BASE}/broken/SKILL.md").respond(status_code=500)
-        async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(AgentSkillsError, match="500"):
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match="500"):
                 await provider.get_metadata("broken")
 
     @respx.mock
@@ -203,22 +208,22 @@ class TestHTTPErrors:
     @respx.mock
     async def test_server_error_on_resource_raises_agentskills_error(self):
         respx.get(f"{BASE}/test-skill/scripts/run.sh").respond(status_code=500)
-        async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(AgentSkillsError, match="500"):
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match="500"):
                 await provider.get_script("test-skill", "run.sh")
 
     @respx.mock
     async def test_connection_error_on_skill_md(self):
         respx.get(f"{BASE}/fail/SKILL.md").mock(side_effect=httpx.ConnectError("refused"))
-        async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(AgentSkillsError, match="HTTP request failed"):
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match="ConnectError"):
                 await provider.get_metadata("fail")
 
     @respx.mock
     async def test_connection_error_on_resource(self):
         respx.get(f"{BASE}/test-skill/assets/x.png").mock(side_effect=httpx.ConnectError("refused"))
-        async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(AgentSkillsError, match="HTTP request failed"):
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match="ConnectError"):
                 await provider.get_asset("test-skill", "x.png")
 
 
@@ -335,6 +340,249 @@ class TestSecurity:
                 await provider.get_metadata("secret-skill")
             # Error message should NOT contain the base URL
             assert BASE not in str(exc_info.value)
+
+    @respx.mock
+    async def test_credentials_do_not_leak_through_the_exception_chain(self):
+        """The whole chain must be clean, not just the message we build.
+
+        ``httpx.HTTPStatusError`` renders the full request URL, query
+        string included, so chaining it leaked SAS tokens into every
+        traceback. The cause is now suppressed.
+        """
+        secret = "sv=2024-01-01&sig=SUPERSECRETTOKEN"
+        respx.get(f"{BASE}/secret-skill/SKILL.md").respond(status_code=403)
+        async with HTTPStaticFileSkillProvider(
+            BASE, params={"sv": "2024-01-01", "sig": "SUPERSECRETTOKEN"}
+        ) as provider:
+            with pytest.raises(AgentSkillsError) as exc_info:
+                await provider.get_metadata("secret-skill")
+
+        rendered = "".join(
+            traceback.format_exception(type(exc_info.value), exc_info.value, exc_info.tb)
+        )
+        assert "SUPERSECRETTOKEN" not in rendered
+        assert secret not in rendered
+
+    @respx.mock
+    async def test_credentials_do_not_leak_on_transport_failure(self):
+        respx.get(f"{BASE}/fail/SKILL.md").mock(side_effect=httpx.ConnectError("refused"))
+        async with HTTPStaticFileSkillProvider(
+            BASE, params={"sig": "SUPERSECRETTOKEN"}, max_retries=0
+        ) as provider:
+            with pytest.raises(SkillUnavailableError) as exc_info:
+                await provider.get_metadata("fail")
+
+        rendered = "".join(
+            traceback.format_exception(type(exc_info.value), exc_info.value, exc_info.tb)
+        )
+        assert "SUPERSECRETTOKEN" not in rendered
+
+
+class TestErrorClassification:
+    """404 is a fact about the skill; 503 is a fact about the server."""
+
+    @respx.mock
+    async def test_410_is_not_found(self):
+        respx.get(f"{BASE}/gone/SKILL.md").respond(status_code=410)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(SkillNotFoundError):
+                await provider.get_metadata("gone")
+
+    @pytest.mark.parametrize("status", [408, 425, 429, 500, 502, 503, 504])
+    @respx.mock
+    async def test_retryable_statuses_are_unavailable(self, status):
+        respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=status)
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match=str(status)):
+                await provider.get_metadata("flaky")
+
+    @respx.mock
+    async def test_unavailable_is_not_confused_with_not_found(self):
+        """The whole point: a 503 must not tell the caller the skill is gone."""
+        respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError) as exc_info:
+                await provider.get_metadata("flaky")
+        assert not isinstance(exc_info.value, SkillNotFoundError)
+
+    @respx.mock
+    async def test_client_error_is_not_retryable(self):
+        respx.get(f"{BASE}/bad/SKILL.md").respond(status_code=400)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(AgentSkillsError, match="400") as exc_info:
+                await provider.get_metadata("bad")
+        assert not isinstance(exc_info.value, SkillUnavailableError)
+
+    @respx.mock
+    async def test_unauthorised_explains_without_echoing_credentials(self):
+        respx.get(f"{BASE}/secret/SKILL.md").respond(status_code=401)
+        async with HTTPStaticFileSkillProvider(
+            BASE, params={"sig": "SUPERSECRETTOKEN"}
+        ) as provider:
+            with pytest.raises(AgentSkillsError, match="unauthorised") as exc_info:
+                await provider.get_metadata("secret")
+        assert "SUPERSECRETTOKEN" not in str(exc_info.value)
+
+    @respx.mock
+    async def test_timeout_is_unavailable(self):
+        respx.get(f"{BASE}/slow/SKILL.md").mock(side_effect=httpx.ReadTimeout("too slow"))
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError, match="ReadTimeout"):
+                await provider.get_metadata("slow")
+
+
+class TestRetries:
+    @respx.mock
+    async def test_retries_then_succeeds(self):
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").mock(
+            side_effect=[
+                httpx.Response(503),
+                httpx.Response(503),
+                httpx.Response(200, text=SKILL_MD),
+            ]
+        )
+        async with HTTPStaticFileSkillProvider(
+            BASE, max_retries=2, retry_backoff=0.001
+        ) as provider:
+            assert "# Test Skill" in await provider.get_body("test-skill")
+        assert route.call_count == 3
+
+    @respx.mock
+    async def test_retries_are_bounded(self):
+        route = respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        async with HTTPStaticFileSkillProvider(
+            BASE, max_retries=2, retry_backoff=0.001
+        ) as provider:
+            with pytest.raises(SkillUnavailableError):
+                await provider.get_metadata("flaky")
+        assert route.call_count == 3
+
+    @respx.mock
+    async def test_not_found_is_never_retried(self):
+        route = respx.get(f"{BASE}/missing/SKILL.md").respond(status_code=404)
+        async with HTTPStaticFileSkillProvider(BASE, retry_backoff=0.001) as provider:
+            with pytest.raises(SkillNotFoundError):
+                await provider.get_metadata("missing")
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_forbidden_is_never_retried(self):
+        route = respx.get(f"{BASE}/secret/SKILL.md").respond(status_code=403)
+        async with HTTPStaticFileSkillProvider(BASE, retry_backoff=0.001) as provider:
+            with pytest.raises(AgentSkillsError):
+                await provider.get_metadata("secret")
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_max_retries_zero_disables_retrying(self):
+        route = respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=0) as provider:
+            with pytest.raises(SkillUnavailableError):
+                await provider.get_metadata("flaky")
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_retry_after_seconds_is_honoured(self, monkeypatch):
+        slept: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            slept.append(seconds)
+
+        monkeypatch.setattr(static_module.asyncio, "sleep", fake_sleep)
+        respx.get(f"{BASE}/test-skill/SKILL.md").mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": "7"}),
+                httpx.Response(200, text=SKILL_MD),
+            ]
+        )
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=1) as provider:
+            await provider.get_body("test-skill")
+
+        assert slept == [7.0]
+
+    @respx.mock
+    async def test_retry_after_http_date_is_honoured(self, monkeypatch):
+        slept: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            slept.append(seconds)
+
+        monkeypatch.setattr(static_module.asyncio, "sleep", fake_sleep)
+        when = datetime.now(UTC) + timedelta(seconds=5)
+        respx.get(f"{BASE}/test-skill/SKILL.md").mock(
+            side_effect=[
+                httpx.Response(503, headers={"Retry-After": format_datetime(when, usegmt=True)}),
+                httpx.Response(200, text=SKILL_MD),
+            ]
+        )
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=1) as provider:
+            await provider.get_body("test-skill")
+
+        assert len(slept) == 1
+        assert 3.0 <= slept[0] <= 6.0
+
+    @respx.mock
+    async def test_retry_after_beyond_the_cap_fails_fast(self, monkeypatch):
+        """Blocking a request path for an hour is worse than failing."""
+        slept: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            slept.append(seconds)
+
+        monkeypatch.setattr(static_module.asyncio, "sleep", fake_sleep)
+        route = respx.get(f"{BASE}/flaky/SKILL.md").respond(
+            status_code=429, headers={"Retry-After": "3600"}
+        )
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=3, max_retry_delay=30) as provider:
+            with pytest.raises(SkillUnavailableError) as exc_info:
+                await provider.get_metadata("flaky")
+
+        assert slept == []
+        assert route.call_count == 1
+        assert exc_info.value.retry_after == 3600
+
+    @respx.mock
+    async def test_backoff_is_jittered_and_grows(self, monkeypatch):
+        slept: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            slept.append(seconds)
+
+        monkeypatch.setattr(static_module.asyncio, "sleep", fake_sleep)
+        # Full jitter: assert the bound, not the value.
+        monkeypatch.setattr(static_module.random, "uniform", lambda a, b: b)
+        respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        async with HTTPStaticFileSkillProvider(BASE, max_retries=3, retry_backoff=1.0) as provider:
+            with pytest.raises(SkillUnavailableError):
+                await provider.get_metadata("flaky")
+
+        assert slept == [1.0, 2.0, 4.0]
+
+    @respx.mock
+    async def test_sleep_is_capped_by_max_retry_delay(self, monkeypatch):
+        slept: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            slept.append(seconds)
+
+        monkeypatch.setattr(static_module.asyncio, "sleep", fake_sleep)
+        monkeypatch.setattr(static_module.random, "uniform", lambda a, b: b)
+        respx.get(f"{BASE}/flaky/SKILL.md").respond(status_code=503)
+        async with HTTPStaticFileSkillProvider(
+            BASE, max_retries=3, retry_backoff=10.0, max_retry_delay=15.0
+        ) as provider:
+            with pytest.raises(SkillUnavailableError):
+                await provider.get_metadata("flaky")
+
+        assert slept == [10.0, 15.0, 15.0]
+
+    def test_rejects_invalid_retry_settings(self):
+        with pytest.raises(ValueError, match="max_retries"):
+            HTTPStaticFileSkillProvider(BASE, max_retries=-1)
+        with pytest.raises(ValueError, match="retry_backoff"):
+            HTTPStaticFileSkillProvider(BASE, retry_backoff=0)
+        with pytest.raises(ValueError, match="max_retry_delay"):
+            HTTPStaticFileSkillProvider(BASE, max_retry_delay=0)
 
 
 class TestSecurityEdgeCases:
