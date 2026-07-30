@@ -215,7 +215,7 @@ The MCP client reads these resources and injects them into the system prompt, gi
 
 ### `AgentSkillsMcpContextProvider(session, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
 
-A `BaseContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
+A `ContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
 ### `create_mcp_server(registry, *, name, instructions=None) -> FastMCP`
 

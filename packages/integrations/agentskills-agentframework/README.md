@@ -109,7 +109,7 @@ All tools are async-compatible (`FunctionTool` with `@tool` decorator).
 
 ### `AgentSkillsContextProvider(registry, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
 
-A `BaseContextProvider` that injects skill catalog + tools into the agent session automatically via `before_run()`. Skips injection when the registry has no skills.
+A `ContextProvider` that injects skill catalog + tools into the agent session automatically via `before_run()`. Skips injection when the registry has no skills.
 
 ### `get_tools(registry: SkillRegistry) -> list[FunctionTool]`
 

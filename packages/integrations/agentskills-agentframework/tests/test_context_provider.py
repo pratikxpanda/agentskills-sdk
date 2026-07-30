@@ -44,6 +44,11 @@ def _mock_provider(
     return provider
 
 
+async def _invoke_text(tool, **kwargs) -> str:
+    """``FunctionTool.invoke`` returns ``list[Content]``; assertions want the payload."""
+    return (await tool.invoke(**kwargs))[0].text
+
+
 def _mock_context() -> MagicMock:
     """Create a mock SessionContext with extend_instructions and extend_tools."""
     ctx = MagicMock()
@@ -331,7 +336,7 @@ class TestInjectedTools:
         await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
 
         tool = next(t for t in ctx.tools if t.name == "get_skill_metadata")
-        result = await tool.invoke(skill_id="incident-response")
+        result = await _invoke_text(tool, skill_id="incident-response")
         meta = json.loads(result)
         assert meta["name"] == "incident-response"
         assert meta["description"] == "Handle production incidents."
@@ -343,7 +348,7 @@ class TestInjectedTools:
         await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
 
         tool = next(t for t in ctx.tools if t.name == "get_skill_body")
-        result = await tool.invoke(skill_id="incident-response")
+        result = await _invoke_text(tool, skill_id="incident-response")
         assert "Incident Response" in result
 
     async def test_get_skill_reference_tool(self, registry):
@@ -353,7 +358,7 @@ class TestInjectedTools:
         await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
 
         tool = next(t for t in ctx.tools if t.name == "get_skill_reference")
-        result = await tool.invoke(skill_id="incident-response", name="severity-levels.md")
+        result = await _invoke_text(tool, skill_id="incident-response", name="severity-levels.md")
         assert "SEV1" in result
 
     async def test_get_skill_script_tool(self, registry):
@@ -363,7 +368,7 @@ class TestInjectedTools:
         await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
 
         tool = next(t for t in ctx.tools if t.name == "get_skill_script")
-        result = await tool.invoke(skill_id="incident-response", name="page-oncall.sh")
+        result = await _invoke_text(tool, skill_id="incident-response", name="page-oncall.sh")
         assert "pagerduty" in result
 
     async def test_get_skill_asset_tool(self, registry):
@@ -373,7 +378,7 @@ class TestInjectedTools:
         await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
 
         tool = next(t for t in ctx.tools if t.name == "get_skill_asset")
-        result = await tool.invoke(skill_id="incident-response", name="flowchart.mermaid")
+        result = await _invoke_text(tool, skill_id="incident-response", name="flowchart.mermaid")
         assert "graph TD" in result
 
     async def test_unknown_skill_raises(self, registry):
