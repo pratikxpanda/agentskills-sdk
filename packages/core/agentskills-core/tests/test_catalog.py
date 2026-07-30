@@ -147,3 +147,41 @@ class TestCatalogEdgeCases:
         pos_first = xml.index("skill-00")
         pos_last = xml.index("skill-09")
         assert pos_first < pos_last
+
+
+class TestCatalogVersion:
+    """The optional ``version`` field surfaces in both catalog formats."""
+
+    @staticmethod
+    def _versioned(version: str) -> AsyncMock:
+        provider = _mock_provider()
+        provider.get_metadata.return_value = {
+            "name": "incident-response",
+            "description": "Handle production incidents.",
+            "version": version,
+        }
+        return provider
+
+    async def test_xml_includes_version(self):
+        registry = await _make_registry(
+            ("incident-response", self._versioned("1.2.3")),
+        )
+        xml = await registry.get_skills_catalog(format="xml")
+        assert "<version>1.2.3</version>" in xml
+
+    async def test_markdown_includes_version(self):
+        registry = await _make_registry(
+            ("incident-response", self._versioned("1.2.3")),
+        )
+        md = await registry.get_skills_catalog(format="markdown")
+        assert "- **Version**: 1.2.3" in md
+
+    async def test_xml_omits_version_when_absent(self):
+        registry = await _make_registry(("incident-response", _mock_provider()))
+        xml = await registry.get_skills_catalog(format="xml")
+        assert "<version>" not in xml
+
+    async def test_markdown_omits_version_when_absent(self):
+        registry = await _make_registry(("incident-response", _mock_provider()))
+        md = await registry.get_skills_catalog(format="markdown")
+        assert "**Version**" not in md

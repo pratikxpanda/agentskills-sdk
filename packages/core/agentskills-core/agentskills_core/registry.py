@@ -269,6 +269,11 @@ class SkillRegistry:
             name_el.text = meta.get("name", skill.get_id())
             desc_el = SubElement(skill_el, "description")
             desc_el.text = meta.get("description", "")
+            version = meta.get("version")
+            if version:
+                # Omitted when absent so unversioned skills cost no prompt tokens.
+                version_el = SubElement(skill_el, "version")
+                version_el.text = str(version)
         indent(root, space="  ")
         return tostring(root, encoding="unicode")
 
@@ -289,6 +294,9 @@ class SkillRegistry:
 
             lines.append(f"## {name}")
             lines.append(f"- **Description**: {description}")
+            version = meta.get("version")
+            if version:
+                lines.append(f"- **Version**: {version}")
             lines.append("")
 
         return "\n".join(lines)

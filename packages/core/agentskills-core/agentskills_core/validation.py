@@ -37,6 +37,15 @@ _NAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
 _NAME_MAX_LEN = 64
 _DESCRIPTION_MAX_LEN = 1024
 
+# The official semver.org grammar. Kept inline rather than taking a
+# dependency: agentskills-core deliberately depends only on pyyaml.
+_SEMVER_RE = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
+    r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+)
+
 # Known optional fields with their expected types.
 _OPTIONAL_FIELDS: dict[str, type] = {
     "license": str,
@@ -45,7 +54,9 @@ _OPTIONAL_FIELDS: dict[str, type] = {
     "allowed-tools": list,
 }
 
-_KNOWN_KEYS: frozenset[str] = frozenset({"name", "description"} | _OPTIONAL_FIELDS.keys())
+_KNOWN_KEYS: frozenset[str] = frozenset(
+    {"name", "description", "version"} | _OPTIONAL_FIELDS.keys()
+)
 
 
 async def validate_skill(skill: Skill) -> list[str]:
@@ -61,6 +72,8 @@ async def validate_skill(skill: Skill) -> list[str]:
       must not start or end with a hyphen, must not contain consecutive
       hyphens, and must match the skill ID.
     * ``description`` (required) -- 1-1024 characters.
+    * ``version`` (optional) -- valid semver when present.  Not yet part
+      of the upstream specification; see :func:`validate_version`.
 
     Args:
         skill: The :class:`~agentskills_core.Skill` to validate.
@@ -122,6 +135,12 @@ async def validate_skill(skill: Skill) -> list[str]:
                     f"{expected_type.__name__}, got {type(value).__name__}"
                 )
 
+        # version — optional, semver when present
+        if "version" in metadata:
+            version_error = validate_version(metadata["version"])
+            if version_error is not None:
+                errors.append(f"Skill '{skill_id}': {version_error}")
+
         # unknown keys
         unknown = set(metadata.keys()) - _KNOWN_KEYS
         if unknown:
@@ -135,3 +154,35 @@ async def validate_skill(skill: Skill) -> list[str]:
         errors.append(f"Skill '{skill_id}': failed to read metadata — {exc}")
 
     return errors
+
+
+def validate_version(value: object) -> str | None:
+    """Check a frontmatter ``version`` value, returning an error or ``None``.
+
+    ``version`` is **not** part of the upstream Agent Skills
+    specification.  It is supported here as an optional extension so
+    that consumers can pin, compare, and detect drift; absence is always
+    valid.
+
+    Args:
+        value: The raw value parsed from YAML frontmatter.
+
+    Returns:
+        A human-readable error message, or ``None`` when *value* is a
+        valid semver string.
+    """
+    if not isinstance(value, str):
+        # YAML types this before we see it: 1.0 is a float, 1 an int,
+        # 2024-01-15 a date. Say so, or the author sees a bare type name.
+        return (
+            f"version must be a quoted string, got {type(value).__name__} ({value!r}). "
+            f"Unquoted YAML reads 1.0 as a number and 2024-01-15 as a date — "
+            f'write version: "1.0.0"'
+        )
+    if not _SEMVER_RE.match(value):
+        return (
+            f"version '{value}' is not valid semver. Expected MAJOR.MINOR.PATCH "
+            f"with optional pre-release and build metadata, e.g. '1.0.0', "
+            f"'2.1.0-rc.1', '1.0.0+build.5'"
+        )
+    return None

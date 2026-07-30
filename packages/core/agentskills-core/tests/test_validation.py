@@ -1,8 +1,19 @@
 """Tests for validation aligned with Agent Skills specification."""
 
+import logging
+from datetime import date
 from unittest.mock import AsyncMock
 
-from agentskills_core import Skill, SkillNotFoundError, SkillProvider, validate_skill
+import pytest
+
+from agentskills_core import (
+    Skill,
+    SkillNotFoundError,
+    SkillProvider,
+    SkillRegistry,
+    validate_skill,
+    validate_version,
+)
 
 
 def _skill(
@@ -242,3 +253,141 @@ class TestBoundaryValidation:
             ),
         )
         assert errors == []
+
+
+class TestVersionValidation:
+    """Tests for the optional, non-spec ``version`` frontmatter field."""
+
+    async def test_absent_version_is_valid(self):
+        errors = await validate_skill(
+            _skill(metadata={"name": "my-skill", "description": "Desc."}),
+        )
+        assert errors == []
+
+    @pytest.mark.parametrize(
+        "version",
+        [
+            "0.0.0",
+            "1.0.0",
+            "10.20.30",
+            "1.0.0-alpha",
+            "2.1.0-rc.1",
+            "1.0.0-0.3.7",
+            "1.0.0+build.5",
+            "1.0.0-beta.1+exp.sha.5114f85",
+        ],
+    )
+    async def test_valid_semver_accepted(self, version):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "version": version,
+                },
+            ),
+        )
+        assert errors == []
+
+    @pytest.mark.parametrize(
+        "version",
+        ["1", "1.0", "v1.0.0", "1.0.0.0", "01.0.0", "1.0.0-", "", "latest"],
+    )
+    async def test_invalid_semver_rejected(self, version):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "version": version,
+                },
+            ),
+        )
+        assert any("is not valid semver" in e for e in errors)
+
+    @pytest.mark.parametrize(
+        "version",
+        [1, 1.0, date(2024, 1, 15), ["1.0.0"], None],
+    )
+    async def test_non_string_version_names_the_yaml_trap(self, version):
+        """YAML coerces unquoted versions; the error must say so."""
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "version": version,
+                },
+            ),
+        )
+        assert any("must be a quoted string" in e for e in errors)
+        assert any('version: "1.0.0"' in e for e in errors)
+
+    async def test_version_is_a_known_key(self, caplog):
+        """``version`` must not trigger the unknown-key warning."""
+        with caplog.at_level(logging.WARNING):
+            await validate_skill(
+                _skill(
+                    metadata={
+                        "name": "my-skill",
+                        "description": "Desc.",
+                        "version": "1.0.0",
+                    },
+                ),
+            )
+        assert "unknown metadata keys" not in caplog.text
+
+    async def test_error_message_includes_skill_id(self):
+        errors = await validate_skill(
+            _skill(
+                metadata={
+                    "name": "my-skill",
+                    "description": "Desc.",
+                    "version": "nope",
+                },
+            ),
+        )
+        assert any(e.startswith("Skill 'my-skill':") for e in errors)
+
+    async def test_invalid_version_fails_registration(self):
+        """Registration is the enforcement point, not just validate_skill()."""
+        provider = AsyncMock(spec=SkillProvider)
+        provider.get_body.return_value = "# Instructions"
+        provider.get_metadata.return_value = {
+            "name": "my-skill",
+            "description": "Desc.",
+            "version": "1.0",
+        }
+        registry = SkillRegistry()
+        with pytest.raises(ValueError, match="is not valid semver"):
+            await registry.register("my-skill", provider)
+        assert registry.list_skills() == []
+
+    async def test_valid_version_registers(self):
+        provider = AsyncMock(spec=SkillProvider)
+        provider.get_body.return_value = "# Instructions"
+        provider.get_metadata.return_value = {
+            "name": "my-skill",
+            "description": "Desc.",
+            "version": "1.0.0",
+        }
+        registry = SkillRegistry()
+        await registry.register("my-skill", provider)
+        assert len(registry.list_skills()) == 1
+
+
+class TestValidateVersion:
+    """Direct tests for the exported helper."""
+
+    def test_valid_returns_none(self):
+        assert validate_version("1.2.3") is None
+
+    def test_invalid_returns_message(self):
+        message = validate_version("1.2")
+        assert message is not None
+        assert "is not valid semver" in message
+
+    def test_float_message_shows_repr(self):
+        message = validate_version(1.0)
+        assert message is not None
+        assert "got float" in message
