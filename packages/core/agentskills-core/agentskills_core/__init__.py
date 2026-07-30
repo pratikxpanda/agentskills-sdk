@@ -8,6 +8,7 @@ validating, and accessing `Agent Skills <https://agentskills.io>`_:
 * :class:`SkillRegistry` -- unified index with explicit registration
   and built-in catalog builder.
 * :func:`validate_skill` -- validates a skill against the specification.
+* :func:`encode_resource_content` -- safely encodes resource bytes as tool output.
 * :class:`SkillNotFoundError` -- raised when a skill does not exist.
 * :class:`ResourceNotFoundError` -- raised when a resource within a skill
   does not exist.
@@ -18,6 +19,10 @@ Install::
     pip install agentskills-core
 """
 
+from agentskills_core.encoding import (
+    DEFAULT_MAX_INLINE_BINARY_BYTES,
+    encode_resource_content,
+)
 from agentskills_core.exceptions import (
     AgentSkillsError,
     ResourceNotFoundError,
@@ -30,12 +35,14 @@ from agentskills_core.skill import Skill
 from agentskills_core.validation import validate_skill
 
 __all__ = [
+    "DEFAULT_MAX_INLINE_BINARY_BYTES",
     "AgentSkillsError",
     "ResourceNotFoundError",
     "Skill",
     "SkillNotFoundError",
     "SkillProvider",
     "SkillRegistry",
+    "encode_resource_content",
     "split_frontmatter",
     "validate_skill",
 ]

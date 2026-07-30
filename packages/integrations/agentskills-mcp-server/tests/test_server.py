@@ -1,5 +1,6 @@
 """Tests for the MCP server builder."""
 
+import base64
 import json
 from unittest.mock import AsyncMock
 
@@ -146,6 +147,32 @@ class TestMCPTools:
     async def test_unknown_skill_raises(self, server):
         with pytest.raises(ToolError, match="nope"):
             await server.call_tool("get_skill_metadata", {"skill_id": "nope"})
+
+    async def test_binary_asset_returned_as_envelope(self, registry):
+        raw = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        await registry.register(
+            "binary-skill", _mock_provider("binary-skill", assets={"diagram.png": raw})
+        )
+        server = create_mcp_server(registry, name="Test Server")
+        result = await server.call_tool(
+            "get_skill_asset",
+            {"skill_id": "binary-skill", "name": "diagram.png"},
+        )
+        envelope = json.loads(_tool_text(result))
+        assert envelope["media_type"] == "image/png"
+        assert base64.b64decode(envelope["content"]) == raw
+
+    async def test_max_inline_binary_bytes_is_configurable(self, registry):
+        await registry.register(
+            "binary-skill", _mock_provider("binary-skill", assets={"big.bin": b"\xff" * 128})
+        )
+        server = create_mcp_server(registry, name="Test Server", max_inline_binary_bytes=64)
+        result = await server.call_tool(
+            "get_skill_asset",
+            {"skill_id": "binary-skill", "name": "big.bin"},
+        )
+        envelope = json.loads(_tool_text(result))
+        assert envelope["encoding"] == "none"
 
 
 class TestMCPResources:

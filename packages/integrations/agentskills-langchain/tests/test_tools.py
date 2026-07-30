@@ -1,5 +1,6 @@
 """Tests for the LangChain integration."""
 
+import base64
 import json
 from unittest.mock import AsyncMock
 
@@ -128,18 +129,35 @@ class TestToolsUsageInstructions:
 class TestToolsEdgeCases:
     """Edge cases: binary content, multiple skills, empty registry, missing resources."""
 
-    async def test_binary_content_decoded_with_replacement(self):
-        """Non-UTF-8 bytes in scripts/assets/references produce replacement chars."""
+    async def test_binary_content_returned_as_envelope(self):
+        """Non-UTF-8 bytes round-trip as base64 rather than being corrupted."""
+        raw = b"\x80\x81\xfe\xff valid"
         provider = _mock_provider(
-            scripts={"binary.sh": b"\x80\x81\xfe\xff valid"},
+            scripts={"binary.sh": raw},
         )
         reg = SkillRegistry()
         await reg.register("incident-response", provider)
         tools = get_tools(reg)
         tool = next(t for t in tools if t.name == "get_skill_script")
         result = await tool.ainvoke({"skill_id": "incident-response", "name": "binary.sh"})
-        assert "\ufffd" in result
-        assert "valid" in result
+        envelope = json.loads(result)
+        assert "\ufffd" not in result
+        assert envelope["encoding"] == "base64"
+        assert base64.b64decode(envelope["content"]) == raw
+
+    async def test_oversized_binary_is_described_not_inlined(self):
+        provider = _mock_provider(
+            assets={"big.bin": b"\xff" * 128},
+        )
+        reg = SkillRegistry()
+        await reg.register("incident-response", provider)
+        tools = get_tools(reg, max_inline_binary_bytes=64)
+        tool = next(t for t in tools if t.name == "get_skill_asset")
+        result = await tool.ainvoke({"skill_id": "incident-response", "name": "big.bin"})
+        envelope = json.loads(result)
+        assert envelope["encoding"] == "none"
+        assert "content" not in envelope
+        assert envelope["size_bytes"] == 128
 
     async def test_multiple_skills_registered(self):
         """Tools work correctly with multiple skills in the registry."""

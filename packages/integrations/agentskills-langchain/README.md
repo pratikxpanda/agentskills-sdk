@@ -53,7 +53,7 @@ All tools are async-compatible (`StructuredTool` with `coroutine`).
 
 ## API
 
-### `get_tools(registry: SkillRegistry) -> list[StructuredTool]`
+### `get_tools(registry: SkillRegistry, *, max_inline_binary_bytes: int = 65536) -> list[StructuredTool]`
 
 Returns a list of LangChain structured tools bound to the given registry.
 
@@ -75,7 +75,25 @@ See [examples/langchain/](https://github.com/pratikxpanda/agentskills-sdk/tree/m
 
 All exceptions inherit from `AgentSkillsError` (from `agentskills-core`).
 
-> **Note:** Binary content (scripts, assets, references) is decoded as UTF-8 with `errors="replace"`. Non-decodable bytes are replaced with the Unicode replacement character (�).
+## Binary Resources
+
+Skill resources may be arbitrary files. Valid UTF-8 is returned as-is; anything else is returned as a JSON envelope, so a binary payload is never silently mangled into replacement characters:
+
+```json
+{
+  "name": "architecture.png",
+  "media_type": "image/png",
+  "size_bytes": 20481,
+  "encoding": "base64",
+  "content": "iVBORw0KGgo..."
+}
+```
+
+Base64 costs roughly 1.37 characters per byte, so binaries above 64 KiB are described rather than inlined - `"encoding": "none"` plus a `note` explaining the omission. Adjust the ceiling with:
+
+```python
+tools = get_tools(registry, max_inline_binary_bytes=256 * 1024)
+```
 
 ## License
 

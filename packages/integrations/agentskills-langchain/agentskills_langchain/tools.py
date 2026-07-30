@@ -36,10 +36,18 @@ import json
 
 from langchain_core.tools import StructuredTool
 
-from agentskills_core import SkillRegistry
+from agentskills_core import (
+    DEFAULT_MAX_INLINE_BINARY_BYTES,
+    SkillRegistry,
+    encode_resource_content,
+)
 
 
-def get_tools(registry: SkillRegistry) -> list[StructuredTool]:
+def get_tools(
+    registry: SkillRegistry,
+    *,
+    max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
+) -> list[StructuredTool]:
     """Build LangChain tools that expose an Agent Skills registry.
 
     Each tool wraps a :class:`~agentskills_core.SkillRegistry` or
@@ -56,6 +64,10 @@ def get_tools(registry: SkillRegistry) -> list[StructuredTool]:
     Args:
         registry: The :class:`~agentskills_core.SkillRegistry` whose
             skills should be exposed as tools.
+        max_inline_binary_bytes: Size ceiling for inlining binary
+            resources as base64.  Larger resources are described but
+            not returned.  See
+            :func:`~agentskills_core.encode_resource_content`.
 
     Returns:
         A list of :class:`~langchain_core.tools.StructuredTool`
@@ -75,29 +87,38 @@ def get_tools(registry: SkillRegistry) -> list[StructuredTool]:
     async def get_skill_reference(skill_id: str, name: str) -> str:
         """Get the content of a specific reference document.
 
-        Binary content is decoded as UTF-8 with replacement characters
-        for non-decodable bytes.
+        Binary content is returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_reference(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_reference(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     async def get_skill_asset(skill_id: str, name: str) -> str:
         """Get the content of a specific asset.
 
-        Binary content is decoded as UTF-8 with replacement characters
-        for non-decodable bytes.
+        Binary content is returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_asset(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_asset(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     async def get_skill_script(skill_id: str, name: str) -> str:
         """Get the content of a specific script.
 
-        Binary content is decoded as UTF-8 with replacement characters
-        for non-decodable bytes.
+        Binary content is returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_script(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_script(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     tools = [
         StructuredTool.from_function(

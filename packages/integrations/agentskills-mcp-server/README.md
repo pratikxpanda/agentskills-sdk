@@ -217,17 +217,34 @@ The MCP client reads these resources and injects them into the system prompt, gi
 
 A `ContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
-### `create_mcp_server(registry, *, name, instructions=None) -> FastMCP`
+### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536) -> FastMCP`
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `registry` | `SkillRegistry` | The registry whose skills are exposed |
 | `name` | `str` | Display name for the MCP server (required) |
 | `instructions` | `str \| None` | Optional server-level instructions sent to clients |
+| `max_inline_binary_bytes` | `int` | Size ceiling for inlining binary resources as base64 |
 
 Returns a configured `FastMCP` instance ready for `server.run()`.
 
 Supported transport modes: `stdio` (default), `streamable-http`.
+
+## Binary Resources
+
+Skill resources may be arbitrary files. Valid UTF-8 is returned as-is; anything else is returned as a JSON envelope, so a binary payload is never silently mangled into replacement characters:
+
+```json
+{
+  "name": "architecture.png",
+  "media_type": "image/png",
+  "size_bytes": 20481,
+  "encoding": "base64",
+  "content": "iVBORw0KGgo..."
+}
+```
+
+Base64 costs roughly 1.37 characters per byte, so binaries above 64 KiB are described rather than inlined - `"encoding": "none"` plus a `note` explaining the omission. Adjust the ceiling with `create_mcp_server(..., max_inline_binary_bytes=256 * 1024)`.
 
 ## License
 

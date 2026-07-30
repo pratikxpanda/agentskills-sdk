@@ -91,6 +91,18 @@ class DatabaseSkillProvider(SkillProvider):
 
 All methods are `async` so implementations backed by network I/O can be non-blocking.
 
+### Encoding Resources for Tool Output
+
+Resources are `bytes`, but tool interfaces return text. `encode_resource_content()` is the shared conversion used by every integration, so behaviour cannot drift between them:
+
+```python
+from agentskills_core import encode_resource_content
+
+text = encode_resource_content("architecture.png", raw_bytes)
+```
+
+Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carrying the media type and base64 content, so binaries are never silently corrupted. Binaries above `max_inline_binary_bytes` (default 64 KiB) are described but not inlined.
+
 ## Security
 
 - **Frontmatter size limits** - `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
