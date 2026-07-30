@@ -36,10 +36,18 @@ import json
 
 from agent_framework import FunctionTool, tool
 
-from agentskills_core import SkillRegistry
+from agentskills_core import (
+    DEFAULT_MAX_INLINE_BINARY_BYTES,
+    SkillRegistry,
+    encode_resource_content,
+)
 
 
-def get_tools(registry: SkillRegistry) -> list[FunctionTool]:
+def get_tools(
+    registry: SkillRegistry,
+    *,
+    max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
+) -> list[FunctionTool]:
     """Build Agent Framework tools that expose an Agent Skills registry.
 
     Each tool wraps a :class:`~agentskills_core.SkillRegistry` or
@@ -56,6 +64,10 @@ def get_tools(registry: SkillRegistry) -> list[FunctionTool]:
     Args:
         registry: The :class:`~agentskills_core.SkillRegistry` whose
             skills should be exposed as tools.
+        max_inline_binary_bytes: Size ceiling for inlining binary
+            resources as base64.  Larger resources are described but
+            not returned.  See
+            :func:`~agentskills_core.encode_resource_content`.
 
     Returns:
         A list of :class:`~agent_framework.FunctionTool`
@@ -95,7 +107,11 @@ def get_tools(registry: SkillRegistry) -> list[FunctionTool]:
     async def get_skill_reference(skill_id: str, name: str) -> str:
         """Get the content of a specific reference document."""
         skill = registry.get_skill(skill_id)
-        return (await skill.get_reference(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_reference(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     @tool(
         name="get_skill_asset",
@@ -107,7 +123,11 @@ def get_tools(registry: SkillRegistry) -> list[FunctionTool]:
     async def get_skill_asset(skill_id: str, name: str) -> str:
         """Get the content of a specific asset."""
         skill = registry.get_skill(skill_id)
-        return (await skill.get_asset(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_asset(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     @tool(
         name="get_skill_script",
@@ -119,7 +139,11 @@ def get_tools(registry: SkillRegistry) -> list[FunctionTool]:
     async def get_skill_script(skill_id: str, name: str) -> str:
         """Get the content of a specific script."""
         skill = registry.get_skill(skill_id)
-        return (await skill.get_script(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_script(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     return [
         get_skill_metadata,

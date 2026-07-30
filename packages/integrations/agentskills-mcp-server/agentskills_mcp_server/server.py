@@ -50,7 +50,12 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from agentskills_core import SkillProvider, SkillRegistry
+from agentskills_core import (
+    DEFAULT_MAX_INLINE_BINARY_BYTES,
+    SkillProvider,
+    SkillRegistry,
+    encode_resource_content,
+)
 
 # ------------------------------------------------------------------
 # Provider resolution
@@ -118,6 +123,7 @@ def create_mcp_server(
     *,
     name: str,
     instructions: str | None = None,
+    max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
 ) -> FastMCP:
     """Build an MCP server that exposes an Agent Skills registry.
 
@@ -139,6 +145,10 @@ def create_mcp_server(
         instructions: Optional server-level instructions sent to the
             MCP client during initialization.  Use this to describe
             the server's purpose or capabilities.
+        max_inline_binary_bytes: Size ceiling for inlining binary
+            resources as base64.  Larger resources are described but
+            not returned.  See
+            :func:`~agentskills_core.encode_resource_content`.
 
     Returns:
         A configured :class:`~mcp.server.fastmcp.FastMCP` server
@@ -167,30 +177,42 @@ def create_mcp_server(
         """Get the full content of a specific reference document from a skill.
 
         Provide both skill_id and the reference name.  Binary content is
-        decoded as UTF-8 with replacement characters for non-decodable bytes.
+        returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_reference(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_reference(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     @mcp.tool()
     async def get_skill_asset(skill_id: str, name: str) -> str:
         """Get the content of a specific asset from a skill.
 
         Provide both skill_id and the asset name.  Binary content is
-        decoded as UTF-8 with replacement characters for non-decodable bytes.
+        returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_asset(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_asset(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     @mcp.tool()
     async def get_skill_script(skill_id: str, name: str) -> str:
         """Get the content of a specific script from a skill.
 
         Provide both skill_id and the script name.  Binary content is
-        decoded as UTF-8 with replacement characters for non-decodable bytes.
+        returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return (await skill.get_script(name)).decode("utf-8", errors="replace")
+        return encode_resource_content(
+            name,
+            await skill.get_script(name),
+            max_inline_binary_bytes=max_inline_binary_bytes,
+        )
 
     # ------------------------------------------------------------------
     # Resources
