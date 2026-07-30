@@ -4,7 +4,7 @@
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-http)](https://pypi.org/project/agentskills-http/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> HTTP static-file skill provider for the [Agent Skills SDK](../../README.md).
+> HTTP static-file skill provider for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).
 
 Serves [Agent Skills](https://agentskills.io) from any static HTTP file host - S3, Azure Blob, CDN, GitHub Pages, Nginx, etc. Expects the same directory-tree layout as the filesystem provider, served over HTTP.
 
@@ -115,7 +115,7 @@ All exceptions inherit from `AgentSkillsError`.
 - **Response size limits** - Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
 - **Error-message sanitization** - Error messages omit URLs and include only status codes and generic descriptions, preventing internal URL leakage.
 
-For the full security policy, see [SECURITY.md](../../../SECURITY.md).
+For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
 ## Deployment Considerations
 
