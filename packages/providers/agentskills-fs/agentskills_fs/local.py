@@ -13,12 +13,14 @@ discover skills.  Registration is handled explicitly by the application
 via :meth:`SkillRegistry.register <agentskills_core.SkillRegistry.register>`.
 
 All methods are ``async`` to satisfy the :class:`~agentskills_core.SkillProvider`
-interface.  File I/O is synchronous internally because skill files are
-small and local disk reads do not meaningfully block the event loop.
+interface.  Blocking file I/O runs in a worker thread via
+:func:`asyncio.to_thread`, so concurrent agent sessions are not stalled by
+disk latency.
 """
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +71,11 @@ class LocalFileSystemSkillProvider(SkillProvider):
             :class:`~agentskills_core.AgentSkillsError`.  Defaults
             to 10 MB.
 
+    ``SKILL.md`` contents are cached per provider instance after the
+    first read, because a single skill is otherwise re-read up to five
+    times in one agent session.  Call :meth:`invalidate` when skills
+    change on disk.
+
     Raises:
         NotADirectoryError: If *root* does not exist or is not a
             directory.
@@ -89,6 +96,19 @@ class LocalFileSystemSkillProvider(SkillProvider):
         if not self._root.is_dir():
             raise NotADirectoryError(f"Skill root does not exist: {self._root}")
         self._max_file_bytes = max_file_bytes
+        self._skill_md_cache: dict[str, str] = {}
+
+    def invalidate(self, skill_id: str | None = None) -> None:
+        """Drop cached ``SKILL.md`` content.
+
+        Args:
+            skill_id: Skill to forget.  Clears the whole cache when
+                omitted.  Unknown IDs are ignored.
+        """
+        if skill_id is None:
+            self._skill_md_cache.clear()
+        else:
+            self._skill_md_cache.pop(skill_id, None)
 
     # ------------------------------------------------------------------
     # Metadata & body — parsed lazily from SKILL.md
@@ -111,7 +131,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
             SkillNotFoundError: If the skill directory or ``SKILL.md``
                 does not exist.
         """
-        raw = self._read_skill_md(skill_id)
+        raw = await self._read_skill_md(skill_id)
         frontmatter, _ = split_frontmatter(raw)
         return frontmatter
 
@@ -128,7 +148,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
             SkillNotFoundError: If the skill directory or ``SKILL.md``
                 does not exist.
         """
-        raw = self._read_skill_md(skill_id)
+        raw = await self._read_skill_md(skill_id)
         _, body = split_frontmatter(raw)
         return body
 
@@ -149,7 +169,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             ResourceNotFoundError: If the file does not exist.
         """
-        return self._read_subdir_file(skill_id, "scripts", name)
+        return await self._read_subdir_file(skill_id, "scripts", name)
 
     # ------------------------------------------------------------------
     # Assets
@@ -168,7 +188,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             ResourceNotFoundError: If the file does not exist.
         """
-        return self._read_subdir_file(skill_id, "assets", name)
+        return await self._read_subdir_file(skill_id, "assets", name)
 
     # ------------------------------------------------------------------
     # References
@@ -187,7 +207,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             ResourceNotFoundError: If the file does not exist.
         """
-        return self._read_subdir_file(skill_id, "references", name)
+        return await self._read_subdir_file(skill_id, "references", name)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -212,7 +232,16 @@ class LocalFileSystemSkillProvider(SkillProvider):
             raise SkillNotFoundError(f"Skill not found: {skill_id!r}")
         return path
 
-    def _read_skill_md(self, skill_id: str) -> str:
+    async def _read_skill_md(self, skill_id: str) -> str:
+        """Read a skill's ``SKILL.md`` without blocking the event loop."""
+        cached = self._skill_md_cache.get(skill_id)
+        if cached is not None:
+            return cached
+        text = await asyncio.to_thread(self._read_skill_md_sync, skill_id)
+        self._skill_md_cache[skill_id] = text
+        return text
+
+    def _read_skill_md_sync(self, skill_id: str) -> str:
         """Read the full text of a skill's ``SKILL.md`` file.
 
         Args:
@@ -235,7 +264,11 @@ class LocalFileSystemSkillProvider(SkillProvider):
             )
         return skill_md.read_text(encoding="utf-8")
 
-    def _read_subdir_file(self, skill_id: str, subdir: str, name: str) -> bytes:
+    async def _read_subdir_file(self, skill_id: str, subdir: str, name: str) -> bytes:
+        """Read a skill resource without blocking the event loop."""
+        return await asyncio.to_thread(self._read_subdir_file_sync, skill_id, subdir, name)
+
+    def _read_subdir_file_sync(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Read a single file from a skill's subdirectory.
 
         Args:

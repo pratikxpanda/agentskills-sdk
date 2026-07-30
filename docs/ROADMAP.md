@@ -48,9 +48,9 @@ Close the highest-severity correctness and performance gaps before the API surfa
 
 | Item | Theme | Package(s) | Notes |
 |---|---|---|---|
-| Provider content caching | Performance | `agentskills-fs`, `agentskills-http` | A single skill's `SKILL.md` is fetched up to 5x per session — twice during registration (`validate_skill()` calls `get_body()` and `get_metadata()` independently), once per catalog build, and again on each tool call. For HTTP that is 5 network round-trips for one immutable file. Cache per provider instance; use `ETag` / `Last-Modified` conditional requests rather than a blind TTL. |
-| Concurrent catalog build | Performance | `agentskills-core` | `get_skills_catalog()` fetches metadata serially. Fan out with `asyncio.gather` and bounded concurrency. |
-| Non-blocking filesystem I/O | Performance | `agentskills-fs` | The provider is `async` but reads synchronously, blocking the event loop. Move to a thread executor. |
+| Provider content caching | Performance | `agentskills-fs`, `agentskills-http` | **Implemented, awaiting release.** A single skill's `SKILL.md` was fetched up to 5x per session — twice during registration (`validate_skill()` calls `get_body()` and `get_metadata()` independently), once per catalog build, and again on each tool call. Now cached per provider instance with an explicit `invalidate()`. HTTP revalidation via `ETag` / `Last-Modified` is opt-in (`revalidate=True`) rather than default, since a conditional request per access defeats the point for the common static-host case. |
+| Concurrent catalog build | Performance | `agentskills-core` | **Implemented, awaiting release.** `get_skills_catalog()` fetched metadata serially. Now fans out with `asyncio.gather` under a bounded semaphore (`SkillRegistry(catalog_concurrency=8)`); output ordering is unchanged. |
+| Non-blocking filesystem I/O | Performance | `agentskills-fs` | **Implemented, awaiting release.** The provider was `async` but read synchronously, blocking the event loop. Path resolution, stat and read now run in a worker thread via `asyncio.to_thread`. |
 | Resource discovery API | Correctness | `agentskills-core` + providers | No way for an agent to learn which references/scripts/assets exist. Add `list_resources(skill_id)` returning names by kind. Today discovery depends on SKILL.md prose. |
 | Binary-safe resources | Correctness | `agentskills-core` + all integrations | All three integrations decode provider bytes with `.decode("utf-8", errors="replace")`, silently destroying images, PDFs, and archives. Detect binary content and return a structured envelope instead; use MCP's native binary content blocks where the protocol supports them. |
 | Optional `version` frontmatter | Correctness | `agentskills-core` | Semver, validated when present, surfaced in `get_metadata()`. Prerequisite for Hub version pinning and for any dependency/compatibility story. |
@@ -58,7 +58,7 @@ Close the highest-severity correctness and performance gaps before the API surfa
 | Structured logging | Operability | all | Consistent `agentskills.*` logger namespace, no handlers attached by the library, never log secrets or URLs containing credentials. |
 | Coverage gate in CI | Project health | repo | `pytest-cov` with a floor, enforced in CI, badge in README. |
 | Automated PyPI publish | Project health | repo | Replace manual `publish.ps1` runs with GitHub Actions **Trusted Publishing** (OIDC, no long-lived tokens), triggered by the release tag. |
-| Agent Framework 1.x API rename | Correctness | `agentskills-agentframework`, `agentskills-mcp-server` | **Ships broken today.** `agent-framework-core` 1.12.1 renamed `BaseContextProvider` to `ContextProvider`; our constraint `>=1.0.0rc3,<2.0` admits it, so a fresh install raises `ImportError` on import. Masked locally because `poetry.lock` pins 1.0.0rc3. |
+| Agent Framework 1.x API rename | Correctness | `agentskills-agentframework`, `agentskills-mcp-server` | **Merged, awaiting release.** `agent-framework-core` 1.12.1 renamed `BaseContextProvider` to `ContextProvider`; our constraint `>=1.0.0rc3,<2.0` admitted it, so a fresh install raised `ImportError` on import. Masked locally because `poetry.lock` pinned 1.0.0rc3. Floor raised to `>=1.0`. |
 | Python 3.14 support | Project health | all | **Merged, awaiting release.** Every package capped `python` at `<3.14`, so installs failed on current stable Python. Ceiling raised to `<4.0`; no dependency justified the old cap. |
 
 ---
@@ -143,7 +143,6 @@ Breadth, once the core contracts are stable enough that each new package is chea
 |---|---|
 | API freeze | Public surface documented and frozen; anything not documented is explicitly private. |
 | Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated cross-package version guarantees. |
-| Python 3.14 support | Currently blocked on upstream dependencies. Track with a nightly allow-failure CI matrix entry so we know the day it unblocks. |
 | Release automation end-to-end | Changelog generation, signed artifacts with build provenance/attestations, automated publish on tag. |
 | Hub interoperability | The SDK contracts the Hub depends on (versioning, integrity, telemetry, MCP gateway composition) are stable and documented. |
 
