@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from agent_framework import BaseContextProvider, FunctionTool
+from agent_framework import ContextProvider, FunctionTool
 
 from agentskills_core import SkillRegistry
 
@@ -67,7 +67,7 @@ def _validate_prompt_template(template: str) -> None:
         raise ValueError(_PROMPT_VALIDATION_ERROR) from exc
 
 
-class AgentSkillsContextProvider(BaseContextProvider):
+class AgentSkillsContextProvider(ContextProvider):
     """Expose a :class:`~agentskills_core.SkillRegistry` to an Agent Framework agent.
 
     Wraps a registry of any-backend skills and hooks into the agent

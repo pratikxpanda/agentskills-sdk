@@ -40,6 +40,11 @@ def _mock_provider(
     return provider
 
 
+async def _invoke_text(tool, **kwargs) -> str:
+    """``FunctionTool.invoke`` returns ``list[Content]``; assertions want the payload."""
+    return (await tool.invoke(**kwargs))[0].text
+
+
 @pytest.fixture()
 async def registry() -> SkillRegistry:
     reg = SkillRegistry()
@@ -67,7 +72,7 @@ class TestGetTools:
     async def test_get_skill_metadata_tool(self, registry):
         tools = get_tools(registry)
         tool = next(t for t in tools if t.name == "get_skill_metadata")
-        result = await tool.invoke(skill_id="incident-response")
+        result = await _invoke_text(tool, skill_id="incident-response")
         meta = json.loads(result)
         assert meta["name"] == "incident-response"
         assert meta["description"] == "Handle production incidents."
@@ -75,25 +80,25 @@ class TestGetTools:
     async def test_get_skill_body_tool(self, registry):
         tools = get_tools(registry)
         tool = next(t for t in tools if t.name == "get_skill_body")
-        result = await tool.invoke(skill_id="incident-response")
+        result = await _invoke_text(tool, skill_id="incident-response")
         assert "Incident Response" in result
 
     async def test_get_skill_reference_tool(self, registry):
         tools = get_tools(registry)
         tool = next(t for t in tools if t.name == "get_skill_reference")
-        result = await tool.invoke(skill_id="incident-response", name="severity-levels.md")
+        result = await _invoke_text(tool, skill_id="incident-response", name="severity-levels.md")
         assert "SEV1" in result
 
     async def test_get_skill_script_tool(self, registry):
         tools = get_tools(registry)
         tool = next(t for t in tools if t.name == "get_skill_script")
-        result = await tool.invoke(skill_id="incident-response", name="page-oncall.sh")
+        result = await _invoke_text(tool, skill_id="incident-response", name="page-oncall.sh")
         assert "pagerduty" in result
 
     async def test_get_skill_asset_tool(self, registry):
         tools = get_tools(registry)
         tool = next(t for t in tools if t.name == "get_skill_asset")
-        result = await tool.invoke(skill_id="incident-response", name="flowchart.mermaid")
+        result = await _invoke_text(tool, skill_id="incident-response", name="flowchart.mermaid")
         assert "graph TD" in result
 
     async def test_unknown_skill_raises(self, registry):
@@ -138,7 +143,7 @@ class TestToolsEdgeCases:
         await reg.register("incident-response", provider)
         tools = get_tools(reg)
         tool = next(t for t in tools if t.name == "get_skill_script")
-        result = await tool.invoke(skill_id="incident-response", name="binary.sh")
+        result = await _invoke_text(tool, skill_id="incident-response", name="binary.sh")
         assert "\ufffd" in result
         assert "valid" in result
 
@@ -149,8 +154,8 @@ class TestToolsEdgeCases:
         await reg.register("skill-b", _mock_provider("skill-b"))
         tools = get_tools(reg)
         tool = next(t for t in tools if t.name == "get_skill_body")
-        a = await tool.invoke(skill_id="skill-a")
-        b = await tool.invoke(skill_id="skill-b")
+        a = await _invoke_text(tool, skill_id="skill-a")
+        b = await _invoke_text(tool, skill_id="skill-b")
         assert "Incident Response" in a
         assert "Incident Response" in b
 

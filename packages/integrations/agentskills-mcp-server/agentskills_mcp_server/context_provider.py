@@ -2,7 +2,7 @@
 
 Provides :class:`AgentSkillsMcpContextProvider`, a thin adapter that
 bridges an existing MCP session into the Agent Framework
-:class:`~agent_framework.BaseContextProvider` lifecycle.  It reads the
+:class:`~agent_framework.ContextProvider` lifecycle.  It reads the
 skills catalog and usage-instruction resources from the MCP server and
 injects them as session instructions on every ``agent.run()`` call.
 
@@ -45,12 +45,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 try:
-    from agent_framework import BaseContextProvider
+    from agent_framework import ContextProvider
 except ImportError as _exc:
-    raise ImportError(
-        "AgentSkillsMcpContextProvider requires agent-framework. "
-        "Install it with:  pip install agentskills-mcp-server[agentframework]"
-    ) from _exc
+    import importlib.util
+
+    if importlib.util.find_spec("agent_framework") is None:
+        _MSG = (
+            "AgentSkillsMcpContextProvider requires agent-framework. "
+            "Install it with:  pip install agentskills-mcp-server[agentframework]"
+        )
+    else:
+        _MSG = (
+            "agent-framework is installed but does not provide 'ContextProvider'. "
+            "agentskills-mcp-server requires agent-framework >=1.0, which renamed "
+            "'BaseContextProvider' to 'ContextProvider'. Upgrade with:  "
+            "pip install --upgrade agent-framework-core"
+        )
+    raise ImportError(_MSG) from _exc
 
 if TYPE_CHECKING:
     from agent_framework import AgentSession, SessionContext, SupportsAgentRun
@@ -88,7 +99,7 @@ def _validate_prompt_template(template: str) -> None:
         raise ValueError(_PROMPT_VALIDATION_ERROR) from exc
 
 
-class AgentSkillsMcpContextProvider(BaseContextProvider):
+class AgentSkillsMcpContextProvider(ContextProvider):
     """Inject skills catalog and usage instructions from an MCP session.
 
     This adapter reads two MCP resources on every ``agent.run()`` call
