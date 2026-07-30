@@ -8,6 +8,7 @@ import respx
 
 from agentskills_core import (
     AgentSkillsError,
+    ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillRegistry,
@@ -501,3 +502,94 @@ class TestSkillMdCaching:
             assert "updated body" in await provider.get_body("test-skill")
 
         assert route.calls[2].request.headers["if-none-match"] == '"v2"'
+
+
+class TestResourceListing:
+    """Listing requires an opt-in ``index.json`` manifest."""
+
+    def test_capability_off_by_default(self):
+        provider = HTTPStaticFileSkillProvider(BASE)
+        assert provider.supports_resource_listing is False
+
+    def test_capability_on_when_manifest_declared(self):
+        provider = HTTPStaticFileSkillProvider(BASE, resource_manifest=True)
+        assert provider.supports_resource_listing is True
+
+    @respx.mock
+    async def test_raises_when_not_configured(self):
+        """A plain static host must say 'cannot enumerate', not 'no resources'."""
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(ResourceListingNotSupportedError, match="resource_manifest"):
+                await provider.list_resources("test-skill")
+        assert not respx.calls
+
+    @respx.mock
+    async def test_reads_manifest(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(
+            json={
+                "references": ["sev.md", "esc.md"],
+                "scripts": ["run.sh"],
+                "assets": ["diagram.mermaid"],
+            }
+        )
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            assert await provider.list_resources("test-skill") == {
+                "references": ["esc.md", "sev.md"],
+                "scripts": ["run.sh"],
+                "assets": ["diagram.mermaid"],
+            }
+
+    @respx.mock
+    async def test_missing_kinds_default_to_empty(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(json={"scripts": ["run.sh"]})
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            assert await provider.list_resources("test-skill") == {
+                "references": [],
+                "scripts": ["run.sh"],
+                "assets": [],
+            }
+
+    @respx.mock
+    async def test_unsafe_names_are_dropped(self):
+        """A manifest is host data and its names are interpolated into URLs."""
+        respx.get(f"{BASE}/test-skill/index.json").respond(
+            json={"references": ["ok.md", "../../etc/passwd", "a/b.md", "", 42]}
+        )
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            listing = await provider.list_resources("test-skill")
+        assert listing["references"] == ["ok.md"]
+
+    @respx.mock
+    async def test_absent_manifest_reports_unsupported(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(404)
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(ResourceListingNotSupportedError, match=r"No index\.json"):
+                await provider.list_resources("test-skill")
+
+    @respx.mock
+    async def test_invalid_json_raises(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(content=b"not json")
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="not valid JSON"):
+                await provider.list_resources("test-skill")
+
+    @respx.mock
+    async def test_non_object_manifest_raises(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(json=["sev.md"])
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="must be a JSON object"):
+                await provider.list_resources("test-skill")
+
+    @respx.mock
+    async def test_non_list_kind_raises(self):
+        respx.get(f"{BASE}/test-skill/index.json").respond(json={"scripts": "run.sh"})
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="non-list"):
+                await provider.list_resources("test-skill")
+
+    @respx.mock
+    async def test_traversal_in_skill_id_rejected(self):
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(ValueError):
+                await provider.list_resources("../secrets")
+        assert not respx.calls

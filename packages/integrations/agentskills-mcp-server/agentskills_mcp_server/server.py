@@ -52,6 +52,7 @@ from mcp.server.fastmcp import FastMCP
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    ResourceListingNotSupportedError,
     SkillProvider,
     SkillRegistry,
     encode_resource_content,
@@ -103,7 +104,7 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
             ) from exc
         # Only pass constructor-safe keys; runtime objects like
         # ``client`` cannot be serialized to a config file.
-        safe_http_keys = {"base_url", "headers", "params"}
+        safe_http_keys = {"base_url", "headers", "params", "resource_manifest"}
         filtered = {k: v for k, v in options.items() if k in safe_http_keys}
         return HTTPStaticFileSkillProvider(**filtered)
 
@@ -156,6 +157,14 @@ def create_mcp_server(
     """
     mcp = FastMCP(name, instructions=instructions)
 
+    async def _list_resources_json(skill_id: str) -> str:
+        """Serialize a skill's resource listing, or why it is unavailable."""
+        skill = registry.get_skill(skill_id)
+        try:
+            return json.dumps(await skill.list_resources())
+        except ResourceListingNotSupportedError as exc:
+            return json.dumps({"supported": False, "note": str(exc)})
+
     # ------------------------------------------------------------------
     # Tools
     # ------------------------------------------------------------------
@@ -171,6 +180,17 @@ def create_mcp_server(
         """Get the full instructions and guidance (markdown body) for a specific skill."""
         skill = registry.get_skill(skill_id)
         return await skill.get_body()
+
+    @mcp.tool()
+    async def list_skill_resources(skill_id: str) -> str:
+        """List the references, scripts, and assets a skill bundles.
+
+        Returns a JSON object keyed by resource kind.  Some skill
+        backends cannot enumerate resources; those return
+        ``{"supported": false}``, in which case take the resource names
+        from the skill body instead.
+        """
+        return await _list_resources_json(skill_id)
 
     @mcp.tool()
     async def get_skill_reference(skill_id: str, name: str) -> str:
@@ -228,6 +248,11 @@ def create_mcp_server(
         """Markdown catalog of all registered skills for system-prompt injection."""
         return await registry.get_skills_catalog(format="markdown")
 
+    @mcp.resource("skills://{skill_id}/resources")
+    async def skill_resources(skill_id: str) -> str:
+        """Resource listing for a single skill, grouped by kind."""
+        return await _list_resources_json(skill_id)
+
     @mcp.resource("skills://tools-usage-instructions")
     def skills_tools_usage_instructions() -> str:
         """Workflow instructions explaining how to use the Agent Skills tools."""
@@ -262,7 +287,10 @@ other assets
 ### Important guidelines
 
 - **Do not guess resource names.** Only fetch resources that are \
-explicitly mentioned in the skill body.
+explicitly mentioned in the skill body, or that \
+`list_skill_resources(skill_id)` reports. That tool returns \
+`{"supported": false}` on backends that cannot be enumerated — when \
+it does, rely on the skill body alone.
 - **Follow progressive disclosure.** Read the skill body first, then \
 fetch only the resources you need for the current step.
 - **One skill at a time.** Focus on the most relevant skill for the \

@@ -15,9 +15,13 @@ Registration of skills is handled explicitly by the application via
 :meth:`SkillRegistry.register(skill_id, provider)
 <agentskills_core.SkillRegistry.register>`.
 
-Resource *names* are discovered by the agent from the skill body (the
-markdown instructions), not from a programmatic listing.  The provider
-only needs to serve individual resources by name.
+Resource *names* may be discovered two ways: from the skill body (the
+markdown instructions), or -- where the backend supports it -- from
+:meth:`SkillProvider.list_resources`.  Listing is an **optional
+capability**: backends that cannot enumerate (a static HTTP host with no
+manifest, say) leave :attr:`SkillProvider.supports_resource_listing`
+``False`` and the default implementation refuses.  See
+:doc:`ADR 0002 </adr/0002-optional-provider-capabilities>`.
 
 All methods are ``async`` so that implementations backed by network I/O
 (HTTP APIs, databases, cloud storage) can be non-blocking.  Filesystem
@@ -30,6 +34,11 @@ Concrete implementations include
 
 from abc import ABC, abstractmethod
 from typing import Any
+
+from agentskills_core.exceptions import ResourceListingNotSupportedError
+
+#: Resource categories defined by the Agent Skills specification.
+RESOURCE_KINDS: tuple[str, ...] = ("references", "scripts", "assets")
 
 
 class SkillProvider(ABC):
@@ -58,6 +67,13 @@ class SkillProvider(ABC):
             async def get_body(self, skill_id: str) -> str: ...
             # ... remaining abstract methods
     """
+
+    #: Whether this provider can enumerate a skill's resources.  Set to
+    #: ``True`` by implementations that override :meth:`list_resources`.
+    #: Declared as a plain attribute rather than a ``ClassVar`` so that
+    #: providers whose capability depends on configuration can set it
+    #: per instance.
+    supports_resource_listing: bool = False
 
     @abstractmethod
     async def get_metadata(self, skill_id: str) -> dict[str, Any]:
@@ -145,3 +161,33 @@ class SkillProvider(ABC):
         Raises:
             ResourceNotFoundError: If the reference does not exist.
         """
+
+    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
+        """Return the resource names a skill contains, grouped by kind.
+
+        **Optional capability.**  The default implementation refuses.
+        Override it *and* set :attr:`supports_resource_listing` to
+        ``True`` in backends that can enumerate.
+
+        Implementations return every key in :data:`RESOURCE_KINDS`, using
+        an empty list for a category the skill does not use, so callers
+        never have to guard on key presence.  Names are sorted.
+
+        Args:
+            skill_id: The skill name to enumerate.
+
+        Returns:
+            Mapping of ``"references"`` / ``"scripts"`` / ``"assets"`` to
+            sorted resource names.
+
+        Raises:
+            ResourceListingNotSupportedError: If this provider cannot
+                enumerate resources.  Never returns an empty mapping to
+                signal the same thing -- that would be indistinguishable
+                from a skill with no resources.
+            SkillNotFoundError: If the skill does not exist.
+        """
+        raise ResourceListingNotSupportedError(
+            f"{type(self).__name__} cannot enumerate skill resources. "
+            f"Resource names must be taken from the skill body instead."
+        )

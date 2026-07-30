@@ -28,6 +28,7 @@ for non-blocking HTTP requests.
 
 from __future__ import annotations
 
+import json
 import re
 import warnings
 from dataclasses import dataclass
@@ -37,7 +38,9 @@ from urllib.parse import quote, urlparse
 import httpx
 
 from agentskills_core import (
+    RESOURCE_KINDS,
     AgentSkillsError,
+    ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillProvider,
@@ -56,6 +59,9 @@ DEFAULT_MAX_RESPONSE_BYTES: int = 10 * 1024 * 1024
 #: Default HTTP request timeout in seconds.
 DEFAULT_TIMEOUT_SECONDS: float = 30.0
 
+#: Per-skill manifest filename used for resource listing.
+RESOURCE_MANIFEST_NAME: str = "index.json"
+
 
 @dataclass(frozen=True)
 class _CachedSkillMd:
@@ -72,7 +78,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     The provider expects an HTTP server (S3, Azure Blob, CDN, Nginx,
     GitHub Pages, etc.) that hosts skill files at predictable URL paths.
     Resource names (scripts, assets, references) are discovered by the
-    agent from the skill body rather than from a separate manifest.
+    agent from the skill body, or from an optional per-skill
+    ``index.json`` manifest -- see *resource_manifest*.
 
     The provider owns an :class:`httpx.AsyncClient` for connection
     pooling.  If you supply your own client the provider will use it
@@ -104,6 +111,12 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             trip per access but picks up republished skills.  Defaults
             to ``False``, which serves cached content until
             :meth:`invalidate` is called.
+        resource_manifest: Set ``True`` if the host publishes a per-skill
+            ``index.json`` listing resource names.  Enables
+            :meth:`list_resources`.  Defaults to ``False``, because a
+            plain static host cannot be enumerated and claiming
+            otherwise would make missing manifests look like skills with
+            no resources.
 
     ``SKILL.md`` responses are cached per provider instance, because a
     single skill is otherwise re-fetched up to five times in one agent
@@ -131,6 +144,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         require_tls: bool = False,
         max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
         revalidate: bool = False,
+        resource_manifest: bool = False,
     ) -> None:
         if client is not None and (headers is not None or params is not None):
             raise ValueError(
@@ -158,6 +172,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._max_response_bytes = max_response_bytes
         self._revalidate = revalidate
         self._skill_md_cache: dict[str, _CachedSkillMd] = {}
+        self.supports_resource_listing = resource_manifest
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(
             headers=headers,
@@ -301,6 +316,82 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             ResourceNotFoundError: If the reference does not exist.
         """
         return await self._get_resource(skill_id, "references", name)
+
+    # ------------------------------------------------------------------
+    # Resource listing
+    # ------------------------------------------------------------------
+
+    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
+        """List a skill's resources from its ``index.json`` manifest.
+
+        Requires ``resource_manifest=True``.  The manifest is a JSON
+        object at ``{base_url}/{skill_id}/index.json`` mapping resource
+        kinds to name lists::
+
+            {"references": ["sev.md"], "scripts": ["run.sh"], "assets": []}
+
+        Unknown keys are ignored and missing kinds default to empty.
+        Entries that are not valid resource names are dropped, since a
+        manifest is host-supplied data and a name is later interpolated
+        into a URL.
+
+        Args:
+            skill_id: Skill name.
+
+        Returns:
+            Mapping of resource kind to sorted resource names.
+
+        Raises:
+            ResourceListingNotSupportedError: If the provider was built
+                without ``resource_manifest=True``, or the skill has no
+                published manifest.
+            AgentSkillsError: If the manifest is not a JSON object.
+        """
+        if not self.supports_resource_listing:
+            raise ResourceListingNotSupportedError(
+                "This provider was not configured with a resource manifest. "
+                "A static HTTP host cannot be enumerated. Pass "
+                "resource_manifest=True if the host publishes "
+                f"{RESOURCE_MANIFEST_NAME} per skill, otherwise take resource "
+                "names from the skill body."
+            )
+
+        self._validate_identifier(skill_id, "skill_id")
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/{RESOURCE_MANIFEST_NAME}"
+        try:
+            raw = await self._get_bytes(url)
+        except ResourceNotFoundError as exc:
+            raise ResourceListingNotSupportedError(
+                f"No {RESOURCE_MANIFEST_NAME} manifest published for skill "
+                f"{skill_id!r}. Take resource names from the skill body instead."
+            ) from exc
+
+        try:
+            manifest = json.loads(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise AgentSkillsError(
+                f"Resource manifest for skill {skill_id!r} is not valid JSON"
+            ) from exc
+
+        if not isinstance(manifest, dict):
+            raise AgentSkillsError(
+                f"Resource manifest for skill {skill_id!r} must be a JSON object"
+            )
+
+        listing: dict[str, list[str]] = {}
+        for kind in RESOURCE_KINDS:
+            entries = manifest.get(kind) or []
+            if not isinstance(entries, list):
+                raise AgentSkillsError(
+                    f"Resource manifest for skill {skill_id!r} has a non-list value for {kind!r}"
+                )
+            listing[kind] = sorted(
+                name
+                for name in entries
+                if isinstance(name, str) and _SAFE_IDENTIFIER_RE.match(name)
+            )
+
+        return listing
 
     # ------------------------------------------------------------------
     # Internal helpers

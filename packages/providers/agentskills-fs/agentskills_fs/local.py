@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from agentskills_core import (
+    RESOURCE_KINDS,
     ResourceNotFoundError,
     SkillNotFoundError,
     SkillProvider,
@@ -76,6 +77,8 @@ class LocalFileSystemSkillProvider(SkillProvider):
     times in one agent session.  Call :meth:`invalidate` when skills
     change on disk.
 
+    Resource listing is supported: see :meth:`list_resources`.
+
     Raises:
         NotADirectoryError: If *root* does not exist or is not a
             directory.
@@ -90,6 +93,8 @@ class LocalFileSystemSkillProvider(SkillProvider):
         meta = await skill.get_metadata()
         print(f"{meta['name']}: {meta['description']}")
     """
+
+    supports_resource_listing = True
 
     def __init__(self, root: Path, *, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> None:
         self._root = Path(root)
@@ -209,9 +214,52 @@ class LocalFileSystemSkillProvider(SkillProvider):
         """
         return await self._read_subdir_file(skill_id, "references", name)
 
+    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
+        """List the resource files a skill contains, grouped by kind.
+
+        Only regular files directly inside ``references/``, ``scripts/``
+        and ``assets/`` are reported.  Subdirectories, dotfiles and
+        symlinks pointing outside the skill root are skipped rather than
+        raising, so one stray entry cannot make a whole skill
+        unlistable.
+
+        Args:
+            skill_id: Skill name.
+
+        Returns:
+            Mapping of resource kind to sorted filenames.  Categories the
+            skill does not use map to an empty list.
+
+        Raises:
+            SkillNotFoundError: If the skill directory does not exist.
+        """
+        return await asyncio.to_thread(self._list_resources_sync, skill_id)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _list_resources_sync(self, skill_id: str) -> dict[str, list[str]]:
+        """Enumerate a skill's resource directories."""
+        skill_dir = self._skill_dir(skill_id)
+        root = self._root.resolve()
+        listing: dict[str, list[str]] = {}
+
+        for kind in RESOURCE_KINDS:
+            subdir = skill_dir / kind
+            names: list[str] = []
+            if subdir.is_dir():
+                for entry in subdir.iterdir():
+                    if entry.name.startswith("."):
+                        continue
+                    if not entry.is_file():
+                        continue
+                    if not entry.resolve().is_relative_to(root):
+                        continue
+                    names.append(entry.name)
+            listing[kind] = sorted(names)
+
+        return listing
 
     def _skill_dir(self, skill_id: str) -> Path:
         """Resolve and validate the directory path for a skill.

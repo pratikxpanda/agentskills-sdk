@@ -415,3 +415,78 @@ class TestSkillMdCaching:
         ticker.cancel()
 
         assert ticks > 1
+
+
+class TestListResources:
+    def test_capability_is_declared(self, tmp_path: Path):
+        assert LocalFileSystemSkillProvider(tmp_path).supports_resource_listing is True
+
+    async def test_lists_all_kinds(self, tmp_path: Path):
+        _create_skill(
+            tmp_path,
+            references={"severity-levels.md": "# SEV"},
+            scripts={"page-oncall.sh": "#!/bin/sh"},
+            assets={"flowchart.mermaid": "graph TD"},
+        )
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.list_resources("test-skill") == {
+            "references": ["severity-levels.md"],
+            "scripts": ["page-oncall.sh"],
+            "assets": ["flowchart.mermaid"],
+        }
+
+    async def test_missing_kinds_are_empty_lists(self, tmp_path: Path):
+        """Every kind is always present, so callers need no key checks."""
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.list_resources("test-skill") == {
+            "references": [],
+            "scripts": [],
+            "assets": [],
+        }
+
+    async def test_names_are_sorted(self, tmp_path: Path):
+        _create_skill(tmp_path, references={"c.md": "c", "a.md": "a", "b.md": "b"})
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        listing = await provider.list_resources("test-skill")
+        assert listing["references"] == ["a.md", "b.md", "c.md"]
+
+    async def test_dotfiles_are_skipped(self, tmp_path: Path):
+        skill_dir = _create_skill(tmp_path, references={"real.md": "x"})
+        (skill_dir / "references" / ".DS_Store").write_text("junk", encoding="utf-8")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        listing = await provider.list_resources("test-skill")
+        assert listing["references"] == ["real.md"]
+
+    async def test_subdirectories_are_skipped(self, tmp_path: Path):
+        """Reads only accept flat names, so listing must not offer nested ones."""
+        skill_dir = _create_skill(tmp_path, references={"real.md": "x"})
+        (skill_dir / "references" / "nested").mkdir()
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        listing = await provider.list_resources("test-skill")
+        assert listing["references"] == ["real.md"]
+
+    async def test_symlink_escaping_the_root_is_skipped(self, tmp_path: Path):
+        outside = tmp_path.parent / "outside-secret.md"
+        outside.write_text("secret", encoding="utf-8")
+        root = tmp_path / "skills"
+        root.mkdir()
+        skill_dir = _create_skill(root, references={"real.md": "x"})
+        try:
+            (skill_dir / "references" / "escape.md").symlink_to(outside)
+        except (OSError, NotImplementedError):
+            pytest.skip("symlink creation not permitted on this platform")
+
+        provider = LocalFileSystemSkillProvider(root)
+        listing = await provider.list_resources("test-skill")
+        assert listing["references"] == ["real.md"]
+
+    async def test_unknown_skill_raises(self, tmp_path: Path):
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError):
+            await provider.list_resources("nope")
+
+    async def test_traversal_in_skill_id_rejected(self, tmp_path: Path):
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises((ValueError, SkillNotFoundError)):
+            await provider.list_resources("../etc")

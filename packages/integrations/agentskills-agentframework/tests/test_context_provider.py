@@ -172,7 +172,7 @@ class TestBeforeRun:
         assert "incident-response" in prompt
         assert "Handle production incidents." in prompt
 
-    async def test_injects_5_tools(self, registry):
+    async def test_injects_6_tools(self, registry):
         cp = AgentSkillsContextProvider(registry)
         ctx = _mock_context()
 
@@ -186,11 +186,12 @@ class TestBeforeRun:
         ctx.extend_tools.assert_called_once()
         source_id, tools = ctx.extend_tools.call_args[0]
         assert source_id == "agentskills"
-        assert len(tools) == 5
+        assert len(tools) == 6
         names = {t.name for t in tools}
         assert names == {
             "get_skill_metadata",
             "get_skill_body",
+            "list_skill_resources",
             "get_skill_reference",
             "get_skill_asset",
             "get_skill_script",
@@ -407,4 +408,4 @@ class TestRepeatedCalls:
             await cp.before_run(agent=MagicMock(), session=MagicMock(), context=ctx, state={})
             ctx.extend_instructions.assert_called_once()
             ctx.extend_tools.assert_called_once()
-            assert len(ctx.tools) == 5
+            assert len(ctx.tools) == 6

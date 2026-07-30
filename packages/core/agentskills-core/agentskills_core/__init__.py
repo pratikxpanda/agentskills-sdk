@@ -12,6 +12,8 @@ validating, and accessing `Agent Skills <https://agentskills.io>`_:
 * :class:`SkillNotFoundError` -- raised when a skill does not exist.
 * :class:`ResourceNotFoundError` -- raised when a resource within a skill
   does not exist.
+* :class:`ResourceListingNotSupportedError` -- raised when a provider cannot
+  enumerate a skill's resources.
 * :class:`AgentSkillsError` -- base class for all library exceptions.
 
 Install::
@@ -25,18 +27,21 @@ from agentskills_core.encoding import (
 )
 from agentskills_core.exceptions import (
     AgentSkillsError,
+    ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
 )
 from agentskills_core.parsing import split_frontmatter
-from agentskills_core.provider import SkillProvider
+from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
 from agentskills_core.registry import SkillRegistry
 from agentskills_core.skill import Skill
 from agentskills_core.validation import validate_skill
 
 __all__ = [
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
+    "RESOURCE_KINDS",
     "AgentSkillsError",
+    "ResourceListingNotSupportedError",
     "ResourceNotFoundError",
     "Skill",
     "SkillNotFoundError",

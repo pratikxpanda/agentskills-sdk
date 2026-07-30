@@ -38,6 +38,12 @@ def _mock_provider(
     provider.get_reference.side_effect = lambda sid, name: references[name]
     provider.get_script.side_effect = lambda sid, name: scripts[name]
     provider.get_asset.side_effect = lambda sid, name: assets[name]
+    provider.supports_resource_listing = True
+    provider.list_resources.return_value = {
+        "references": sorted(references),
+        "scripts": sorted(scripts),
+        "assets": sorted(assets),
+    }
     return provider
 
 
@@ -54,9 +60,9 @@ async def registry() -> SkillRegistry:
 
 
 class TestGetTools:
-    async def test_returns_5_tools(self, registry):
+    async def test_returns_6_tools(self, registry):
         tools = get_tools(registry)
-        assert len(tools) == 5
+        assert len(tools) == 6
 
     async def test_tool_names(self, registry):
         tools = get_tools(registry)
@@ -64,6 +70,7 @@ class TestGetTools:
         expected = {
             "get_skill_metadata",
             "get_skill_body",
+            "list_skill_resources",
             "get_skill_reference",
             "get_skill_asset",
             "get_skill_script",
@@ -89,6 +96,31 @@ class TestGetTools:
         tool = next(t for t in tools if t.name == "get_skill_reference")
         result = await _invoke_text(tool, skill_id="incident-response", name="severity-levels.md")
         assert "SEV1" in result
+
+    async def test_list_skill_resources_tool(self, registry):
+        tools = get_tools(registry)
+        tool = next(t for t in tools if t.name == "list_skill_resources")
+        listing = json.loads(await _invoke_text(tool, skill_id="incident-response"))
+        assert listing == {
+            "references": ["severity-levels.md"],
+            "scripts": ["page-oncall.sh"],
+            "assets": ["flowchart.mermaid"],
+        }
+
+    async def test_list_skill_resources_reports_unsupported(self):
+        """An un-enumerable backend is reported, not raised: the agent can act on it."""
+        from agentskills_core import ResourceListingNotSupportedError
+
+        provider = _mock_provider()
+        provider.supports_resource_listing = False
+        provider.list_resources.side_effect = ResourceListingNotSupportedError("no manifest")
+        reg = SkillRegistry()
+        await reg.register("incident-response", provider)
+
+        tool = next(t for t in get_tools(reg) if t.name == "list_skill_resources")
+        payload = json.loads(await _invoke_text(tool, skill_id="incident-response"))
+        assert payload["supported"] is False
+        assert "no manifest" in payload["note"]
 
     async def test_get_skill_script_tool(self, registry):
         tools = get_tools(registry)
@@ -178,10 +210,10 @@ class TestToolsEdgeCases:
         assert "Incident Response" in b
 
     async def test_empty_registry(self):
-        """Tools with empty registry return 5 tools (but lookups fail)."""
+        """Tools with empty registry return 6 tools (but lookups fail)."""
         reg = SkillRegistry()
         tools = get_tools(reg)
-        assert len(tools) == 5
+        assert len(tools) == 6
 
     async def test_missing_resource_raises(self):
         """Requesting a non-existent resource raises an error."""
