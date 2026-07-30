@@ -28,6 +28,10 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 All six packages are released together and share a version number — a badge showing a different
 version from the rest means a publish did not complete.
 
+**Which do I need?** One provider for where your skills live, plus the integration for your agent
+framework. Both pull in `agentskills-core` automatically, so a LangChain app reading skills from
+disk needs only `pip install agentskills-fs agentskills-langchain`.
+
 ## How It Works
 
 The SDK uses **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
@@ -37,6 +41,48 @@ The SDK uses **progressive disclosure** to deliver skill content efficiently - e
 3. **Disclose on demand** - the agent uses tools (`get_skill_body`, `get_skill_reference`, etc.) to retrieve content as needed
 
 The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API - the agent fetches metadata, then the full body, then individual references, scripts, or assets, only when needed.
+
+## What a Skill Looks Like
+
+A skill is a folder containing a `SKILL.md`. Everything else is optional:
+
+```text
+my-skills/
+└── incident-response/
+    ├── SKILL.md                        # required - frontmatter + markdown instructions
+    ├── references/                     # optional - supporting documents
+    │   └── severity-levels.md
+    ├── scripts/                        # optional - retrieved for the agent, never executed by the SDK
+    │   └── page-oncall.sh
+    └── assets/                         # optional - diagrams, templates, other files
+        └── escalation-flowchart.mermaid
+```
+
+`SKILL.md` is YAML frontmatter followed by markdown. Only `name` and `description` are required:
+
+```markdown
+---
+name: incident-response
+description: Standard operating procedures for production incident management including severity classification, escalation paths, communication protocols, and postmortem processes.
+---
+
+# Incident Response
+
+This skill provides structured guidance for handling production incidents.
+
+## When to Declare an Incident
+
+- A production service is degraded or unavailable for users
+- Data integrity may be compromised
+...
+```
+
+The `description` is the only part the agent sees on every turn — it is what the agent uses to
+decide whether to load the skill at all. Write it to say **when** the skill applies, not just what
+it contains.
+
+See [examples/skills/incident-response/](examples/skills/incident-response/) for a complete skill
+with references, scripts, and assets.
 
 ## Quick Start
 
@@ -67,6 +113,8 @@ asyncio.run(main())
 ### With LangChain
 
 ```python
+import os
+
 from langchain.agents import create_agent
 from langchain_openai import AzureChatOpenAI
 from agentskills_langchain import get_tools, get_tools_usage_instructions
