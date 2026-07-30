@@ -36,6 +36,7 @@ Requires Python 3.12 or 3.13.
 ```python
 from agentskills_core import SkillRegistry
 
+# provider: any SkillProvider - agentskills-fs, agentskills-http, or your own
 registry = SkillRegistry()
 await registry.register("incident-response", provider)  # validates on registration
 ```

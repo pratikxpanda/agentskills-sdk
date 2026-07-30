@@ -138,7 +138,7 @@ from agentskills_core import SkillRegistry
 from agentskills_mcp_server import create_mcp_server
 
 registry = SkillRegistry()
-await registry.register("incident-response", my_custom_provider)
+await registry.register("incident-response", my_custom_provider)  # any SkillProvider
 
 server = create_mcp_server(registry, name="My Skills Server")
 server.run()  # stdio by default

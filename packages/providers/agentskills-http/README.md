@@ -49,6 +49,8 @@ async with HTTPStaticFileSkillProvider("https://cdn.example.com/skills") as prov
 Pass authentication or other headers:
 
 ```python
+from agentskills_http import HTTPStaticFileSkillProvider
+
 provider = HTTPStaticFileSkillProvider(
     "https://cdn.example.com/skills",
     headers={"Authorization": "Bearer <token>"},
@@ -61,6 +63,7 @@ Supply a pre-configured `httpx.AsyncClient` for full control over timeouts, prox
 
 ```python
 import httpx
+from agentskills_http import HTTPStaticFileSkillProvider
 
 client = httpx.AsyncClient(timeout=30, headers={"Authorization": "Bearer <token>"})
 provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=client)
