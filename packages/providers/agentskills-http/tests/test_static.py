@@ -6,7 +6,12 @@ import httpx
 import pytest
 import respx
 
-from agentskills_core import AgentSkillsError, ResourceNotFoundError, SkillNotFoundError
+from agentskills_core import (
+    AgentSkillsError,
+    ResourceNotFoundError,
+    SkillNotFoundError,
+    SkillRegistry,
+)
 from agentskills_http import HTTPStaticFileSkillProvider
 from agentskills_http.static import DEFAULT_TIMEOUT_SECONDS
 
@@ -405,3 +410,94 @@ class TestSecurityEdgeCases:
             assert len(w) == 0
             assert provider._base_url == BASE
             provider._owns_client = False
+
+
+class TestSkillMdCaching:
+    @respx.mock
+    async def test_single_request_across_a_full_session(self):
+        """register -> catalog -> tool call must cost one SKILL.md request."""
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            registry = SkillRegistry()
+            await registry.register("test-skill", provider)
+            await registry.get_skills_catalog()
+            await registry.get_skill("test-skill").get_body()
+            await registry.get_skill("test-skill").get_metadata()
+
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_resource_fetches_are_not_cached(self):
+        """Only SKILL.md is cached; resources are fetched on demand."""
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        route = respx.get(f"{BASE}/test-skill/scripts/run.sh").respond(content=b"echo hi")
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            await provider.get_script("test-skill", "run.sh")
+            await provider.get_script("test-skill", "run.sh")
+
+        assert route.call_count == 2
+
+    @respx.mock
+    async def test_cache_is_per_instance(self):
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        async with HTTPStaticFileSkillProvider(BASE) as first:
+            await first.get_body("test-skill")
+        async with HTTPStaticFileSkillProvider(BASE) as second:
+            await second.get_body("test-skill")
+
+        assert route.call_count == 2
+
+    @respx.mock
+    async def test_invalidate_refetches(self):
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            await provider.get_body("test-skill")
+            provider.invalidate("test-skill")
+            await provider.get_body("test-skill")
+            provider.invalidate()
+            await provider.get_body("test-skill")
+
+        assert route.call_count == 3
+
+    @respx.mock
+    async def test_revalidate_sends_validators_and_honours_304(self):
+        """With revalidate=True the provider re-checks but reuses the body."""
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            if request.headers.get("if-none-match") == '"v1"':
+                return httpx.Response(304)
+            return httpx.Response(200, text=SKILL_MD, headers={"ETag": '"v1"'})
+
+        respx.get(f"{BASE}/test-skill/SKILL.md").mock(side_effect=handler)
+
+        async with HTTPStaticFileSkillProvider(BASE, revalidate=True) as provider:
+            first = await provider.get_body("test-skill")
+            second = await provider.get_body("test-skill")
+
+        assert first == second
+        assert len(requests) == 2
+        assert "if-none-match" not in requests[0].headers
+        assert requests[1].headers["if-none-match"] == '"v1"'
+
+    @respx.mock
+    async def test_revalidate_picks_up_new_content(self):
+        """A 200 during revalidation replaces the cached body."""
+        responses = [
+            httpx.Response(200, text=SKILL_MD, headers={"ETag": '"v1"'}),
+            httpx.Response(
+                200,
+                text=SKILL_MD.replace("body of the test skill", "updated body"),
+                headers={"ETag": '"v2"'},
+            ),
+            httpx.Response(304),
+        ]
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").mock(side_effect=responses)
+
+        async with HTTPStaticFileSkillProvider(BASE, revalidate=True) as provider:
+            assert "updated body" not in await provider.get_body("test-skill")
+            assert "updated body" in await provider.get_body("test-skill")
+            assert "updated body" in await provider.get_body("test-skill")
+
+        assert route.calls[2].request.headers["if-none-match"] == '"v2"'

@@ -22,13 +22,17 @@ Example::
 
 from __future__ import annotations
 
-from typing import Literal, overload
+import asyncio
+from typing import Any, Literal, overload
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from agentskills_core.exceptions import SkillNotFoundError
 from agentskills_core.provider import SkillProvider
 from agentskills_core.skill import Skill
 from agentskills_core.validation import validate_skill
+
+#: Metadata fetches issued in parallel when building a catalog.
+DEFAULT_CATALOG_CONCURRENCY = 8
 
 
 class SkillRegistry:
@@ -48,8 +52,20 @@ class SkillRegistry:
     providers.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, catalog_concurrency: int = DEFAULT_CATALOG_CONCURRENCY) -> None:
+        """Create an empty registry.
+
+        Args:
+            catalog_concurrency: Maximum number of provider metadata
+                fetches issued in parallel by :meth:`get_skills_catalog`.
+
+        Raises:
+            ValueError: If *catalog_concurrency* is less than 1.
+        """
+        if catalog_concurrency < 1:
+            raise ValueError("catalog_concurrency must be at least 1")
         self._skills: dict[str, Skill] = {}
+        self._catalog_concurrency = catalog_concurrency
 
     def __repr__(self) -> str:
         n = len(self._skills)
@@ -220,15 +236,34 @@ class SkillRegistry:
     # Private helpers
     # ------------------------------------------------------------------
 
+    async def _gather_metadata(self) -> list[tuple[Skill, dict[str, Any]]]:
+        """Fetch metadata for every registered skill concurrently.
+
+        Ordering follows :meth:`list_skills` regardless of completion
+        order, so catalog output is deterministic.
+        """
+        skills = self.list_skills()
+        semaphore = asyncio.Semaphore(self._catalog_concurrency)
+
+        async def fetch(skill: Skill) -> dict[str, Any]:
+            async with semaphore:
+                try:
+                    return await skill.get_metadata()
+                except Exception as exc:
+                    exc.add_note(f"raised while building the catalog entry for '{skill.get_id()}'")
+                    raise
+
+        metadata = await asyncio.gather(*(fetch(skill) for skill in skills))
+        return list(zip(skills, metadata, strict=True))
+
     async def _build_xml(self) -> str:
         """Return an ``<available_skills>`` XML block."""
-        skills = self.list_skills()
-        if not skills:
+        entries = await self._gather_metadata()
+        if not entries:
             return "<available_skills />"
 
         root = Element("available_skills")
-        for skill in skills:
-            meta = await skill.get_metadata()
+        for skill, meta in entries:
             skill_el = SubElement(root, "skill")
             name_el = SubElement(skill_el, "name")
             name_el.text = meta.get("name", skill.get_id())
@@ -239,8 +274,8 @@ class SkillRegistry:
 
     async def _build_markdown(self) -> str:
         """Return a Markdown-formatted skill catalog."""
-        skills = self.list_skills()
-        if not skills:
+        entries = await self._gather_metadata()
+        if not entries:
             return "No skills are currently available."
 
         lines: list[str] = [
@@ -248,9 +283,7 @@ class SkillRegistry:
             "",
         ]
 
-        for skill in skills:
-            meta = await skill.get_metadata()
-
+        for skill, meta in entries:
             name = meta.get("name", skill.get_id())
             description = meta.get("description", "No description available.")
 

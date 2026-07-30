@@ -46,7 +46,14 @@ body = await skill.get_body()
 script = await skill.get_script("page-oncall.sh")
 ```
 
-The provider reads files synchronously (local disk I/O is fast for small skill files) but exposes an `async` interface to satisfy the `SkillProvider` contract.
+Blocking file I/O runs in a worker thread, so a slow or networked filesystem does not stall other coroutines.
+
+`SKILL.md` content is cached per provider instance after the first read — a single skill is otherwise re-read up to five times in one agent session. Call `invalidate()` when skills change on disk.
+
+```python
+provider.invalidate("incident-response")  # forget one skill
+provider.invalidate()                      # forget everything
+```
 
 ## Security
 
@@ -72,6 +79,7 @@ For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/
 | `get_script(skill_id, name)` | `bytes` | Raw content of a script file |
 | `get_asset(skill_id, name)` | `bytes` | Raw content of an asset file |
 | `get_reference(skill_id, name)` | `bytes` | Raw content of a reference file |
+| `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 
 ## License
 

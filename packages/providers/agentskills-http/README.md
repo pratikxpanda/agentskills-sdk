@@ -74,7 +74,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 
 ## API
 
-### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None, params=None, require_tls=False, max_response_bytes=10_485_760)`
+### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None, params=None, require_tls=False, max_response_bytes=10_485_760, revalidate=False)`
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -84,6 +84,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `params` | `dict \| None` | `None` | Query parameters appended to every request |
 | `require_tls` | `bool` | `False` | Reject `http://` URLs with `ValueError` |
 | `max_response_bytes` | `int` | `10_485_760` | Maximum allowed response size in bytes |
+| `revalidate` | `bool` | `False` | Re-check cached `SKILL.md` on every access with `If-None-Match` / `If-Modified-Since` |
 
 > **Note:** `client` and `headers`/`params` are mutually exclusive. Configure headers and params on the client directly when providing your own.
 
@@ -94,9 +95,22 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `get_script(skill_id, name)` | `bytes` | Raw script content |
 | `get_asset(skill_id, name)` | `bytes` | Raw asset content |
 | `get_reference(skill_id, name)` | `bytes` | Raw reference content |
+| `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 | `aclose()` | `None` | Close the HTTP client (if owned by the provider) |
 
 Supports `async with` for automatic cleanup.
+
+## Caching
+
+`SKILL.md` responses are cached per provider instance. Without it a single skill costs up to five round-trips per agent session — twice during registration, once per catalog build, and again on each tool call. Scripts, assets and references are not cached.
+
+By default the cache is served until you call `invalidate()`. If your host serves mutable skills and the process is long-lived, opt into conditional revalidation instead:
+
+```python
+provider = HTTPStaticFileSkillProvider(BASE, revalidate=True)
+```
+
+That sends `If-None-Match` / `If-Modified-Since` on every access and reuses the cached body on `304`. It costs one cheap round-trip per access, so prefer the default plus an explicit `invalidate()` when you control publishing.
 
 ## Error Handling
 

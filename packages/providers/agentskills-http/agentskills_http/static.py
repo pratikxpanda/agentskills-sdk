@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote, urlparse
 
@@ -54,6 +55,15 @@ DEFAULT_MAX_RESPONSE_BYTES: int = 10 * 1024 * 1024
 
 #: Default HTTP request timeout in seconds.
 DEFAULT_TIMEOUT_SECONDS: float = 30.0
+
+
+@dataclass(frozen=True)
+class _CachedSkillMd:
+    """A fetched ``SKILL.md`` plus the validators needed to revalidate it."""
+
+    text: str
+    etag: str | None
+    last_modified: str | None
 
 
 class HTTPStaticFileSkillProvider(SkillProvider):
@@ -88,6 +98,17 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             Responses exceeding this limit raise
             :class:`~agentskills_core.AgentSkillsError`.  Defaults to
             10 MB.
+        revalidate: If ``True``, re-check cached ``SKILL.md`` content
+            on every access using ``If-None-Match`` /
+            ``If-Modified-Since``.  Costs one (usually empty) round
+            trip per access but picks up republished skills.  Defaults
+            to ``False``, which serves cached content until
+            :meth:`invalidate` is called.
+
+    ``SKILL.md`` responses are cached per provider instance, because a
+    single skill is otherwise re-fetched up to five times in one agent
+    session.  Resource fetches (scripts, assets, references) are not
+    cached: they are usually larger and read once.
 
     Example::
 
@@ -109,6 +130,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         params: dict[str, str] | None = None,
         require_tls: bool = False,
         max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+        revalidate: bool = False,
     ) -> None:
         if client is not None and (headers is not None or params is not None):
             raise ValueError(
@@ -134,6 +156,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
         self._base_url = base_url.rstrip("/")
         self._max_response_bytes = max_response_bytes
+        self._revalidate = revalidate
+        self._skill_md_cache: dict[str, _CachedSkillMd] = {}
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(
             headers=headers,
@@ -146,6 +170,18 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         """Close the underlying HTTP client if it is owned by this provider."""
         if self._owns_client:
             await self._client.aclose()
+
+    def invalidate(self, skill_id: str | None = None) -> None:
+        """Drop cached ``SKILL.md`` content.
+
+        Args:
+            skill_id: Skill to forget.  Clears the whole cache when
+                omitted.  Unknown IDs are ignored.
+        """
+        if skill_id is None:
+            self._skill_md_cache.clear()
+        else:
+            self._skill_md_cache.pop(skill_id, None)
 
     async def __aenter__(self) -> HTTPStaticFileSkillProvider:
         return self
@@ -270,8 +306,14 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _stream_bytes(self, url: str, not_found_error: type[Exception]) -> bytes:
-        """Stream a GET request and return the response bytes.
+    async def _stream_bytes(
+        self,
+        url: str,
+        not_found_error: type[Exception],
+        *,
+        extra_headers: dict[str, str] | None = None,
+    ) -> tuple[bytes | None, httpx.Headers]:
+        """Stream a GET request and return the response bytes and headers.
 
         Uses ``httpx.AsyncClient.stream`` so that overly large
         responses are detected **during** download rather than after
@@ -282,6 +324,12 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             not_found_error: Exception type to raise on HTTP 404
                 (e.g. :class:`SkillNotFoundError` or
                 :class:`ResourceNotFoundError`).
+            extra_headers: Additional request headers, used to send
+                conditional-request validators.
+
+        Returns:
+            ``(body, headers)``.  *body* is ``None`` when the server
+            answered ``304 Not Modified``.
 
         Raises:
             not_found_error: On 404.
@@ -289,9 +337,11 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 the response exceeds *max_response_bytes*.
         """
         try:
-            async with self._client.stream("GET", url) as resp:
+            async with self._client.stream("GET", url, headers=extra_headers) as resp:
                 if resp.status_code == 404:
                     raise not_found_error("Skill content not found")
+                if resp.status_code == 304:
+                    return None, resp.headers
                 try:
                     resp.raise_for_status()
                 except httpx.HTTPStatusError as exc:
@@ -316,24 +366,14 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                             f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
                         )
                     chunks.append(chunk)
+                headers = resp.headers
 
         except (SkillNotFoundError, ResourceNotFoundError, AgentSkillsError):
             raise
         except httpx.HTTPError as exc:
             raise AgentSkillsError("HTTP request failed") from exc
 
-        return b"".join(chunks)
-
-    async def _get_text(self, url: str) -> str:
-        """GET a URL and return the response text.
-
-        Raises:
-            SkillNotFoundError: On 404.
-            AgentSkillsError: On other HTTP or connection errors,
-                or if the response exceeds *max_response_bytes*.
-        """
-        data = await self._stream_bytes(url, SkillNotFoundError)
-        return data.decode("utf-8")
+        return b"".join(chunks), headers
 
     async def _get_bytes(self, url: str) -> bytes:
         """GET a URL and return the response bytes.
@@ -343,13 +383,40 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             AgentSkillsError: On other HTTP or connection errors,
                 or if the response exceeds *max_response_bytes*.
         """
-        return await self._stream_bytes(url, ResourceNotFoundError)
+        data, _ = await self._stream_bytes(url, ResourceNotFoundError)
+        # 304 needs conditional validators, which resource fetches never send.
+        return b"" if data is None else data
 
     async def _get_skill_md(self, skill_id: str) -> str:
-        """Fetch the full text of a skill's ``SKILL.md``."""
+        """Fetch a skill's ``SKILL.md``, serving from cache when possible."""
         self._validate_identifier(skill_id, "skill_id")
         url = f"{self._base_url}/{quote(skill_id, safe='')}/SKILL.md"
-        return await self._get_text(url)
+
+        cached = self._skill_md_cache.get(skill_id)
+        if cached is not None and not self._revalidate:
+            return cached.text
+
+        conditional: dict[str, str] = {}
+        if cached is not None:
+            if cached.etag:
+                conditional["If-None-Match"] = cached.etag
+            if cached.last_modified:
+                conditional["If-Modified-Since"] = cached.last_modified
+
+        data, headers = await self._stream_bytes(
+            url, SkillNotFoundError, extra_headers=conditional or None
+        )
+        if data is None:
+            # 304 is only reachable when validators were sent, which requires a cache entry.
+            return cached.text  # type: ignore[union-attr]
+
+        text = data.decode("utf-8")
+        self._skill_md_cache[skill_id] = _CachedSkillMd(
+            text=text,
+            etag=headers.get("etag"),
+            last_modified=headers.get("last-modified"),
+        )
+        return text
 
     async def _get_resource(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Fetch a single resource file from a skill subdirectory."""

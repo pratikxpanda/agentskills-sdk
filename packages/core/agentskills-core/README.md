@@ -70,6 +70,12 @@ xml_catalog = await registry.get_skills_catalog(format="xml")       # <available
 md_catalog = await registry.get_skills_catalog(format="markdown")   # Markdown list
 ```
 
+Metadata for every registered skill is fetched concurrently, which matters when providers are network-backed. Bound the fan-out at construction time:
+
+```python
+registry = SkillRegistry(catalog_concurrency=4)   # default: 8
+```
+
 ### Implementing a Custom Provider
 
 ```python

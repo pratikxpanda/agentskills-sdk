@@ -295,3 +295,123 @@ class TestSecurityFSBoundary:
         provider = LocalFileSystemSkillProvider(tmp_path / "root")
         with pytest.raises(SkillNotFoundError):
             await provider.get_metadata("evil")
+
+
+class TestSkillMdCaching:
+    async def test_skill_md_read_once(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        """Repeated accesses hit the disk exactly once."""
+        _create_skill(tmp_path)
+        reads: list[Path] = []
+        original = Path.read_text
+
+        def counting_read_text(self: Path, *args: object, **kwargs: object) -> str:
+            reads.append(self)
+            return original(self, *args, **kwargs)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(Path, "read_text", counting_read_text)
+
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        await provider.get_metadata("test-skill")
+        await provider.get_body("test-skill")
+        await provider.get_metadata("test-skill")
+
+        assert [p.name for p in reads] == ["SKILL.md"]
+
+    async def test_cache_is_per_instance(self, tmp_path: Path):
+        """One provider's cache does not serve another provider."""
+        _create_skill(tmp_path)
+        first = LocalFileSystemSkillProvider(tmp_path)
+        await first.get_body("test-skill")
+
+        (tmp_path / "test-skill" / "SKILL.md").write_text(
+            SAMPLE_SKILL_MD.replace("body of the test skill", "updated body"),
+            encoding="utf-8",
+        )
+
+        second = LocalFileSystemSkillProvider(tmp_path)
+        assert "updated body" in await second.get_body("test-skill")
+        assert "updated body" not in await first.get_body("test-skill")
+
+    async def test_invalidate_single_skill(self, tmp_path: Path):
+        _create_skill(tmp_path, skill_id="a")
+        _create_skill(tmp_path, skill_id="b")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        await provider.get_body("a")
+        await provider.get_body("b")
+
+        for skill_id in ("a", "b"):
+            (tmp_path / skill_id / "SKILL.md").write_text(
+                SAMPLE_SKILL_MD.replace("body of the test skill", "updated body"),
+                encoding="utf-8",
+            )
+
+        provider.invalidate("a")
+        assert "updated body" in await provider.get_body("a")
+        assert "updated body" not in await provider.get_body("b")
+
+    async def test_invalidate_all(self, tmp_path: Path):
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        await provider.get_body("test-skill")
+
+        (tmp_path / "test-skill" / "SKILL.md").write_text(
+            SAMPLE_SKILL_MD.replace("body of the test skill", "updated body"),
+            encoding="utf-8",
+        )
+
+        provider.invalidate()
+        assert "updated body" in await provider.get_body("test-skill")
+
+    async def test_invalidate_unknown_skill_is_noop(self, tmp_path: Path):
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        provider.invalidate("never-registered")
+
+    async def test_concurrent_reads(self, tmp_path: Path):
+        """Concurrent reads across skills return the right content."""
+        import asyncio
+
+        for skill_id in ("a", "b", "c"):
+            _create_skill(
+                tmp_path,
+                skill_id=skill_id,
+                skill_md=SAMPLE_SKILL_MD.replace("test skill.", f"skill {skill_id}."),
+            )
+
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        results = await asyncio.gather(
+            *(provider.get_metadata(skill_id) for skill_id in ("a", "b", "c") for _ in range(4))
+        )
+
+        assert len(results) == 12
+        descriptions = {r["description"] for r in results}
+        assert descriptions == {
+            "A test skill for unit testing.".replace("test skill.", f"skill {s}.") for s in "abc"
+        }
+
+    async def test_does_not_block_the_event_loop(self, tmp_path: Path):
+        """A slow read must not stall other coroutines."""
+        import asyncio
+        import time
+
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        original = provider._read_skill_md_sync
+        ticks = 0
+
+        def slow_read(skill_id: str) -> str:
+            time.sleep(0.2)
+            return original(skill_id)
+
+        provider._read_skill_md_sync = slow_read  # type: ignore[method-assign]
+
+        async def tick() -> None:
+            nonlocal ticks
+            while True:
+                await asyncio.sleep(0.01)
+                ticks += 1
+
+        ticker = asyncio.create_task(tick())
+        await provider.get_body("test-skill")
+        ticker.cancel()
+
+        assert ticks > 1
