@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
-[![Downloads](https://img.shields.io/pypi/dm/agentskills-core)](https://pypistats.org/packages/agentskills-core)
+[![Downloads](https://static.pepy.tech/badge/agentskills-core/month)](https://pepy.tech/project/agentskills-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 
