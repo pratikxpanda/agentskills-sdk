@@ -1,8 +1,6 @@
 # Agent Skills SDK
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
-[![Downloads](https://static.pepy.tech/badge/agentskills-core/month)](https://pepy.tech/project/agentskills-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 
@@ -18,14 +16,14 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 
 ## Packages
 
-| Package | Version | Description | Install |
-| --- | --- | --- | --- |
-| [`agentskills-core`](packages/core/agentskills-core/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-core?label=)](https://pypi.org/project/agentskills-core/) | Core abstractions - `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
-| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-fs?label=)](https://pypi.org/project/agentskills-fs/) | Load skills from the local filesystem - `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
-| [`agentskills-http`](packages/providers/agentskills-http/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
-| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
-| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | Integrate skills with Microsoft Agent Framework agents - `AgentSkillsContextProvider`, `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server`, `AgentSkillsMcpContextProvider` | `pip install agentskills-mcp-server` |
+| Package | Version | Downloads | Description | Install |
+| --- | --- | --- | --- | --- |
+| [`agentskills-core`](packages/core/agentskills-core/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-core?label=)](https://pypi.org/project/agentskills-core/) | [![Downloads](https://static.pepy.tech/badge/agentskills-core)](https://pepy.tech/project/agentskills-core) | Core abstractions - `SkillProvider`, `Skill`, `SkillRegistry`, validation | `pip install agentskills-core` |
+| [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-fs?label=)](https://pypi.org/project/agentskills-fs/) | [![Downloads](https://static.pepy.tech/badge/agentskills-fs)](https://pepy.tech/project/agentskills-fs) | Load skills from the local filesystem - `LocalFileSystemSkillProvider` | `pip install agentskills-fs` |
+| [`agentskills-http`](packages/providers/agentskills-http/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://static.pepy.tech/badge/agentskills-http)](https://pepy.tech/project/agentskills-http) | Load skills from a static HTTP server - `HTTPStaticFileSkillProvider` | `pip install agentskills-http` |
+| [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | [![Downloads](https://static.pepy.tech/badge/agentskills-langchain)](https://pepy.tech/project/agentskills-langchain) | Integrate skills with LangChain agents - `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-langchain` |
+| [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://static.pepy.tech/badge/agentskills-agentframework)](https://pepy.tech/project/agentskills-agentframework) | Integrate skills with Microsoft Agent Framework agents - `AgentSkillsContextProvider`, `get_tools`, `get_tools_usage_instructions` | `pip install agentskills-agentframework` |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://static.pepy.tech/badge/agentskills-mcp-server)](https://pepy.tech/project/agentskills-mcp-server) | Expose skills over the Model Context Protocol (MCP) - `create_mcp_server`, `AgentSkillsMcpContextProvider` | `pip install agentskills-mcp-server` |
 
 All six packages are released together and share a version number — a badge showing a different
 version from the rest means a publish did not complete.
