@@ -14,6 +14,8 @@ validating, and accessing `Agent Skills <https://agentskills.io>`_:
   does not exist.
 * :class:`ResourceListingNotSupportedError` -- raised when a provider cannot
   enumerate a skill's resources.
+* :class:`SkillUnavailableError` -- raised when a backend is unreachable or
+  fails transiently, as distinct from a skill that does not exist.
 * :class:`AgentSkillsError` -- base class for all library exceptions.
 
 Install::
@@ -30,6 +32,7 @@ from agentskills_core.exceptions import (
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
+    SkillUnavailableError,
 )
 from agentskills_core.parsing import split_frontmatter
 from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
@@ -47,6 +50,7 @@ __all__ = [
     "SkillNotFoundError",
     "SkillProvider",
     "SkillRegistry",
+    "SkillUnavailableError",
     "encode_resource_content",
     "split_frontmatter",
     "validate_skill",

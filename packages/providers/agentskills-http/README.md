@@ -86,6 +86,10 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `max_response_bytes` | `int` | `10_485_760` | Maximum allowed response size in bytes |
 | `revalidate` | `bool` | `False` | Re-check cached `SKILL.md` on every access with `If-None-Match` / `If-Modified-Since` |
 | `resource_manifest` | `bool` | `False` | Enable `list_resources()` by reading a per-skill `index.json` |
+| `timeout` | `float` | `30.0` | Request timeout in seconds (ignored when you supply `client`) |
+| `max_retries` | `int` | `2` | Retries after the initial attempt, for retryable failures only |
+| `retry_backoff` | `float` | `0.5` | Base delay in seconds for exponential backoff |
+| `max_retry_delay` | `float` | `30.0` | Ceiling on any single backoff sleep |
 
 > **Note:** `client` and `headers`/`params` are mutually exclusive. Configure headers and params on the client directly when providing your own.
 
@@ -139,23 +143,44 @@ That sends `If-None-Match` / `If-Modified-Since` on every access and reuses the 
 
 ## Error Handling
 
-| Scenario | Exception |
-| --- | --- |
-| 404 on `SKILL.md` | `SkillNotFoundError` |
-| 404 on a resource | `ResourceNotFoundError` |
-| Other HTTP errors (500, 403, ...) | `AgentSkillsError` |
-| Connection failures | `AgentSkillsError` |
+| Scenario | Exception | Retried |
+| --- | --- | --- |
+| `404` / `410` on `SKILL.md` | `SkillNotFoundError` | No |
+| `404` / `410` on a resource | `ResourceNotFoundError` | No |
+| `5xx`, `408`, `425`, `429` | `SkillUnavailableError` | Yes |
+| Timeouts, connection and protocol errors | `SkillUnavailableError` | Yes |
+| `401` / `403` | `AgentSkillsError` | No |
+| Other `4xx`, oversized responses | `AgentSkillsError` | No |
 
 All exceptions inherit from `AgentSkillsError`.
+
+The split between `SkillNotFoundError` and `SkillUnavailableError` is the point of the taxonomy: a `503` means the skill may well exist and the same request could succeed in a moment, whereas a `404` means it is gone. Collapsing both into "not found" turns a retryable blip into a permanent-looking failure, and nothing downstream can tell the difference.
+
+### Retries
+
+Retryable failures are retried with exponential backoff and full jitter:
+
+```python
+provider = HTTPStaticFileSkillProvider(
+    BASE,
+    max_retries=2,          # attempts after the first; 0 disables
+    retry_backoff=0.5,      # base delay in seconds
+    max_retry_delay=30.0,   # ceiling on any single sleep
+)
+```
+
+Jitter matters because a registry builds its catalog concurrently — without it, every skill fetch would retry in lockstep and hit the recovering server as one wave.
+
+`Retry-After` is honoured in both the delay-seconds and HTTP-date forms. If the server asks for longer than `max_retry_delay`, the request is **not** retried: blocking a request path for minutes is worse than failing fast. The advised delay is still available to the caller as `SkillUnavailableError.retry_after`, so a scheduler can act on it.
 
 ## Security
 
 - **Input validation** - Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
 - **TLS warnings** - A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
 - **Redirect protection** - The internally-created HTTP client does not follow redirects by default, preventing open-redirect SSRF.
-- **Timeouts** - Default 30-second timeout on all HTTP requests.
+- **Timeouts** - Default 30-second timeout on all HTTP requests. Configure via `timeout`.
 - **Response size limits** - Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
-- **Error-message sanitization** - Error messages omit URLs and include only status codes and generic descriptions, preventing internal URL leakage.
+- **Error-message sanitization** - Messages carry the status code and the path *relative to `base_url`* — never the host, never a query string. The underlying `httpx` exception is deliberately **not** chained (`from None`), because `httpx.HTTPStatusError` renders the full request URL including its query string, which is exactly where SAS tokens and signed-URL signatures live. Chaining it leaked credentials into every traceback.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
