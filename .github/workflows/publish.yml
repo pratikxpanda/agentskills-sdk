@@ -1,0 +1,193 @@
+name: Publish
+
+# PyPI Trusted Publishing binds to this workflow's *filename*. Renaming this file
+# breaks publishing with an opaque OIDC error, so it does one thing and stays put.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: # dry run to TestPyPI without minting a tag
+
+permissions: {}
+
+jobs:
+  target:
+    name: Resolve target
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+      repository-url: ${{ steps.pick.outputs.repository-url }}
+    steps:
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Only a bare vX.Y.Z tag reaches PyPI. Pre-releases and anything of an
+          # unexpected shape fall through to TestPyPI, so a malformed tag cannot
+          # burn a real version number.
+          if [ "$EVENT" = push ] && [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            environment=pypi
+            url=https://upload.pypi.org/legacy/
+          else
+            environment=testpypi
+            url=https://test.pypi.org/legacy/
+          fi
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "repository-url=$url" >> "$GITHUB_OUTPUT"
+          echo "\`$REF\` publishes to **$environment** ($url)" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Check versions agree with the tag
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = push ]; then
+            python scripts/check_release_version.py --tag "$REF"
+          else
+            python scripts/check_release_version.py
+          fi
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          for pkg in \
+            packages/core/agentskills-core \
+            packages/providers/agentskills-fs \
+            packages/providers/agentskills-http \
+            packages/integrations/agentskills-langchain \
+            packages/integrations/agentskills-agentframework \
+            packages/integrations/agentskills-mcp-server
+          do
+            name="$(basename "$pkg")"
+            (cd "$pkg" && poetry build)
+            mkdir -p "dist/$name"
+            mv "$pkg"/dist/* "dist/$name/"
+          done
+          find dist -type f | sort
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  publish:
+    name: Publish to ${{ needs.target.outputs.environment }}
+    needs: [target, build]
+    runs-on: ubuntu-latest
+    # One job, six sequential steps: the environment's reviewers approve the
+    # release once, not once per package.
+    environment:
+      name: ${{ needs.target.outputs.environment }}
+    permissions:
+      id-token: write # mint the OIDC token; no PyPI token is stored anywhere
+    env:
+      # core -> providers -> integrations. PyPI does not enforce this order; it
+      # exists so nobody can resolve a package whose dependency is not up yet.
+      REPO: ${{ needs.target.outputs.repository-url }}
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: dist
+          path: dist
+
+      - name: agentskills-core
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-core
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true # so a half-finished release can be re-run
+
+      - name: agentskills-fs
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-fs
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-http
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-http
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-langchain
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-langchain
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-agentframework
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-agentframework
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-mcp-server
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-mcp-server
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: Report
+        if: always()
+        env:
+          ENVIRONMENT: ${{ needs.target.outputs.environment }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          {
+            echo "## Publish to $ENVIRONMENT: $OUTCOME"
+            echo
+            echo "Packages are published in dependency order. If this run failed"
+            echo "part-way, the step that failed names the package; everything above"
+            echo "it is already live. Re-running is safe — published versions are skipped."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Create GitHub Release
+    needs: [target, publish]
+    # Last, so the release notes never advertise a version that failed to publish.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Create Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ needs.target.outputs.environment == 'testpypi' }}
