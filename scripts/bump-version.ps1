@@ -98,6 +98,8 @@ foreach ($relPath in $pyprojectFiles) {
 
     $content = Get-Content $filePath -Raw
     $updated = $content -replace "version = `"$currentVersion`"", "version = `"$newVersion`""
+    # The six ship in lockstep, so a dependent must require the core it ships with.
+    $updated = $updated -replace 'agentskills-core = "[^"]*"', "agentskills-core = `">=$newVersion,<1.0`""
     Set-Content -Path $filePath -Value $updated -NoNewline
     Write-Host "  Updated $relPath" -ForegroundColor Green
 }

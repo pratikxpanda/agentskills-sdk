@@ -205,6 +205,10 @@ All packages share the same version. Use the bump script to update all `pyprojec
 .\scripts\bump-version.ps1 -Bump minor -DryRun
 ```
 
+The script also rewrites each dependent's `agentskills-core` constraint to `>=<new>,<1.0`. The
+six packages ship in lockstep, so a dependent must require the core it was released with —
+otherwise pip can resolve an older core against a newer dependent and fail at import.
+
 ### 2. Commit and merge
 
 Create a branch, commit the version bump, open a PR, and merge to `main`.
