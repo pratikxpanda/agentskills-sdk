@@ -1,6 +1,7 @@
 # Agent Skills SDK
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-brightgreen.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://www.python.org/downloads/)
 

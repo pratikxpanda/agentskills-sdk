@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Development task runner for Pallium.
+"""Development task runner for the Agent Skills SDK.
 
 Usage:
     python scripts/dev.py lint        # Check linting
     python scripts/dev.py format      # Auto-format code
     python scripts/dev.py check       # Lint + type check (no auto-fix)
     python scripts/dev.py test        # Run all tests
+    python scripts/dev.py test:cov    # Run tests and enforce coverage floors
     python scripts/dev.py clean       # Remove cache files
     python scripts/dev.py all         # Format + lint + test
 """
@@ -20,12 +21,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGES_DIR = ROOT / "packages"
 
+#: Minimum coverage per distribution, as measured when the gate was introduced.
+#: The aggregate floor lives in ``[tool.coverage.report] fail_under`` so that a
+#: bare ``coverage report`` enforces it too, and is not repeated here.
+#:
+#: These exist to catch untested code being added, not to certify quality. Raise
+#: one when its package moves up; never lower one without saying why in the PR.
+COVERAGE_FLOORS: dict[str, int] = {
+    "agentskills_core": 99,
+    "agentskills_fs": 97,
+    "agentskills_http": 96,
+    "agentskills_langchain": 100,
+    "agentskills_agentframework": 100,
+    "agentskills_mcp_server": 91,
+}
+
 
 def _run(cmd: list[str], *, check: bool = True) -> int:
     """Run a command and return its exit code."""
     print(f"\n{'='*60}")
     print(f"  {' '.join(cmd)}")
-    print(f"{'='*60}\n")
+    print(f"{'='*60}\n", flush=True)  # or every banner lands after every subprocess
     result = subprocess.run(cmd, cwd=ROOT, check=False)
     if check and result.returncode != 0:
         sys.exit(result.returncode)
@@ -75,8 +91,35 @@ def test() -> None:
 
 
 def test_cov() -> None:
-    """Run tests with coverage report."""
-    _run([_PY, "-m", "pytest", "packages/", "-v", "--cov=packages", "--cov-report=term-missing"])
+    """Run tests and enforce the per-package and aggregate coverage floors."""
+    _run([_PY, "-m", "pytest", "packages/", "-q", "--cov", "--cov-report="])
+    _run([_PY, "-m", "coverage", "xml"])
+    _run([_PY, "-m", "coverage", "html"])
+
+    below: list[str] = []
+    for package, floor in COVERAGE_FLOORS.items():
+        # An aggregate floor alone lets one package rot behind the others.
+        code = _run(
+            [
+                _PY,
+                "-m",
+                "coverage",
+                "report",
+                f"--include=*/{package}/*",
+                f"--fail-under={floor}",
+            ],
+            check=False,
+        )
+        if code != 0:
+            below.append(package)
+
+    # No --fail-under: this one reads the aggregate floor from pyproject.toml.
+    aggregate = _run([_PY, "-m", "coverage", "report"], check=False)
+
+    if below or aggregate != 0:
+        if below:
+            print(f"\nBelow the per-package floor: {', '.join(below)}")
+        sys.exit(1)
 
 
 def clean() -> None:
