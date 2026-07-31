@@ -33,13 +33,33 @@ issues or pull requests, and do not use the `gh` CLI for that.** After a merge, 
 One roadmap item — or one tightly coupled cluster — per branch. If scope drifts, rename
 the branch or squash-merge under a title that matches what actually landed.
 
+### Labels
+
+Releases are built with `generate_release_notes: true`, which groups merged pull requests
+by the label map in `.github/release.yml`. **The label is the only input — the branch
+prefix and commit message are ignored.** An unlabelled pull request lands under "Other
+Changes", which is where most of 0.3.0 ended up.
+
+| Branch prefix | Label to assign | Release-notes section |
+| --- | --- | --- |
+| `feat/` | `enhancement` or `feature` | Features |
+| `fix/` | `bug` or `fix` | Bug Fixes |
+| `docs/` | `documentation` | Documentation |
+| CI, workflows, release tooling | `ci` or `automation` | CI/CD |
+| `perf/`, `chore/` | — | Other Changes |
+
+Label the pull request before merging; adding it afterwards does not change notes that
+have already been generated. Adding a category means editing `.github/release.yml` and
+creating the label in the repository — a label used in that file but absent from the
+repository silently matches nothing.
+
 ## Commands
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 327 passed, 1 skipped
-python -m ruff check packages
-python -m ruff format --check packages
+python -m pytest packages -q --no-header          # baseline: 478 passed, 2 skipped
+python -m ruff check packages/ examples/       # CI lints these two paths only
+python -m ruff format --check packages/ examples/
 ```
 
 `scripts/dev.py check` also runs a `mypy` step, but `mypy` is not currently installed —
