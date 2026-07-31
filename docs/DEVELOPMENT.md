@@ -261,8 +261,8 @@ attestations and an audit trail.
 
 #### One-time setup
 
-Trusted Publishing must be configured once per project, on both PyPI and TestPyPI — six projects
-on each. Under *Manage → Publishing*, add a GitHub publisher:
+Trusted Publishing is configured once per project, per index. Under *Manage → Publishing*, add a
+GitHub publisher:
 
 | Field | Value |
 | --- | --- |
@@ -274,6 +274,24 @@ on each. Under *Manage → Publishing*, add a GitHub publisher:
 Then create both environments under *Settings → Environments*, and add required reviewers to
 `pypi`. The trusted publisher is bound to the workflow **filename**; renaming `publish.yml`
 breaks publishing with an opaque OIDC error.
+
+##### Bootstrapping a project that does not exist yet
+
+A project with no releases has nothing to attach a publisher to, so you register a *pending*
+publisher instead, from the account-level publishing page rather than the project's settings.
+
+Pending publishers must be **uniquely identifiable by their claims**, and every package here
+shares the same owner, repository, workflow and environment. The index cannot tell which pending
+project an incoming token belongs to, so only one pending publisher can exist at a time:
+
+> A pending trusted publisher matching this configuration has already been registered for a
+> different project name.
+
+Bootstrapping N projects on a fresh index therefore takes N sequential rounds — register one,
+publish it, and the pending publisher converts to a project-scoped one, freeing the slot for the
+next. `skip-existing` makes each round cheap, since packages already published are skipped.
+
+This is worth knowing before adding a seventh package, or publishing to any new index.
 
 ## Project Structure
 
