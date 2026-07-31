@@ -311,6 +311,27 @@ class DatabaseSkillProvider(SkillProvider):
     async def get_reference(self, skill_id: str, name: str) -> bytes: ...
 ```
 
+### Resource listing
+
+`list_resources()` lets an agent discover which references, scripts, and assets a skill has,
+instead of inferring them from the prose in `SKILL.md`. It is **optional**, because some backends
+genuinely cannot enumerate — a static CDN has no directory listing.
+
+Providers that can enumerate override the method and advertise it:
+
+```python
+class DatabaseSkillProvider(SkillProvider):
+    supports_resource_listing = True
+
+    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
+        return {"references": [...], "scripts": [...], "assets": [...]}
+```
+
+Leave both alone and the default raises `ResourceListingNotSupportedError`. That is deliberate:
+returning an empty dict would tell an agent the skill *has* no resources, when the truth is that
+this provider cannot say. `LocalFileSystemSkillProvider` supports listing; the HTTP provider does
+so only when the skill publishes an `index.json`.
+
 Register a custom provider:
 
 ```python
@@ -329,6 +350,55 @@ await registry.register([
 ```
 
 Batch registration is atomic - if any skill fails validation, none are registered.
+
+## Error Handling
+
+Failures are typed so that a caller can tell "this will never work" from "try again later":
+
+| Exception | Meaning |
+| --- | --- |
+| `SkillNotFoundError` | The skill does not exist. Retrying will not help. |
+| `ResourceNotFoundError` | The skill exists; that reference, script, or asset does not. |
+| `SkillUnavailableError` | The backend is temporarily unable to answer — a `5xx`, a timeout, a rate limit. Carries `retry_after` when the server advised one. |
+| `ResourceListingNotSupportedError` | This provider cannot enumerate resources. Not the same as having none. |
+
+All of them derive from `AgentSkillsError`.
+
+```python
+import asyncio
+from agentskills_core import SkillNotFoundError, SkillUnavailableError
+
+try:
+    body = await registry.get_skill("incident-response").get_body()
+except SkillNotFoundError:
+    ...                                   # a real 404 — surface it
+except SkillUnavailableError as exc:
+    await asyncio.sleep(exc.retry_after or 5.0)
+```
+
+The HTTP provider already retries transient failures with bounded, jittered backoff and honours
+`Retry-After`, so a `SkillUnavailableError` means retrying did not help.
+
+## Logging
+
+Everything logs under a single `agentskills` namespace, so one call turns on the whole SDK:
+
+```python
+import logging
+
+logging.getLogger("agentskills").setLevel(logging.DEBUG)
+```
+
+Sub-loggers follow the package layout — `agentskills.http.static`, `agentskills.core.registry` —
+so you can raise the level on one provider alone. Only a `NullHandler` is attached by default; the
+SDK never configures handlers or touches the root logger.
+
+`DEBUG` covers fetches, cache hits, and parses. `INFO` records registration outcomes. `WARNING`
+means degraded but recovered, such as a retry after a `503`. There is deliberately no `ERROR`
+level: failures raise, and logging them as well would report the same event twice.
+
+URLs are redacted before they are logged or embedded in exceptions, so query strings — SAS tokens,
+signed-URL signatures — do not reach your logs or your tracebacks. Headers are never logged.
 
 ## Development
 
@@ -349,7 +419,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for planned themes, non-goals, and how wo
 
 Agent Skills are **equivalent to executable code** - skill content is injected into an LLM agent's context verbatim. **Only load skills from sources you trust.**
 
-The SDK includes built-in protections: input validation, TLS enforcement options, response size limits, path-traversal guards, and safe XML generation. See each package's README for provider-specific security controls.
+The SDK includes built-in protections: input validation, TLS enforcement options, response size limits, path-traversal guards, credential redaction in logs and tracebacks, and safe XML generation. See each package's README for provider-specific security controls.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
