@@ -209,31 +209,67 @@ All packages share the same version. Use the bump script to update all `pyprojec
 
 Create a branch, commit the version bump, open a PR, and merge to `main`.
 
-### 3. Publish to PyPI
+### 3. Tag
 
-```powershell
-# Publish all packages in dependency order
-.\scripts\publish.ps1
-
-# Test on TestPyPI first
-.\scripts\publish.ps1 -TestPyPI
-
-# Build only (no publish)
-.\scripts\publish.ps1 -BuildOnly
-```
-
-Packages are published in dependency order: core, then providers, then integrations.
-
-### 4. Tag and release
-
-Push a version tag to trigger the GitHub Release workflow (`.github/workflows/release.yml`):
+Publishing is triggered by the tag and nothing else. Verify the bump landed, then tag `main`:
 
 ```bash
+python scripts/check_release_version.py --tag v<version>
 git tag v<version>
 git push origin v<version>
 ```
 
-This automatically creates a GitHub Release with auto-generated notes from merged PRs and commits since the previous tag.
+The tag must be `v` followed by the exact version string — `0.3.0rc1` is tagged `v0.3.0rc1`.
+Only a bare `vX.Y.Z` tag publishes to PyPI; every other tag shape goes to TestPyPI, so a
+malformed tag cannot burn a real version number.
+
+### 4. Approve
+
+`.github/workflows/publish.yml` builds all six distributions, then waits on the `pypi`
+environment for a reviewer. Approving releases all six packages; there is one approval per
+release, not one per package.
+
+Publishing uses [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — the
+runner mints a short-lived OIDC token, and no PyPI API token exists anywhere in the repository,
+in Actions secrets, or on a workstation. Each distribution is uploaded with a PEP 740 provenance
+attestation.
+
+Packages go up in dependency order: core, then providers, then integrations. PyPI does not
+enforce this; it exists so that nobody installing mid-release resolves a package whose
+dependency is not there yet. If a run fails part-way, the failing step names the package and
+everything above it is already live — re-running the job is safe, because published versions are
+skipped rather than re-uploaded.
+
+The GitHub Release, with auto-generated notes, is created only after every package is live, so
+the notes never advertise a version that failed to publish. Releases from a non-`vX.Y.Z` tag are
+marked as pre-releases.
+
+### Dry runs
+
+Run the **Publish** workflow manually (`workflow_dispatch`) to push the current build to
+TestPyPI. Manual runs can only ever target TestPyPI; a production release requires a tag.
+
+### Publishing by hand
+
+`scripts/publish.ps1` still works and needs a PyPI token. It is for emergencies — recovering a
+release when GitHub Actions is down. Prefer the workflow: it is the only path that produces
+attestations and an audit trail.
+
+#### One-time setup
+
+Trusted Publishing must be configured once per project, on both PyPI and TestPyPI — six projects
+on each. Under *Manage → Publishing*, add a GitHub publisher:
+
+| Field | Value |
+| --- | --- |
+| Owner | `pratikxpanda` |
+| Repository | `agentskills-sdk` |
+| Workflow | `publish.yml` |
+| Environment | `pypi` (on PyPI) / `testpypi` (on TestPyPI) |
+
+Then create both environments under *Settings → Environments*, and add required reviewers to
+`pypi`. The trusted publisher is bound to the workflow **filename**; renaming `publish.yml`
+breaks publishing with an opaque OIDC error.
 
 ## Project Structure
 
