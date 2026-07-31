@@ -85,10 +85,15 @@ if $DRY_RUN; then
 else
     for rel_path in "${PYPROJECT_FILES[@]}"; do
         file_path="$REPO_ROOT/$rel_path"
+        # The six ship in lockstep, so a dependent must require the core it ships with.
+        sed_args=(
+            -e "s/version = \"$current_version\"/version = \"$new_version\"/"
+            -e "s/agentskills-core = \"[^\"]*\"/agentskills-core = \">=$new_version,<1.0\"/"
+        )
         if [[ "$(uname)" == "Darwin" ]]; then
-            sed -i '' "s/version = \"$current_version\"/version = \"$new_version\"/" "$file_path"
+            sed -i '' "${sed_args[@]}" "$file_path"
         else
-            sed -i "s/version = \"$current_version\"/version = \"$new_version\"/" "$file_path"
+            sed -i "${sed_args[@]}" "$file_path"
         fi
         echo "  Updated $rel_path"
     done
