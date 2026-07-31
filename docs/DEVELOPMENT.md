@@ -34,6 +34,31 @@ poetry run pytest packages/integrations/agentskills-agentframework -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
 ```
 
+### Coverage
+
+```bash
+poetry run python scripts/dev.py test:cov
+```
+
+This runs the suite with branch coverage, writes `coverage.xml` and `htmlcov/`, and fails if any
+package or the aggregate is below its floor. CI runs the same command and publishes the report to
+the job summary of every run.
+
+Coverage is measured by **import name**, not by path — `[tool.coverage.run] source_pkgs` in the
+root `pyproject.toml`. Measuring `packages/` instead would count the test files, and a test file
+is trivially covered by the act of running it.
+
+Floors are enforced at two levels:
+
+| Scope | Where | Why |
+|---|---|---|
+| Aggregate | `[tool.coverage.report] fail_under` | Enforced by `coverage report` itself, so a bare run is gated too |
+| Per package | `COVERAGE_FLOORS` in `scripts/dev.py` | An aggregate floor alone lets one package rot behind the others |
+
+Both were set to the value measured when the gate was introduced, and are meant to ratchet
+upward. Raise a floor when its package moves up. If you have to lower one, say why in the PR —
+the point of the gate is that lowering it is a visible decision rather than a silent drift.
+
 ## Linting & Formatting
 
 This project uses [Ruff](https://docs.astral.sh/ruff/) for both linting and formatting. Configuration lives in the root `pyproject.toml`.
@@ -80,10 +105,12 @@ python scripts/dev.py all           # Format + lint + test
 
 ## CI
 
-GitHub Actions runs automatically on every push and pull request to `main`. The pipeline is defined in `.github/workflows/ci.yml` and includes two jobs:
+GitHub Actions runs automatically on every push and pull request to `main`. The pipeline is defined in `.github/workflows/ci.yml` and includes these jobs:
 
 - **Lint**: checks formatting (`ruff format --check`) and linting (`ruff check`)
 - **Test**: runs `pytest` across Python 3.12, 3.13, and 3.14
+- **Coverage**: runs the coverage gate and publishes the report to the job summary
+- **Test (latest permitted dependencies)**: resolves without `poetry.lock` to surface upstream breakage; advisory only
 
 All checks must pass before a PR can be merged. The CI status badge is shown on the root README.
 
