@@ -447,7 +447,7 @@ class TestResolveEnvVars:
         monkeypatch.delenv("MISSING_VAR", raising=False)
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="agentskills_mcp_server.config"):
+        with caplog.at_level(logging.WARNING, logger="agentskills.mcp_server.config"):
             resolve_env_vars("${MISSING_VAR}")
         assert "MISSING_VAR" in caplog.text
 

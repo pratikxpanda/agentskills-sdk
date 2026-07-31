@@ -27,9 +27,12 @@ from typing import Any, Literal, overload
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from agentskills_core.exceptions import SkillNotFoundError
+from agentskills_core.logging import get_logger
 from agentskills_core.provider import SkillProvider
 from agentskills_core.skill import Skill
 from agentskills_core.validation import validate_skill
+
+_logger = get_logger(__name__)
 
 #: Metadata fetches issued in parallel when building a catalog.
 DEFAULT_CATALOG_CONCURRENCY = 8
@@ -141,6 +144,7 @@ class SkillRegistry:
                 f"Skill '{skill_id}' failed validation:\n" + "\n".join(f"  - {e}" for e in errors)
             )
         self._skills[skill_id] = skill
+        _logger.info("Registered skill %r from %s", skill_id, type(provider).__name__)
 
     async def _register_batch(self, skills: list[tuple[str, SkillProvider]]) -> None:
         """Validate and register a batch of skills atomically."""
@@ -168,6 +172,7 @@ class SkillRegistry:
         # All passed — commit.
         for skill_id, skill in validated:
             self._skills[skill_id] = skill
+        _logger.info("Registered %d skills: %s", len(validated), [sid for sid, _ in validated])
 
     def list_skills(self) -> list[Skill]:
         """Return registered skills sorted by ID.
@@ -254,6 +259,11 @@ class SkillRegistry:
                     raise
 
         metadata = await asyncio.gather(*(fetch(skill) for skill in skills))
+        _logger.debug(
+            "Gathered catalog metadata for %d skills at concurrency %d",
+            len(skills),
+            self._catalog_concurrency,
+        )
         return list(zip(skills, metadata, strict=True))
 
     async def _build_xml(self) -> str:

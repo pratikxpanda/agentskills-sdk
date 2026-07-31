@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import quote, urlparse, urlsplit
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -49,8 +49,12 @@ from agentskills_core import (
     SkillNotFoundError,
     SkillProvider,
     SkillUnavailableError,
+    get_logger,
+    redact_url,
     split_frontmatter,
 )
+
+_logger = get_logger(__name__)
 
 # Input validation: identifiers (skill_id, resource name) must be safe
 # URL path segments.  Allows alphanumeric, hyphens, dots, underscores.
@@ -260,6 +264,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             self._skill_md_cache.clear()
         else:
             self._skill_md_cache.pop(skill_id, None)
+        _logger.debug("Invalidated SKILL.md cache for %s", skill_id or "all skills")
 
     async def __aenter__(self) -> HTTPStaticFileSkillProvider:
         return self
@@ -461,14 +466,14 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # ------------------------------------------------------------------
 
     def _describe(self, url: str) -> str:
-        """Describe *url* for an error message without leaking secrets.
+        """Describe *url* for an error message or log record without leaking secrets.
 
         Returns the path relative to *base_url*, so neither the host nor
         any query string can reach a message, a log line, or a
         traceback.  Query strings are where credentials actually live:
         SAS tokens and signed-URL signatures are passed via ``params``.
         """
-        return urlsplit(url.removeprefix(self._base_url)).path or url
+        return redact_url(url, relative_to=self._base_url)
 
     async def _stream_bytes(
         self,
@@ -512,6 +517,15 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 else:
                     sleep_for = random.uniform(0, min(delay, self._max_retry_delay))
                     delay *= 2
+                # No exc_info: httpx exception reprs embed the full URL, query string included.
+                _logger.warning(
+                    "Retrying %s in %.2fs after attempt %d/%d: %s",
+                    self._describe(url),
+                    sleep_for,
+                    attempt + 1,
+                    self._max_retries + 1,
+                    exc,
+                )
                 await asyncio.sleep(sleep_for)
 
         raise AssertionError("unreachable: the loop either returns or raises")
@@ -530,6 +544,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         the entire body has been buffered into memory.
         """
         safe_url = self._describe(url)
+        _logger.debug("GET %s", safe_url)
         try:
             async with self._client.stream("GET", url, headers=extra_headers) as resp:
                 status = resp.status_code
@@ -601,6 +616,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
         cached = self._skill_md_cache.get(skill_id)
         if cached is not None and not self._revalidate:
+            _logger.debug("Cache hit for SKILL.md of %r", skill_id)
             return cached.text
 
         conditional: dict[str, str] = {}
@@ -615,6 +631,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         )
         if data is None:
             # 304 is only reachable when validators were sent, which requires a cache entry.
+            _logger.debug("Revalidated SKILL.md of %r: 304 Not Modified", skill_id)
             return cached.text  # type: ignore[union-attr]
 
         text = data.decode("utf-8")

@@ -31,14 +31,15 @@ Example config (JSON)::
 
 from __future__ import annotations
 
-import logging
 import os
 import re
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-_logger = logging.getLogger(__name__)
+from agentskills_core import get_logger
+
+_logger = get_logger(__name__)
 
 
 class SkillConfig(BaseModel):

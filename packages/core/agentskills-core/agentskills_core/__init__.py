@@ -9,6 +9,8 @@ validating, and accessing `Agent Skills <https://agentskills.io>`_:
   and built-in catalog builder.
 * :func:`validate_skill` -- validates a skill against the specification.
 * :func:`validate_version` -- validates an optional semver ``version`` field.
+* :func:`get_logger` -- returns a logger in the shared ``agentskills.*`` namespace.
+* :func:`redact_url` -- strips credentials from a URL before it is logged or raised.
 * :func:`encode_resource_content` -- safely encodes resource bytes as tool output.
 * :class:`SkillNotFoundError` -- raised when a skill does not exist.
 * :class:`ResourceNotFoundError` -- raised when a resource within a skill
@@ -35,6 +37,12 @@ from agentskills_core.exceptions import (
     SkillNotFoundError,
     SkillUnavailableError,
 )
+from agentskills_core.logging import (
+    LOGGER_NAMESPACE,
+    REDACTED,
+    get_logger,
+    redact_url,
+)
 from agentskills_core.parsing import split_frontmatter
 from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
 from agentskills_core.registry import SkillRegistry
@@ -43,6 +51,8 @@ from agentskills_core.validation import validate_skill, validate_version
 
 __all__ = [
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
+    "LOGGER_NAMESPACE",
+    "REDACTED",
     "RESOURCE_KINDS",
     "AgentSkillsError",
     "ResourceListingNotSupportedError",
@@ -53,6 +63,8 @@ __all__ = [
     "SkillRegistry",
     "SkillUnavailableError",
     "encode_resource_content",
+    "get_logger",
+    "redact_url",
     "split_frontmatter",
     "validate_skill",
     "validate_version",
