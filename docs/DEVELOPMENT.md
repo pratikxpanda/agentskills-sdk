@@ -32,6 +32,7 @@ poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/integrations/agentskills-langchain -v
 poetry run pytest packages/integrations/agentskills-agentframework -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
+poetry run pytest packages/cli/agentskills-cli -v
 ```
 
 ### Coverage
@@ -206,7 +207,7 @@ All packages share the same version. Use the bump script to update all `pyprojec
 ```
 
 The script also rewrites each dependent's `agentskills-core` constraint to `>=<new>,<1.0`. The
-six packages ship in lockstep, so a dependent must require the core it was released with —
+packages ship in lockstep, so a dependent must require the core it was released with —
 otherwise pip can resolve an older core against a newer dependent and fail at import.
 
 ### 2. Commit and merge
@@ -229,8 +230,8 @@ malformed tag cannot burn a real version number.
 
 ### 4. Approve
 
-`.github/workflows/publish.yml` builds all six distributions, then waits on the `pypi`
-environment for a reviewer. Approving releases all six packages; there is one approval per
+`.github/workflows/publish.yml` builds every distribution, then waits on the `pypi`
+environment for a reviewer. Approving releases all of them; there is one approval per
 release, not one per package.
 
 Publishing uses [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — the
@@ -303,5 +304,6 @@ This is worth knowing before adding a seventh package, or publishing to any new 
 | `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |
 | `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
 | `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
+| `packages/cli/agentskills-cli` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
 
-Each package has its own `pyproject.toml` under `packages/` and can be published independently. `agentskills-fs`, `agentskills-http`, `agentskills-langchain`, `agentskills-agentframework`, and `agentskills-mcp-server` depend on `agentskills-core`. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.
+Each package has its own `pyproject.toml` under `packages/` and can be published independently. Every package except `agentskills-core` depends on it. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.

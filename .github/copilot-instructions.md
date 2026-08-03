@@ -1,6 +1,6 @@
 # Working in this repository
 
-Poetry monorepo. Six packages, versioned and released together.
+Poetry monorepo. Seven packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
@@ -10,6 +10,7 @@ Poetry monorepo. Six packages, versioned and released together.
 | `packages/integrations/agentskills-langchain` | LangChain tools |
 | `packages/integrations/agentskills-agentframework` | Microsoft Agent Framework context provider |
 | `packages/integrations/agentskills-mcp-server` | MCP server + Agent Framework MCP bridge |
+| `packages/cli/agentskills-cli` | `agentskills` command: init, validate, lint, inspect, serve |
 
 Planning lives in `docs/ROADMAP.md`, per-milestone specs in `docs/issues/`, settled
 decisions in `docs/adr/`.
@@ -57,7 +58,7 @@ repository silently matches nothing.
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 478 passed, 2 skipped
+python -m pytest packages -q --no-header          # baseline: 553 passed, 2 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 ```
@@ -75,6 +76,11 @@ that task fails for reasons unrelated to your change.
 
 ## Traps worth knowing
 
+- **A new package must be registered in seven places.** Root `pyproject.toml` (path
+  dependency, `[tool.coverage.run] source_pkgs`, `[tool.ruff.lint.isort]
+  known-first-party`), `scripts/dev.py` `COVERAGE_FLOORS`, both `bump-version` scripts,
+  `scripts/check_release_version.py`, and the build loop plus a publish step in
+  `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
 - **`poetry.lock` hides upstream breaking changes.** Locked installs kept CI green while
   the published packages were broken for every new user. The advisory `test-unlocked` CI
   job resolves without the lock; when it fails, the fix belongs in a version constraint,

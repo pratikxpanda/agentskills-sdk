@@ -40,6 +40,27 @@ type = "directory"
 url = "packages/integrations/agentskills-agentframework"
 
 [[package]]
+name = "agentskills-cli"
+version = "0.3.0"
+description = "Command line tools for authoring and validating Agent Skills (https://agentskills.io)"
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+agentskills-core = ">=0.3.0,<1.0"
+agentskills-fs = ">=0.3.0,<1.0"
+
+[package.extras]
+serve = ["agentskills-mcp-server (>=0.3.0,<1.0)"]
+
+[package.source]
+type = "directory"
+url = "packages/cli/agentskills-cli"
+
+[[package]]
 name = "agentskills-core"
 version = "0.3.0"
 description = "Storage-agnostic abstractions for discovering, validating, and accessing Agent Skills (https://agentskills.io)"
@@ -2685,4 +2706,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "0f0f859e4ff332bcc171bf69cead97b6b3ec127f0d05c5b02b7194ddbd0ed37e"
+content-hash = "1139af54e9e5f294a4bce03d4633e20747e2de0402c69233da03022c05171883"

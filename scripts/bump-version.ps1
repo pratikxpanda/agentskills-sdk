@@ -43,7 +43,8 @@ $pyprojectFiles = @(
     "packages/providers/agentskills-http/pyproject.toml",
     "packages/integrations/agentskills-langchain/pyproject.toml",
     "packages/integrations/agentskills-agentframework/pyproject.toml",
-    "packages/integrations/agentskills-mcp-server/pyproject.toml"
+    "packages/integrations/agentskills-mcp-server/pyproject.toml",
+    "packages/cli/agentskills-cli/pyproject.toml"
 )
 
 # Read current version from root pyproject.toml
@@ -98,7 +99,7 @@ foreach ($relPath in $pyprojectFiles) {
 
     $content = Get-Content $filePath -Raw
     $updated = $content -replace "version = `"$currentVersion`"", "version = `"$newVersion`""
-    # The six ship in lockstep, so a dependent must require the core it ships with.
+    # These ship in lockstep, so a dependent must require the core it ships with.
     $updated = $updated -replace 'agentskills-core = "[^"]*"', "agentskills-core = `">=$newVersion,<1.0`""
     Set-Content -Path $filePath -Value $updated -NoNewline
     Write-Host "  Updated $relPath" -ForegroundColor Green
