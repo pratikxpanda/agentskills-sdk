@@ -323,17 +323,17 @@ class TestSecurity:
 
     async def test_invalid_skill_id_rejected(self):
         async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(ValueError, match="Invalid skill_id"):
+            with pytest.raises(SkillNotFoundError, match="Invalid skill_id"):
                 await provider.get_metadata("../../etc")
 
     async def test_invalid_resource_name_rejected(self):
         async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(ValueError, match="Invalid resource name"):
+            with pytest.raises(ResourceNotFoundError, match="Invalid resource name"):
                 await provider.get_script("test-skill", "../../../etc/passwd")
 
     async def test_path_separator_in_skill_id_rejected(self):
         async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(ValueError, match="Invalid skill_id"):
+            with pytest.raises(SkillNotFoundError, match="Invalid skill_id"):
                 await provider.get_metadata("foo/bar")
 
     @respx.mock
@@ -691,7 +691,7 @@ class TestSecurityEdgeCases:
     async def test_empty_string_identifier_rejected(self):
         """Empty string skill_id is rejected by _validate_identifier."""
         async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(ValueError, match="Invalid skill_id"):
+            with pytest.raises(SkillNotFoundError, match="Invalid skill_id"):
                 await provider.get_metadata("")
 
     @pytest.mark.parametrize(
@@ -708,7 +708,7 @@ class TestSecurityEdgeCases:
     async def test_invalid_identifier_patterns(self, bad_id: str):
         """Various invalid identifier patterns are all rejected."""
         async with HTTPStaticFileSkillProvider(BASE) as provider:
-            with pytest.raises(ValueError, match="Invalid skill_id"):
+            with pytest.raises(SkillNotFoundError, match="Invalid skill_id"):
                 await provider.get_metadata(bad_id)
 
     @respx.mock
@@ -908,6 +908,6 @@ class TestResourceListing:
     @respx.mock
     async def test_traversal_in_skill_id_rejected(self):
         async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
-            with pytest.raises(ValueError):
+            with pytest.raises(SkillNotFoundError):
                 await provider.list_resources("../secrets")
         assert not respx.calls

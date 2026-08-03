@@ -2,13 +2,13 @@
 
 import base64
 import json
-from unittest.mock import AsyncMock
 
 import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 
-from agentskills_core import SkillProvider, SkillRegistry
+from agentskills_core import SkillRegistry
 from agentskills_mcp_server import create_mcp_server
+from agentskills_testing import InMemorySkillProvider, build_skill
 
 
 def _tool_text(result) -> str:
@@ -29,13 +29,13 @@ def _mock_provider(
     references: dict[str, bytes] | None = None,
     scripts: dict[str, bytes] | None = None,
     assets: dict[str, bytes] | None = None,
-) -> AsyncMock:
-    """Create a mock SkillProvider with test data."""
-    if metadata is None:
-        metadata = {
-            "name": skill_id,
-            "description": "Handle production incidents.",
-        }
+) -> InMemorySkillProvider:
+    """Build a real provider with test data.
+
+    A mock agrees with whatever the test asserts, including the
+    assertions that are wrong; :class:`InMemorySkillProvider` passes the
+    provider conformance suite.
+    """
     if references is None:
         references = {"severity-levels.md": b"# Severity\n\nSEV1 is critical."}
     if scripts is None:
@@ -43,19 +43,16 @@ def _mock_provider(
     if assets is None:
         assets = {"flowchart.mermaid": b"graph TD; A-->B"}
 
-    provider = AsyncMock(spec=SkillProvider)
-    provider.get_metadata.return_value = metadata
-    provider.get_body.return_value = body
-    provider.get_reference.side_effect = lambda sid, name: references[name]
-    provider.get_script.side_effect = lambda sid, name: scripts[name]
-    provider.get_asset.side_effect = lambda sid, name: assets[name]
-    provider.supports_resource_listing = True
-    provider.list_resources.return_value = {
-        "references": sorted(references),
-        "scripts": sorted(scripts),
-        "assets": sorted(assets),
-    }
-    return provider
+    skill = build_skill(
+        skill_id,
+        description="Handle production incidents.",
+        body=body,
+        metadata=metadata,
+        references=references,
+        scripts=scripts,
+        assets=assets,
+    )
+    return InMemorySkillProvider({skill_id: skill})
 
 
 @pytest.fixture()
@@ -147,18 +144,17 @@ class TestMCPTools:
 
     async def test_list_skill_resources_reports_unsupported(self, registry):
         """An un-enumerable backend is reported, not raised."""
-        from agentskills_core import ResourceListingNotSupportedError
-
-        provider = _mock_provider("static-skill")
-        provider.supports_resource_listing = False
-        provider.list_resources.side_effect = ResourceListingNotSupportedError("no manifest")
+        provider = InMemorySkillProvider(
+            {"static-skill": build_skill("static-skill")},
+            supports_resource_listing=False,
+        )
         await registry.register("static-skill", provider)
 
         server = create_mcp_server(registry, name="Test Server")
         result = await server.call_tool("list_skill_resources", {"skill_id": "static-skill"})
         payload = json.loads(_tool_text(result))
         assert payload["supported"] is False
-        assert "no manifest" in payload["note"]
+        assert "listing disabled" in payload["note"]
 
     async def test_get_skill_script(self, server):
         result = await server.call_tool(

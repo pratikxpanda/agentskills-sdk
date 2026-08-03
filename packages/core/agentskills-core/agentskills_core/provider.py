@@ -88,6 +88,10 @@ class SkillProvider(ABC):
         never the full instruction body -- to keep context usage low
         during the discovery phase.
 
+        The returned dict must not be shared between calls: a caller that
+        mutates it must not affect the next caller.  Implementations that
+        cache a parsed dict should return a copy.
+
         Args:
             skill_id: The skill name to look up.
 

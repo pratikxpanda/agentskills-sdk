@@ -33,6 +33,7 @@ poetry run pytest packages/integrations/agentskills-langchain -v
 poetry run pytest packages/integrations/agentskills-agentframework -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
 poetry run pytest packages/cli/agentskills-cli -v
+poetry run pytest packages/testing/agentskills-testing -v
 ```
 
 ### Coverage
@@ -308,5 +309,6 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
 | `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
 | `packages/cli/agentskills-cli` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
+| `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, and pytest fixtures |
 
 Each package has its own `pyproject.toml` under `packages/` and can be published independently. Every package except `agentskills-core` depends on it. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.

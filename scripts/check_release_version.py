@@ -28,6 +28,7 @@ DEPENDENTS = [
     "packages/integrations/agentskills-agentframework",
     "packages/integrations/agentskills-mcp-server",
     "packages/cli/agentskills-cli",
+    "packages/testing/agentskills-testing",
 ]
 
 PACKAGES = [CORE, *DEPENDENTS]

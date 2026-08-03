@@ -277,14 +277,20 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _validate_identifier(value: str, label: str) -> None:
-        """Raise :class:`ValueError` if *value* is not a safe URL path segment.
+    def _validate_identifier(value: str, label: str, error: type[AgentSkillsError]) -> None:
+        """Raise *error* if *value* is not a safe URL path segment.
 
         Prevents path-traversal attacks (e.g. ``../``) and other
         injection via ``skill_id`` or resource ``name``.
+
+        *error* is the exception the calling method documents — a
+        rejected identifier is indistinguishable from a missing one from
+        the caller's side, and raising something outside the
+        :class:`~agentskills_core.AgentSkillsError` hierarchy would force
+        callers to special-case this provider.
         """
         if not _SAFE_IDENTIFIER_RE.match(value):
-            raise ValueError(
+            raise error(
                 f"Invalid {label}: {value!r} — must start with an "
                 f"alphanumeric character and contain only alphanumeric "
                 f"characters, hyphens, dots, and underscores"
@@ -424,7 +430,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 "names from the skill body."
             )
 
-        self._validate_identifier(skill_id, "skill_id")
+        self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
         url = f"{self._base_url}/{quote(skill_id, safe='')}/{RESOURCE_MANIFEST_NAME}"
         try:
             raw = await self._get_bytes(url)
@@ -611,7 +617,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
     async def _get_skill_md(self, skill_id: str) -> str:
         """Fetch a skill's ``SKILL.md``, serving from cache when possible."""
-        self._validate_identifier(skill_id, "skill_id")
+        self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
         url = f"{self._base_url}/{quote(skill_id, safe='')}/SKILL.md"
 
         cached = self._skill_md_cache.get(skill_id)
@@ -644,7 +650,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
 
     async def _get_resource(self, skill_id: str, subdir: str, name: str) -> bytes:
         """Fetch a single resource file from a skill subdirectory."""
-        self._validate_identifier(skill_id, "skill_id")
-        self._validate_identifier(name, "resource name")
+        self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
+        self._validate_identifier(name, "resource name", ResourceNotFoundError)
         url = f"{self._base_url}/{quote(skill_id, safe='')}/{subdir}/{quote(name, safe='')}"
         return await self._get_bytes(url)
