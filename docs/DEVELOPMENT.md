@@ -225,8 +225,10 @@ git push origin v<version>
 ```
 
 The tag must be `v` followed by the exact version string — `0.3.0rc1` is tagged `v0.3.0rc1`.
-Only a bare `vX.Y.Z` tag publishes to PyPI; every other tag shape goes to TestPyPI, so a
-malformed tag cannot burn a real version number.
+A tag that is neither `vX.Y.Z` nor `vX.Y.Z` plus `a1`, `b1` or `rc1` fails the run before
+anything is built, naming the shape it expected. Pre-release tags publish to PyPI like any
+other: `pip` will not install one unless `--pre` is passed, so they cannot reach anybody who
+did not ask for them.
 
 ### 4. Approve
 
@@ -246,13 +248,14 @@ everything above it is already live — re-running the job is safe, because publ
 skipped rather than re-uploaded.
 
 The GitHub Release, with auto-generated notes, is created only after every package is live, so
-the notes never advertise a version that failed to publish. Releases from a non-`vX.Y.Z` tag are
-marked as pre-releases.
+the notes never advertise a version that failed to publish. A pre-release tag produces a release
+marked as a pre-release.
 
 ### Dry runs
 
-Run the **Publish** workflow manually (`workflow_dispatch`) to push the current build to
-TestPyPI. Manual runs can only ever target TestPyPI; a production release requires a tag.
+Run the **Publish** workflow manually (`workflow_dispatch`). It runs the version guard, builds
+every distribution and uploads the artifact, then stops — publishing takes a tag. What it does
+not exercise is the upload itself, and there is no longer a scratch index that would.
 
 ### Publishing by hand
 
@@ -270,10 +273,10 @@ GitHub publisher:
 | Owner | `pratikxpanda` |
 | Repository | `agentskills-sdk` |
 | Workflow | `publish.yml` |
-| Environment | `pypi` (on PyPI) / `testpypi` (on TestPyPI) |
+| Environment | `pypi` |
 
-Then create both environments under *Settings → Environments*, and add required reviewers to
-`pypi`. The trusted publisher is bound to the workflow **filename**; renaming `publish.yml`
+Then create the environment under *Settings → Environments* and add required reviewers to it.
+The trusted publisher is bound to the workflow **filename**; renaming `publish.yml`
 breaks publishing with an opaque OIDC error.
 
 ##### Bootstrapping a project that does not exist yet
@@ -292,7 +295,7 @@ Bootstrapping N projects on a fresh index therefore takes N sequential rounds �
 publish it, and the pending publisher converts to a project-scoped one, freeing the slot for the
 next. `skip-existing` makes each round cheap, since packages already published are skipped.
 
-This is worth knowing before adding a seventh package, or publishing to any new index.
+This is worth knowing before adding a package, or publishing to any new index.
 
 ## Project Structure
 
