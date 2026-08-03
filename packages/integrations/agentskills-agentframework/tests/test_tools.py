@@ -2,13 +2,13 @@
 
 import base64
 import json
-from unittest.mock import AsyncMock
 
 import pytest
 
 from agentskills_agentframework import get_tools, get_tools_usage_instructions
-from agentskills_core import SkillProvider, SkillRegistry
+from agentskills_core import SkillRegistry
 from agentskills_core.exceptions import SkillNotFoundError
+from agentskills_testing import InMemorySkillProvider, build_skill
 
 
 def _mock_provider(
@@ -18,13 +18,14 @@ def _mock_provider(
     references: dict[str, bytes] | None = None,
     scripts: dict[str, bytes] | None = None,
     assets: dict[str, bytes] | None = None,
-) -> AsyncMock:
-    """Create a mock SkillProvider with test data."""
-    if metadata is None:
-        metadata = {
-            "name": skill_id,
-            "description": "Handle production incidents.",
-        }
+) -> InMemorySkillProvider:
+    """Build a real provider with test data.
+
+    A mock agrees with whatever the test asserts, including the
+    assertions that are wrong; :class:`InMemorySkillProvider` passes the
+    provider conformance suite, so a test passing against it is evidence
+    the code under test would work against a real provider.
+    """
     if references is None:
         references = {"severity-levels.md": b"# Severity\n\nSEV1 is critical."}
     if scripts is None:
@@ -32,19 +33,16 @@ def _mock_provider(
     if assets is None:
         assets = {"flowchart.mermaid": b"graph TD; A-->B"}
 
-    provider = AsyncMock(spec=SkillProvider)
-    provider.get_metadata.return_value = metadata
-    provider.get_body.return_value = body
-    provider.get_reference.side_effect = lambda sid, name: references[name]
-    provider.get_script.side_effect = lambda sid, name: scripts[name]
-    provider.get_asset.side_effect = lambda sid, name: assets[name]
-    provider.supports_resource_listing = True
-    provider.list_resources.return_value = {
-        "references": sorted(references),
-        "scripts": sorted(scripts),
-        "assets": sorted(assets),
-    }
-    return provider
+    skill = build_skill(
+        skill_id,
+        description="Handle production incidents.",
+        body=body,
+        metadata=metadata,
+        references=references,
+        scripts=scripts,
+        assets=assets,
+    )
+    return InMemorySkillProvider({skill_id: skill})
 
 
 async def _invoke_text(tool, **kwargs) -> str:
@@ -109,18 +107,17 @@ class TestGetTools:
 
     async def test_list_skill_resources_reports_unsupported(self):
         """An un-enumerable backend is reported, not raised: the agent can act on it."""
-        from agentskills_core import ResourceListingNotSupportedError
-
-        provider = _mock_provider()
-        provider.supports_resource_listing = False
-        provider.list_resources.side_effect = ResourceListingNotSupportedError("no manifest")
+        provider = InMemorySkillProvider(
+            {"incident-response": build_skill("incident-response")},
+            supports_resource_listing=False,
+        )
         reg = SkillRegistry()
         await reg.register("incident-response", provider)
 
         tool = next(t for t in get_tools(reg) if t.name == "list_skill_resources")
         payload = json.loads(await _invoke_text(tool, skill_id="incident-response"))
         assert payload["supported"] is False
-        assert "no manifest" in payload["note"]
+        assert "listing disabled" in payload["note"]
 
     async def test_get_skill_script_tool(self, registry):
         tools = get_tools(registry)
@@ -219,13 +216,7 @@ class TestToolsEdgeCases:
         """Requesting a non-existent resource raises an error."""
         from agentskills_core import ResourceNotFoundError
 
-        provider = _mock_provider(
-            references={"exists.md": b"ok"},
-        )
-        provider.get_reference.side_effect = lambda sid, name: (
-            {"exists.md": b"ok"}.get(name)
-            or (_ for _ in ()).throw(ResourceNotFoundError(f"{name} not found"))
-        )
+        provider = _mock_provider(references={"exists.md": b"ok"})
         reg = SkillRegistry()
         await reg.register("incident-response", provider)
         tools = get_tools(reg)

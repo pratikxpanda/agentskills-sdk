@@ -35,6 +35,7 @@ COVERAGE_FLOORS: dict[str, int] = {
     "agentskills_agentframework": 100,
     "agentskills_mcp_server": 91,
     "agentskills_cli": 99,
+    "agentskills_testing": 100,
 }
 
 
@@ -93,7 +94,11 @@ def test() -> None:
 
 def test_cov() -> None:
     """Run tests and enforce the per-package and aggregate coverage floors."""
-    _run([_PY, "-m", "pytest", "packages/", "-q", "--cov", "--cov-report="])
+    # ``coverage run -m pytest`` rather than ``pytest --cov``: agentskills-testing
+    # registers a pytest11 entry point, and entry-point plugins are imported
+    # before pytest-cov can start measuring.  Starting coverage first is the
+    # only way to see those modules at all.
+    _run([_PY, "-m", "coverage", "run", "-m", "pytest", "packages/", "-q"])
     _run([_PY, "-m", "coverage", "xml"])
     _run([_PY, "-m", "coverage", "html"])
 

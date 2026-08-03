@@ -26,6 +26,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | **Integration** - expose skills to a Microsoft Agent Framework agent, injected automatically through the agent lifecycle. | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-agentframework?label=)](https://pepy.tech/project/agentskills-agentframework) |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve skills over the Model Context Protocol to any MCP client, such as Claude Desktop, VS Code, or Cursor. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
 | [`agentskills-cli`](packages/cli/agentskills-cli/README.md) | **Tooling** - the `agentskills` command: scaffold, validate, lint, and inspect skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-cli?label=)](https://pypi.org/project/agentskills-cli/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-cli?label=)](https://pepy.tech/project/agentskills-cli) |
+| [`agentskills-testing`](packages/testing/agentskills-testing/README.md) | **Tooling** - the provider conformance suite and an in-memory provider, for anyone writing a provider or testing against one. | [![PyPI](https://img.shields.io/pypi/v/agentskills-testing?label=)](https://pypi.org/project/agentskills-testing/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-testing?label=)](https://pepy.tech/project/agentskills-testing) |
 
 **Which do I need?** One provider for wherever your skills live, plus the integration for your
 agent framework. Both pull in `agentskills-core`, so a LangChain app reading skills from disk
@@ -407,6 +408,52 @@ await registry.register([
 ```
 
 Batch registration is atomic - if any skill fails validation, none are registered.
+
+### Testing a provider
+
+An ABC enforces that five methods exist and nothing about what they do. The requirements that
+actually matter are the ones it cannot express: that an unknown skill ID raises
+`SkillNotFoundError` rather than returning `{}`, that `../../etc/passwd` is refused rather than
+resolved, and that a provider advertising `supports_resource_listing` can actually list.
+
+`agentskills-testing` turns those into tests you inherit:
+
+```bash
+pip install agentskills-testing
+```
+
+```python
+import pytest
+
+from agentskills_testing import ProviderConformanceSuite
+
+
+class TestDatabaseProvider(ProviderConformanceSuite):
+    @pytest.fixture
+    def provider(self):
+        return DatabaseSkillProvider(conn)
+```
+
+The fixture must expose one skill laid out per the documented contract — the package README lists
+it, and every name and byte string is exported as a constant so you can build the fixture from
+them rather than from copied literals. Both built-in providers are tested this way.
+
+Traversal assertions are not opt-out. Size limits live in a separate `ContentLimitConformanceSuite`,
+because an in-memory provider has no external source to bound — but any provider reading bytes it
+did not author should pass it.
+
+The same package ships `InMemorySkillProvider`, a real provider backed by a dict, for testing code
+that *consumes* skills. Prefer it to an `AsyncMock`: a mock agrees with whatever the test asserts,
+including the assertions that are wrong.
+
+```python
+from agentskills_testing import InMemorySkillProvider, build_skill
+
+provider = InMemorySkillProvider({"incident-response": build_skill("incident-response")})
+```
+
+See the [package README](packages/testing/agentskills-testing/README.md) for the full fixture
+contract and the pytest fixtures it registers.
 
 ## Error Handling
 

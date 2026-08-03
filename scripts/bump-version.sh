@@ -22,6 +22,7 @@ PYPROJECT_FILES=(
     "packages/integrations/agentskills-agentframework/pyproject.toml"
     "packages/integrations/agentskills-mcp-server/pyproject.toml"
     "packages/cli/agentskills-cli/pyproject.toml"
+    "packages/testing/agentskills-testing/pyproject.toml"
 )
 
 BUMP="patch"

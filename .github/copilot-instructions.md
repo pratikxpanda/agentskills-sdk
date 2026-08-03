@@ -1,6 +1,6 @@
 # Working in this repository
 
-Poetry monorepo. Seven packages, versioned and released together.
+Poetry monorepo. Eight packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
@@ -11,6 +11,7 @@ Poetry monorepo. Seven packages, versioned and released together.
 | `packages/integrations/agentskills-agentframework` | Microsoft Agent Framework context provider |
 | `packages/integrations/agentskills-mcp-server` | MCP server + Agent Framework MCP bridge |
 | `packages/cli/agentskills-cli` | `agentskills` command: init, validate, lint, inspect, serve |
+| `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, pytest fixtures |
 
 Planning lives in `docs/ROADMAP.md`, per-milestone specs in `docs/issues/`, settled
 decisions in `docs/adr/`.
@@ -58,7 +59,7 @@ repository silently matches nothing.
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 560 passed, 2 skipped
+python -m pytest packages -q --no-header          # baseline: 799 passed, 4 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 ```
@@ -81,6 +82,13 @@ that task fails for reasons unrelated to your change.
   known-first-party`), `scripts/dev.py` `COVERAGE_FLOORS`, both `bump-version` scripts,
   `scripts/check_release_version.py`, and the build loop plus a publish step in
   `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
+- **A package with a `pytest11` entry point is invisible to `pytest --cov`.** Entry-point
+  plugins are imported before pytest-cov starts measuring, so the package reports 0% and
+  drags everything it imports down with it. `scripts/dev.py test:cov` runs
+  `coverage run -m pytest` for this reason; do not "simplify" it back.
+- **Constructing an `httpx.AsyncClient` costs ~0.17s** (TLS context), which is why
+  `agentskills-http`'s tests dominate the suite runtime. Share one module-scoped client
+  when adding tests there — respx intercepts before it binds to an event loop.
 - **`poetry.lock` hides upstream breaking changes.** Locked installs kept CI green while
   the published packages were broken for every new user. The advisory `test-unlocked` CI
   job resolves without the lock; when it fails, the fix belongs in a version constraint,

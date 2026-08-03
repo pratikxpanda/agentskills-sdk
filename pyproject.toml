@@ -14,6 +14,7 @@ agentskills-langchain = { path = "packages/integrations/agentskills-langchain", 
 agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
 agentskills-cli = { path = "packages/cli/agentskills-cli", develop = true }
+agentskills-testing = { path = "packages/testing/agentskills-testing", develop = true }
 pyjwt = ">=2.12.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -45,6 +46,7 @@ source_pkgs = [
     "agentskills_agentframework",
     "agentskills_mcp_server",
     "agentskills_cli",
+    "agentskills_testing",
 ]
 
 [tool.coverage.report]
@@ -77,4 +79,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_cli"]
+known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_cli", "agentskills_testing"]

@@ -44,7 +44,8 @@ $pyprojectFiles = @(
     "packages/integrations/agentskills-langchain/pyproject.toml",
     "packages/integrations/agentskills-agentframework/pyproject.toml",
     "packages/integrations/agentskills-mcp-server/pyproject.toml",
-    "packages/cli/agentskills-cli/pyproject.toml"
+    "packages/cli/agentskills-cli/pyproject.toml",
+    "packages/testing/agentskills-testing/pyproject.toml"
 )
 
 # Read current version from root pyproject.toml
