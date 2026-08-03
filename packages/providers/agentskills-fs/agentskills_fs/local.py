@@ -277,6 +277,10 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             SkillNotFoundError: If the directory does not exist.
         """
+        # A NUL truncates the path in the C layer. POSIX raises ValueError out
+        # of lstat and Windows does not, so refuse it before resolve() sees it.
+        if "\x00" in skill_id:
+            raise SkillNotFoundError(f"Invalid skill_id: {skill_id!r}")
         path = (self._root / skill_id).resolve()
         if not path.is_relative_to(self._root.resolve()):
             raise SkillNotFoundError(f"Invalid skill_id: {skill_id!r}")
@@ -338,6 +342,8 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             ResourceNotFoundError: If the file does not exist.
         """
+        if "\x00" in name:
+            raise ResourceNotFoundError(f"Invalid resource name: {name!r}")
         path = (self._skill_dir(skill_id) / subdir / name).resolve()
         if not path.is_relative_to(self._root.resolve()):
             raise ResourceNotFoundError(f"Invalid resource name: {name!r}")
