@@ -121,10 +121,9 @@ from agentskills_fs import LocalFileSystemSkillProvider
 
 async def main():
     registry = SkillRegistry()
-    await registry.register(
-        "incident-response",
-        LocalFileSystemSkillProvider(Path("my-skills")),
-    )
+
+    # Registers every skill folder under my-skills/, no IDs to hard-code.
+    await registry.register_all(LocalFileSystemSkillProvider(Path("my-skills")))
 
     # What the agent sees on every turn: names and descriptions, nothing more.
     print(await registry.get_skills_catalog(format="xml"))
@@ -390,11 +389,35 @@ returning an empty dict would tell an agent the skill *has* no resources, when t
 this provider cannot say. `LocalFileSystemSkillProvider` supports listing; the HTTP provider does
 so only when the skill publishes an `index.json`.
 
+### Skill discovery
+
+`discover()` is the same idea one level up: it returns the IDs of every skill the backend holds,
+so the registry can take them all without being told any of them.
+
+```python
+class DatabaseSkillProvider(SkillProvider):
+    supports_discovery = True
+
+    async def discover(self) -> list[str]:
+        return [row.skill_id for row in ...]
+```
+
+The default raises `DiscoveryNotSupportedError` for the same reason: an empty list would say the
+backend is empty, and a caller told that stops looking. `LocalFileSystemSkillProvider` supports
+discovery; the HTTP provider does so when the host publishes a root `index.json` listing its
+skills.
+
 Register a custom provider:
 
 ```python
 registry = SkillRegistry()
 await registry.register("customer-onboarding", DatabaseSkillProvider(conn))  # conn: your DB handle
+```
+
+Register everything a provider holds:
+
+```python
+skill_ids = await registry.register_all(DatabaseSkillProvider(conn))
 ```
 
 Register multiple providers at once:
@@ -407,7 +430,8 @@ await registry.register([
 ])
 ```
 
-Batch registration is atomic - if any skill fails validation, none are registered.
+All three are atomic - if any skill fails validation, none are registered, and the error names
+every skill that failed rather than only the first.
 
 ### Testing a provider
 
@@ -465,6 +489,7 @@ Failures are typed so that a caller can tell "this will never work" from "try ag
 | `ResourceNotFoundError` | The skill exists; that reference, script, or asset does not. |
 | `SkillUnavailableError` | The backend is temporarily unable to answer — a `5xx`, a timeout, a rate limit. Carries `retry_after` when the server advised one. |
 | `ResourceListingNotSupportedError` | This provider cannot enumerate resources. Not the same as having none. |
+| `DiscoveryNotSupportedError` | This provider cannot enumerate the skills it holds. Not the same as holding none. |
 
 All of them derive from `AgentSkillsError`.
 

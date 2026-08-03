@@ -32,6 +32,7 @@ Requires Python 3.12 or newer.
 | `SkillNotFoundError` | Raised when a skill does not exist |
 | `ResourceNotFoundError` | Raised when a resource within a skill does not exist |
 | `ResourceListingNotSupportedError` | Raised when a provider cannot enumerate a skill's resources |
+| `DiscoveryNotSupportedError` | Raised when a provider cannot enumerate the skills it holds |
 | `SkillUnavailableError` | Raised when a backend is unreachable or fails transiently |
 
 ## Usage
@@ -55,7 +56,17 @@ await registry.register([
 ])
 ```
 
-Batch registration is atomic - if any skill fails validation, none are registered.
+Or let the provider name them, when it can enumerate itself:
+
+```python
+skill_ids = await registry.register_all(fs_provider)
+```
+
+`register_all()` raises `DiscoveryNotSupportedError` for backends that cannot be enumerated;
+check `provider.supports_discovery` first if you do not know which kind you have.
+
+All three are atomic - if any skill fails validation, none are registered, and the error names
+every skill that failed rather than only the first.
 
 ### Accessing Skills
 
@@ -157,6 +168,29 @@ except ResourceListingNotSupportedError:
 ```
 
 Providers that support listing always return all three keys — `references`, `scripts`, `assets` — with empty lists for unused categories, so callers need no key checks.
+
+### Skill Discovery (optional capability)
+
+The same pattern one level up: `discover()` returns the IDs of every skill the backend holds, so `register_all()` can take them all without being told any of them.
+
+```python
+class DatabaseSkillProvider(SkillProvider):
+    supports_discovery = True
+
+    async def discover(self) -> list[str]:
+        return [row.skill_id for row in ...]
+```
+
+The default raises `DiscoveryNotSupportedError`, for the same reason as above — a caller told the backend is empty stops looking, while a caller told it cannot be enumerated falls back to explicit registration:
+
+```python
+if provider.supports_discovery:
+    await registry.register_all(provider)
+else:
+    await registry.register("incident-response", provider)
+```
+
+Discovery does not validate. An ID it returns can still fail `validate_skill()`, which is what `register_all()` reports on.
 
 ### Encoding Resources for Tool Output
 

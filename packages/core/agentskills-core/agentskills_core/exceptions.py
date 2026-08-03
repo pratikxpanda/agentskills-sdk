@@ -19,6 +19,11 @@ Python lookup failures and can also be caught with
 two: it means "this may well exist, but the backend could not answer
 right now".  Keeping it distinct from "not found" is what lets a caller
 retry or alert instead of concluding a skill was deleted.
+
+:class:`ResourceListingNotSupportedError` and
+:class:`DiscoveryNotSupportedError` cover optional provider
+capabilities.  Both mean "this backend cannot answer that question at
+all", which is not the same as answering it with nothing.
 """
 
 
@@ -83,6 +88,29 @@ class ResourceListingNotSupportedError(AgentSkillsError, NotImplementedError):
 
         if provider.supports_resource_listing:
             resources = await provider.list_resources("incident-response")
+    """
+
+
+class DiscoveryNotSupportedError(AgentSkillsError, NotImplementedError):
+    """The provider cannot enumerate the skills it holds.
+
+    Raised by the default :meth:`SkillProvider.discover
+    <agentskills_core.SkillProvider.discover>` implementation, and by
+    providers whose backend offers no index -- a static HTTP host with
+    no skill manifest, for instance.
+
+    Like :class:`ResourceListingNotSupportedError`, this is deliberately
+    **not** an empty list.  A caller told a backend holds no skills
+    stops looking; a caller told the backend cannot be enumerated falls
+    back to explicit registration.  Check
+    :attr:`SkillProvider.supports_discovery
+    <agentskills_core.SkillProvider.supports_discovery>` to avoid the
+    exception entirely.
+
+    Example::
+
+        if provider.supports_discovery:
+            await registry.register_all(provider)
     """
 
 

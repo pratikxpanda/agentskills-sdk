@@ -6,6 +6,7 @@ assertions are the ones every provider shares.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 
 import httpx
@@ -29,6 +30,19 @@ from agentskills_testing import (
 
 BASE = "https://skills.example.com"
 
+_RESOURCES = (
+    ("references", REFERENCE_NAME, REFERENCE_BYTES),
+    ("scripts", SCRIPT_NAME, SCRIPT_BYTES),
+    ("assets", ASSET_NAME, ASSET_BYTES),
+)
+
+
+def _serve_contract_skill(mock: respx.MockRouter) -> None:
+    """Route the conformance fixture contract, and 404 everything else."""
+    mock.get(f"{BASE}/{SKILL_ID}/SKILL.md").respond(text=render_skill_md(build_skill(SKILL_ID)))
+    for kind, name, data in _RESOURCES:
+        mock.get(f"{BASE}/{SKILL_ID}/{kind}/{name}").respond(content=data)
+
 
 @pytest.fixture
 def contract_host() -> Iterator[None]:
@@ -38,13 +52,20 @@ def contract_host() -> Iterator[None]:
     unknown-skill and unknown-resource assertions rely on.
     """
     with respx.mock(assert_all_called=False) as mock:
-        mock.get(f"{BASE}/{SKILL_ID}/SKILL.md").respond(text=render_skill_md(build_skill(SKILL_ID)))
-        for kind, name, data in (
-            ("references", REFERENCE_NAME, REFERENCE_BYTES),
-            ("scripts", SCRIPT_NAME, SCRIPT_BYTES),
-            ("assets", ASSET_NAME, ASSET_BYTES),
-        ):
-            mock.get(f"{BASE}/{SKILL_ID}/{kind}/{name}").respond(content=data)
+        _serve_contract_skill(mock)
+        mock.route().mock(return_value=httpx.Response(404))
+        yield
+
+
+@pytest.fixture
+def contract_host_with_manifests() -> Iterator[None]:
+    """The same host, publishing both ``index.json`` manifests."""
+    with respx.mock(assert_all_called=False) as mock:
+        _serve_contract_skill(mock)
+        mock.get(f"{BASE}/index.json").respond(json={"skills": [SKILL_ID]})
+        mock.get(f"{BASE}/{SKILL_ID}/index.json").respond(
+            text=json.dumps({kind: [name] for kind, name, _ in _RESOURCES})
+        )
         mock.route().mock(return_value=httpx.Response(404))
         yield
 
@@ -64,9 +85,20 @@ def client() -> httpx.AsyncClient:
 class TestHTTPStaticFileConformance(ProviderConformanceSuite):
     @pytest.fixture
     def provider(self, client: httpx.AsyncClient) -> HTTPStaticFileSkillProvider:
-        # Without a manifest a static host cannot be enumerated, so the
-        # suite takes the ResourceListingNotSupportedError branch.
+        # Without manifests a static host cannot be enumerated, so the
+        # suite takes the not-supported branch for both capabilities.
         return HTTPStaticFileSkillProvider(BASE, client=client)
+
+
+@pytest.mark.usefixtures("contract_host_with_manifests")
+class TestHTTPStaticFileManifestConformance(ProviderConformanceSuite):
+    @pytest.fixture
+    def provider(self, client: httpx.AsyncClient) -> HTTPStaticFileSkillProvider:
+        # The same assertions again with both optional capabilities on,
+        # which is the only way the manifest branches get contract-tested.
+        return HTTPStaticFileSkillProvider(
+            BASE, client=client, resource_manifest=True, skill_manifest=True
+        )
 
 
 @pytest.mark.usefixtures("contract_host")

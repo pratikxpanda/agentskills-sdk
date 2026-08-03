@@ -86,6 +86,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `max_response_bytes` | `int` | `10_485_760` | Maximum allowed response size in bytes |
 | `revalidate` | `bool` | `False` | Re-check cached `SKILL.md` on every access with `If-None-Match` / `If-Modified-Since` |
 | `resource_manifest` | `bool` | `False` | Enable `list_resources()` by reading a per-skill `index.json` |
+| `skill_manifest` | `bool` | `False` | Enable `discover()` by reading a root `index.json` |
 | `timeout` | `float` | `30.0` | Request timeout in seconds (ignored when you supply `client`) |
 | `max_retries` | `int` | `2` | Retries after the initial attempt, for retryable failures only |
 | `retry_backoff` | `float` | `0.5` | Base delay in seconds for exponential backoff |
@@ -101,6 +102,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `get_asset(skill_id, name)` | `bytes` | Raw asset content |
 | `get_reference(skill_id, name)` | `bytes` | Raw reference content |
 | `list_resources(skill_id)` | `dict[str, list[str]]` | Resource names from `index.json` (requires `resource_manifest=True`) |
+| `discover()` | `list[str]` | Skill IDs from the root `index.json` (requires `skill_manifest=True`) |
 | `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 | `aclose()` | `None` | Close the HTTP client (if owned by the provider) |
 
@@ -128,6 +130,27 @@ listing = await provider.list_resources("incident-response")
 ```
 
 Missing categories default to empty lists. A manifest is host-supplied data whose entries are later interpolated into URLs, so names failing the identifier-safety check are dropped. If a given skill has no `index.json`, `list_resources()` raises `ResourceListingNotSupportedError` for that skill — again, not an empty result.
+
+## Skill Discovery
+
+The same problem one level up: nothing on a static host says which skills exist. Publish the same
+file at the root, listing skills instead of resources:
+
+```json
+{ "skills": ["incident-response", "api-style-guide"] }
+```
+
+Then opt in and register the whole host at once:
+
+```python
+async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+    await registry.register_all(provider)
+```
+
+One filename and one shape — an object mapping a category to a list of names — at two depths,
+rather than two manifest formats to keep in step. Unsafe and duplicate IDs are dropped as above.
+Without `skill_manifest=True`, or when the root publishes no manifest, `discover()` raises
+`DiscoveryNotSupportedError`.
 
 ## Caching
 

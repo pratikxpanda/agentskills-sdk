@@ -512,3 +512,58 @@ class TestListResources:
         provider = LocalFileSystemSkillProvider(tmp_path)
         with pytest.raises((ValueError, SkillNotFoundError)):
             await provider.list_resources("../etc")
+
+
+class TestDiscover:
+    def test_capability_is_declared(self, tmp_path: Path):
+        assert LocalFileSystemSkillProvider(tmp_path).supports_discovery is True
+
+    async def test_lists_skill_directories_sorted(self, tmp_path: Path):
+        for skill_id in ("charlie", "alpha", "bravo"):
+            _create_skill(tmp_path, skill_id)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == ["alpha", "bravo", "charlie"]
+
+    async def test_empty_root_discovers_nothing(self, tmp_path: Path):
+        """An empty root is a real answer, not a failure."""
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == []
+
+    async def test_directories_without_skill_md_are_skipped(self, tmp_path: Path):
+        _create_skill(tmp_path, "real")
+        (tmp_path / "not-a-skill").mkdir()
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == ["real"]
+
+    async def test_loose_files_are_skipped(self, tmp_path: Path):
+        _create_skill(tmp_path, "real")
+        (tmp_path / "README.md").write_text("hello", encoding="utf-8")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == ["real"]
+
+    async def test_dotted_directories_are_skipped(self, tmp_path: Path):
+        _create_skill(tmp_path, "real")
+        _create_skill(tmp_path, ".git")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == ["real"]
+
+    async def test_symlink_escaping_the_root_is_skipped(self, tmp_path: Path):
+        outside = tmp_path.parent / "outside-skill"
+        _create_skill(outside.parent, outside.name)
+        root = tmp_path / "skills"
+        root.mkdir()
+        _create_skill(root, "real")
+        try:
+            (root / "escape").symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            pytest.skip("symlink creation not permitted on this platform")
+
+        provider = LocalFileSystemSkillProvider(root)
+        assert await provider.discover() == ["real"]
+
+    async def test_discovery_does_not_validate(self, tmp_path: Path):
+        """Enumerating a folder must not cost one full parse per skill."""
+        (tmp_path / "broken").mkdir()
+        (tmp_path / "broken" / "SKILL.md").write_text("no frontmatter", encoding="utf-8")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert await provider.discover() == ["broken"]

@@ -38,13 +38,16 @@ from agentskills_fs import LocalFileSystemSkillProvider
 
 provider = LocalFileSystemSkillProvider(Path("./skills"))
 registry = SkillRegistry()
-await registry.register("incident-response", provider)
+await registry.register_all(provider)  # every subdirectory holding a SKILL.md
 
 skill = registry.get_skill("incident-response")
 meta = await skill.get_metadata()
 body = await skill.get_body()
 script = await skill.get_script("page-oncall.sh")
 ```
+
+Use `registry.register("incident-response", provider)` instead to take one named skill and ignore
+the rest of the folder.
 
 Blocking file I/O runs in a worker thread, so a slow or networked filesystem does not stall other coroutines.
 

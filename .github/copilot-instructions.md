@@ -59,7 +59,7 @@ repository silently matches nothing.
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 799 passed, 4 skipped
+python -m pytest packages -q --no-header          # baseline: 938 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 ```
@@ -97,6 +97,14 @@ that task fails for reasons unrelated to your change.
   classifiers on PyPI before adding or trusting an upper bound.
 - **A 200 response does not mean a badge rendered.** shields.io returns 200 with the words
   "rate limited by upstream service" drawn into the SVG. Inspect the rendered text.
+- **An optional provider capability is a flag plus a raising default**, never an empty
+  return. See [ADR 0002](../docs/adr/0002-optional-provider-capabilities.md):
+  `supports_resource_listing` / `supports_discovery` are plain attributes, not `ClassVar`,
+  so an instance can decide at construction time. Returning `[]` from `discover()` says the
+  backend is empty, and a caller told that stops looking.
+- **Adding an assertion to `ProviderConformanceSuite` is a downstream breaking change** if
+  it needs anything new from the `provider` fixture. The fixture contract in `CONTRACT` is
+  a compatibility surface for every third-party provider inheriting the suite.
 - **Resolve markdown links programmatically** rather than counting `../` by eye.
 - **PowerShell has no heredoc.** Use repeated `-m` flags for commit messages; embedded
   `` `n `` desynchronises the shell.

@@ -12,6 +12,7 @@ import respx
 
 from agentskills_core import (
     AgentSkillsError,
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -879,10 +880,21 @@ class TestResourceListing:
 
     @respx.mock
     async def test_absent_manifest_reports_unsupported(self):
+        # The skill is there; only its manifest is missing.
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
         respx.get(f"{BASE}/test-skill/index.json").respond(404)
         async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
             with pytest.raises(ResourceListingNotSupportedError, match=r"No index\.json"):
                 await provider.list_resources("test-skill")
+
+    @respx.mock
+    async def test_absent_skill_is_not_reported_as_a_missing_manifest(self):
+        """A 404 on the manifest means one of two things, and they differ."""
+        respx.get(f"{BASE}/ghost/SKILL.md").respond(404)
+        respx.get(f"{BASE}/ghost/index.json").respond(404)
+        async with HTTPStaticFileSkillProvider(BASE, resource_manifest=True) as provider:
+            with pytest.raises(SkillNotFoundError):
+                await provider.list_resources("ghost")
 
     @respx.mock
     async def test_invalid_json_raises(self):
@@ -911,3 +923,79 @@ class TestResourceListing:
             with pytest.raises(SkillNotFoundError):
                 await provider.list_resources("../secrets")
         assert not respx.calls
+
+
+class TestSkillDiscovery:
+    """``discover()`` against the root ``index.json``."""
+
+    def test_capability_off_by_default(self):
+        assert HTTPStaticFileSkillProvider(BASE).supports_discovery is False
+
+    def test_capability_on_when_manifest_declared(self):
+        assert HTTPStaticFileSkillProvider(BASE, skill_manifest=True).supports_discovery is True
+
+    @respx.mock
+    async def test_raises_when_not_configured(self):
+        """A plain static host must say 'cannot enumerate', not 'no skills'."""
+        async with HTTPStaticFileSkillProvider(BASE) as provider:
+            with pytest.raises(DiscoveryNotSupportedError, match="skill_manifest"):
+                await provider.discover()
+        assert not respx.calls
+
+    @respx.mock
+    async def test_reads_manifest(self):
+        respx.get(f"{BASE}/index.json").respond(json={"skills": ["b-skill", "a-skill"]})
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            assert await provider.discover() == ["a-skill", "b-skill"]
+
+    @respx.mock
+    async def test_missing_key_means_no_skills(self):
+        respx.get(f"{BASE}/index.json").respond(json={"references": ["sev.md"]})
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            assert await provider.discover() == []
+
+    @respx.mock
+    async def test_unsafe_and_duplicate_ids_are_dropped(self):
+        """A manifest is host data and its IDs are interpolated into URLs."""
+        respx.get(f"{BASE}/index.json").respond(
+            json={"skills": ["ok", "../../etc/passwd", "a/b", "", 42, "ok"]}
+        )
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            assert await provider.discover() == ["ok"]
+
+    @respx.mock
+    async def test_absent_manifest_reports_unsupported(self):
+        respx.get(f"{BASE}/index.json").respond(404)
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            with pytest.raises(DiscoveryNotSupportedError, match=r"No index\.json"):
+                await provider.discover()
+
+    @respx.mock
+    async def test_invalid_json_raises(self):
+        respx.get(f"{BASE}/index.json").respond(content=b"not json")
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="not valid JSON"):
+                await provider.discover()
+
+    @respx.mock
+    async def test_non_object_manifest_raises(self):
+        respx.get(f"{BASE}/index.json").respond(json=["a-skill"])
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="must be a JSON object"):
+                await provider.discover()
+
+    @respx.mock
+    async def test_non_list_skills_raises(self):
+        respx.get(f"{BASE}/index.json").respond(json={"skills": "a-skill"})
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            with pytest.raises(AgentSkillsError, match="non-list"):
+                await provider.discover()
+
+    @respx.mock
+    async def test_registers_a_whole_host(self):
+        respx.get(f"{BASE}/index.json").respond(json={"skills": ["test-skill"]})
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        registry = SkillRegistry()
+        async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
+            assert await registry.register_all(provider) == ["test-skill"]
+        assert [skill.get_id() for skill in registry.list_skills()] == ["test-skill"]

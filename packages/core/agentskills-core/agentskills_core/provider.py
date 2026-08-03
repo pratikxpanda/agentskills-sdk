@@ -10,17 +10,20 @@ model described in the `Agent Skills specification
 3. **Resources** -- serve scripts, references, and assets only when requested.
 
 A provider is a **content accessor**: given a skill ID it serves metadata,
-body, and resources.  It does **not** enumerate or discover skills.
-Registration of skills is handled explicitly by the application via
+body, and resources.  Backends that can enumerate what they hold may also
+implement :meth:`SkillProvider.discover`, which
+:meth:`SkillRegistry.register_all <agentskills_core.SkillRegistry.register_all>`
+uses to register a whole backend at once.  Where that is not possible,
+registration stays explicit via
 :meth:`SkillRegistry.register(skill_id, provider)
 <agentskills_core.SkillRegistry.register>`.
 
 Resource *names* may be discovered two ways: from the skill body (the
 markdown instructions), or -- where the backend supports it -- from
-:meth:`SkillProvider.list_resources`.  Listing is an **optional
-capability**: backends that cannot enumerate (a static HTTP host with no
-manifest, say) leave :attr:`SkillProvider.supports_resource_listing`
-``False`` and the default implementation refuses.  See
+:meth:`SkillProvider.list_resources`.  Listing and discovery are both
+**optional capabilities**: backends that cannot enumerate (a static HTTP
+host with no manifest, say) leave the corresponding ``supports_*``
+attribute ``False`` and the default implementation refuses.  See
 :doc:`ADR 0002 </adr/0002-optional-provider-capabilities>`.
 
 All methods are ``async`` so that implementations backed by network I/O
@@ -35,7 +38,10 @@ Concrete implementations include
 from abc import ABC, abstractmethod
 from typing import Any
 
-from agentskills_core.exceptions import ResourceListingNotSupportedError
+from agentskills_core.exceptions import (
+    DiscoveryNotSupportedError,
+    ResourceListingNotSupportedError,
+)
 
 #: Resource categories defined by the Agent Skills specification.
 RESOURCE_KINDS: tuple[str, ...] = ("references", "scripts", "assets")
@@ -45,8 +51,9 @@ class SkillProvider(ABC):
     """Abstract base class that every skill backend must implement.
 
     A :class:`SkillProvider` is a pure content accessor -- it serves
-    skill metadata, body text, and resources by skill ID.  It does
-    **not** enumerate or discover skills; registration is explicit via
+    skill metadata, body text, and resources by skill ID.  Enumerating
+    the skills a backend holds is an optional capability: see
+    :meth:`discover`.  Without it, registration is explicit via
     :meth:`SkillRegistry.register <agentskills_core.SkillRegistry.register>`.
 
     Implementations must enforce progressive disclosure: expensive I/O
@@ -74,6 +81,11 @@ class SkillProvider(ABC):
     #: providers whose capability depends on configuration can set it
     #: per instance.
     supports_resource_listing: bool = False
+
+    #: Whether this provider can enumerate the skills it holds.  Set to
+    #: ``True`` by implementations that override :meth:`discover`.  Also
+    #: a plain attribute, for the same reason.
+    supports_discovery: bool = False
 
     @abstractmethod
     async def get_metadata(self, skill_id: str) -> dict[str, Any]:
@@ -194,4 +206,34 @@ class SkillProvider(ABC):
         raise ResourceListingNotSupportedError(
             f"{type(self).__name__} cannot enumerate skill resources. "
             f"Resource names must be taken from the skill body instead."
+        )
+
+    async def discover(self) -> list[str]:
+        """Return the IDs of every skill this provider can serve.
+
+        **Optional capability.**  The default implementation refuses.
+        Override it *and* set :attr:`supports_discovery` to ``True`` in
+        backends that can enumerate.
+
+        Implementations return sorted IDs, and return only skills that
+        appear to exist -- a directory without a ``SKILL.md`` is not a
+        skill.  Discovery does **not** validate: an ID that comes back
+        here can still fail :func:`~agentskills_core.validate_skill`,
+        which is what :meth:`SkillRegistry.register_all
+        <agentskills_core.SkillRegistry.register_all>` reports on.
+
+        Returns:
+            Sorted skill IDs.  An empty list means the backend was
+            enumerated and holds nothing.
+
+        Raises:
+            DiscoveryNotSupportedError: If this provider cannot
+                enumerate its skills.  Never returns an empty list to
+                signal the same thing -- that would be indistinguishable
+                from an empty backend, and would silently register
+                nothing.
+        """
+        raise DiscoveryNotSupportedError(
+            f"{type(self).__name__} cannot enumerate the skills it holds. "
+            f"Register skills explicitly with registry.register(skill_id, provider)."
         )

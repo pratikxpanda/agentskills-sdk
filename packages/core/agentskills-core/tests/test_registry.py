@@ -4,7 +4,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from agentskills_core import Skill, SkillNotFoundError, SkillProvider, SkillRegistry
+from agentskills_core import (
+    DiscoveryNotSupportedError,
+    Skill,
+    SkillNotFoundError,
+    SkillProvider,
+    SkillRegistry,
+)
 
 
 def _mock_provider(
@@ -19,6 +25,47 @@ def _mock_provider(
     }
     provider.get_body.return_value = body
     return provider
+
+
+class _DiscoverableProvider(SkillProvider):
+    """A minimal real provider mapping skill ID to description.
+
+    Hand-written rather than taken from ``agentskills-testing``, which
+    depends on this package.  An empty description makes a skill fail
+    validation, which is how the failure paths below are built.
+    """
+
+    supports_discovery = True
+
+    def __init__(self, skills: dict[str, str]) -> None:
+        self._skills = skills
+
+    async def discover(self) -> list[str]:
+        return sorted(self._skills)
+
+    async def get_metadata(self, skill_id: str) -> dict:
+        if skill_id not in self._skills:
+            raise SkillNotFoundError(skill_id)
+        return {"name": skill_id, "description": self._skills[skill_id]}
+
+    async def get_body(self, skill_id: str) -> str:
+        return "# Instructions"
+
+    async def get_script(self, skill_id: str, name: str) -> bytes:
+        return b""
+
+    async def get_asset(self, skill_id: str, name: str) -> bytes:
+        return b""
+
+    async def get_reference(self, skill_id: str, name: str) -> bytes:
+        return b""
+
+
+class _NoDiscoveryProvider(_DiscoverableProvider):
+    """The same provider with the capability turned off."""
+
+    supports_discovery = False
+    discover = SkillProvider.discover
 
 
 class TestSkillRegistry:
@@ -173,6 +220,77 @@ class TestBatchRegistration:
         registry = SkillRegistry()
         with pytest.raises(ValueError, match="provider is required"):
             await registry.register("incident-response")
+
+    async def test_batch_reports_every_validation_failure(self):
+        """Fixing a batch one error per run is a game of whack-a-mole."""
+        registry = SkillRegistry()
+        with pytest.raises(ValueError) as exc_info:
+            await registry.register(
+                [
+                    ("alpha", _mock_provider("alpha", description="")),
+                    ("bravo", _mock_provider("bravo", description="")),
+                ]
+            )
+        assert "alpha" in str(exc_info.value)
+        assert "bravo" in str(exc_info.value)
+
+
+class TestRegisterAll:
+    async def test_registers_everything_discovered(self):
+        registry = SkillRegistry()
+        provider = _DiscoverableProvider({"alpha": "A.", "bravo": "B."})
+
+        assert await registry.register_all(provider) == ["alpha", "bravo"]
+        assert [s.get_id() for s in registry.list_skills()] == ["alpha", "bravo"]
+
+    async def test_an_empty_backend_registers_nothing(self):
+        """Enumerated and found nothing is a success, not a failure."""
+        registry = SkillRegistry()
+        assert await registry.register_all(_DiscoverableProvider({})) == []
+        assert registry.list_skills() == []
+
+    async def test_unsupported_provider_raises(self):
+        """A provider that cannot enumerate must not look like an empty one."""
+        registry = SkillRegistry()
+        with pytest.raises(DiscoveryNotSupportedError):
+            await registry.register_all(_NoDiscoveryProvider({"alpha": "A."}))
+        assert registry.list_skills() == []
+
+    async def test_reports_every_validation_failure_at_once(self):
+        registry = SkillRegistry()
+        provider = _DiscoverableProvider({"alpha": "", "bravo": "B.", "charlie": ""})
+
+        with pytest.raises(ValueError) as exc_info:
+            await registry.register_all(provider)
+
+        message = str(exc_info.value)
+        assert "alpha" in message
+        assert "charlie" in message
+
+    async def test_is_atomic(self):
+        registry = SkillRegistry()
+        provider = _DiscoverableProvider({"alpha": "A.", "bravo": ""})
+
+        with pytest.raises(ValueError, match="failed validation"):
+            await registry.register_all(provider)
+
+        assert registry.list_skills() == []
+
+    async def test_rejects_ids_already_registered(self):
+        registry = SkillRegistry()
+        await registry.register("alpha", _mock_provider("alpha"))
+        provider = _DiscoverableProvider({"alpha": "A.", "bravo": "B."})
+
+        with pytest.raises(ValueError, match="already"):
+            await registry.register_all(provider)
+
+        assert [s.get_id() for s in registry.list_skills()] == ["alpha"]
+
+    async def test_two_providers_can_be_combined(self):
+        registry = SkillRegistry()
+        await registry.register_all(_DiscoverableProvider({"alpha": "A."}))
+        await registry.register_all(_DiscoverableProvider({"bravo": "B."}))
+        assert [s.get_id() for s in registry.list_skills()] == ["alpha", "bravo"]
 
 
 class TestRegistryEdgeCases:
