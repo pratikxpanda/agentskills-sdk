@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from agentskills_cli.findings import ERROR, WARNING, Finding, SkillReport
-from agentskills_cli.render import count, exit_code, render_json, render_text
+from agentskills_cli.render import count, exit_code, render_github, render_json, render_text
 
 
 def _report(*findings: Finding) -> SkillReport:
@@ -95,3 +95,43 @@ class TestRenderJson:
         # The skill itself has no errors, but the run failed.
         assert payload["ok"] is False
         assert payload["skills"][0]["ok"] is True
+
+
+class TestRenderGithub:
+    def test_annotations_point_at_the_skill_file(self):
+        out = io.StringIO()
+
+        render_github([_report(ERROR_FINDING, WARNING_FINDING)], out)
+
+        lines = out.getvalue().splitlines()
+        assert lines[0] == ("::error file=skills/alpha/SKILL.md,line=7,title=spec::body is empty")
+        assert lines[1] == (
+            "::warning file=skills/alpha/SKILL.md,title=missing-version::no version field"
+        )
+
+    def test_summary_line_is_always_written(self):
+        out = io.StringIO()
+
+        render_github([_report()], out)
+
+        assert out.getvalue() == "1 skill checked, 0 errors, 0 warnings\n"
+
+    def test_message_and_property_escapes(self):
+        out = io.StringIO()
+        finding = Finding(ERROR, "spec", "100% wrong:\nline two, really")
+
+        render_github([_report(finding)], out)
+
+        # Only the message is escaped for newlines; the comma and colon
+        # matter in properties, where they are the separators.
+        assert out.getvalue().splitlines()[0] == (
+            "::error file=skills/alpha/SKILL.md,title=spec::100%25 wrong:%0Aline two, really"
+        )
+
+    def test_property_separators_are_escaped(self):
+        out = io.StringIO()
+        report = SkillReport("alpha", Path("a,b/c:d"), [Finding(ERROR, "spec", "boom")])
+
+        render_github([report], out)
+
+        assert "file=a%2Cb/c%3Ad/SKILL.md" in out.getvalue()

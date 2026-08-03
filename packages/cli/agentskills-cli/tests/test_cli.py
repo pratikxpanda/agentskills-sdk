@@ -39,6 +39,15 @@ class TestValidate:
         assert main(["validate", str(tmp_path / "nope")]) == 2
         assert "error: not a directory" in capsys.readouterr().err
 
+    def test_github_format_annotates_the_skill_file(self, write_skill, skills_root, capsys):
+        write_skill("alpha", "---\nname: alpha\ndescription: oops: yes\n---\n\nBody.")
+
+        assert main(["validate", str(skills_root), "--format", "github"]) == 1
+
+        out = capsys.readouterr().out
+        assert out.startswith("::error file=")
+        assert "alpha/SKILL.md,line=3,title=frontmatter-invalid-yaml::" in out
+
 
 class TestLint:
     def test_warnings_do_not_fail_by_default(self, write_skill, skills_root):
@@ -64,6 +73,13 @@ class TestLint:
         main(["lint", str(skills_root), "--format", "json"])
 
         assert json.loads(capsys.readouterr().out)["command"] == "lint"
+
+    def test_github_format_emits_warning_annotations(self, write_skill, skills_root, capsys):
+        write_skill("alpha", "---\nname: alpha\ndescription: d\n---\n\nBody.")
+
+        assert main(["lint", str(skills_root), "--format", "github"]) == 0
+
+        assert "::warning file=" in capsys.readouterr().out
 
 
 class TestInit:
@@ -146,6 +162,13 @@ class TestParser:
     def test_a_command_is_required(self):
         with pytest.raises(SystemExit):
             main([])
+
+    def test_inspect_does_not_offer_the_github_format(self, write_skill, skills_root):
+        write_skill("alpha")
+
+        # inspect produces no findings, so it has nothing to annotate.
+        with pytest.raises(SystemExit):
+            main(["inspect", str(skills_root), "--format", "github"])
 
 
 class TestModuleEntryPoint:

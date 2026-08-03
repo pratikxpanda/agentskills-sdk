@@ -23,9 +23,17 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from agentskills_cli.discovery import CliError, SkillLocation, discover, relative_to_cwd
+from agentskills_cli.findings import SkillReport
 from agentskills_cli.inspection import inspect_location, render_inspection_text
 from agentskills_cli.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
-from agentskills_cli.render import SCHEMA_VERSION, exit_code, plural, render_json, render_text
+from agentskills_cli.render import (
+    SCHEMA_VERSION,
+    exit_code,
+    plural,
+    render_github,
+    render_json,
+    render_text,
+)
 from agentskills_cli.scaffold import DEFAULT_DESCRIPTION, init_skill
 from agentskills_cli.serve import build_registry, create_server
 from agentskills_cli.validate import validate_locations
@@ -34,6 +42,23 @@ from agentskills_core import LOGGER_NAMESPACE
 EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_ERROR = 2
+
+
+def _format_parent(*choices: str) -> argparse.ArgumentParser:
+    """Build a parent parser offering ``--format`` over *choices*.
+
+    Only ``validate`` and ``lint`` produce findings, so only they can
+    offer ``github``; advertising it on ``inspect`` would promise an
+    output that command has no way to produce.
+    """
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument(
+        "--format",
+        choices=list(choices),
+        default="text",
+        help="Output format (default: text).",
+    )
+    return parent
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,13 +71,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print the SDK's debug logs to stderr.",
     )
 
-    formatted = argparse.ArgumentParser(add_help=False)
-    formatted.add_argument(
-        "--format",
-        choices=["text", "json"],
-        default="text",
-        help="Output format (default: text).",
-    )
+    reported = _format_parent("text", "json", "github")
+    formatted = _format_parent("text", "json")
 
     parser = argparse.ArgumentParser(
         prog="agentskills",
@@ -82,7 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = subparsers.add_parser(
         "validate",
-        parents=[common, formatted],
+        parents=[common, reported],
         help="Check skills against the specification.",
         description="Check one skill or a directory of skills. Exits 1 on any error.",
     )
@@ -90,7 +110,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     lint = subparsers.add_parser(
         "lint",
-        parents=[common, formatted],
+        parents=[common, reported],
         help="Report quality warnings.",
         description="Report problems that are legal per the spec but still cost you.",
     )
@@ -153,23 +173,34 @@ def _run_init(args: argparse.Namespace, out: TextIO) -> int:
     return EXIT_OK
 
 
+def _render(
+    command: str,
+    output_format: str,
+    reports: list[SkillReport],
+    out: TextIO,
+    *,
+    strict: bool = False,
+) -> None:
+    """Write *reports* in the requested format."""
+    if output_format == "json":
+        render_json(command, reports, out, strict=strict)
+    elif output_format == "github":
+        render_github(reports, out)
+    else:
+        render_text(reports, out)
+
+
 def _run_validate(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
     reports = asyncio.run(validate_locations(root, locations))
-    if args.format == "json":
-        render_json("validate", reports, out)
-    else:
-        render_text(reports, out)
+    _render("validate", args.format, reports, out)
     return exit_code(reports)
 
 
 def _run_lint(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
     reports = asyncio.run(lint_locations(root, locations, body_token_budget=args.max_body_tokens))
-    if args.format == "json":
-        render_json("lint", reports, out, strict=args.strict)
-    else:
-        render_text(reports, out)
+    _render("lint", args.format, reports, out, strict=args.strict)
     return exit_code(reports, strict=args.strict)
 
 

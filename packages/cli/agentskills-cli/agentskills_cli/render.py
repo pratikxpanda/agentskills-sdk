@@ -1,9 +1,9 @@
-"""Rendering — one human format and one JSON schema for every command.
+"""Rendering — one report, three audiences.
 
-The JSON shape is a published contract: the validation GitHub Action
-and anything else in CI keys off it.  ``SCHEMA_VERSION`` is bumped only
-for a breaking change, and new fields are added rather than existing
-ones repurposed.
+Text is for a person at a terminal, JSON for a program, and GitHub for
+a pull request diff.  The JSON shape is a published contract, so
+``SCHEMA_VERSION`` is bumped only for a breaking change and new fields
+are added rather than existing ones repurposed.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any, TextIO
 
-from agentskills_cli.discovery import relative_to_cwd
+from agentskills_cli.discovery import SKILL_FILE, relative_to_cwd
 from agentskills_cli.findings import SkillReport
 
 SCHEMA_VERSION = 1
@@ -59,6 +59,48 @@ def render_text(reports: list[SkillReport], out: TextIO) -> None:
     errors, warnings = count(reports)
     print(
         f"\n{plural(len(reports), 'skill')} checked, "
+        f"{plural(errors, 'error')}, {plural(warnings, 'warning')}",
+        file=out,
+    )
+
+
+def _escape_data(value: str) -> str:
+    """Escape the message half of a workflow command."""
+    return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def _escape_property(value: str) -> str:
+    """Escape a workflow command property value.
+
+    Properties are comma-separated and colon-terminated, so those two
+    characters have to go as well as the message escapes.
+    """
+    return _escape_data(value).replace(":", "%3A").replace(",", "%2C")
+
+
+def render_github(reports: list[SkillReport], out: TextIO) -> None:
+    """Write findings as GitHub Actions workflow commands.
+
+    Every finding becomes an annotation against the skill's ``SKILL.md``
+    so it lands on the pull request diff rather than in a log nobody
+    opens.  ``severity`` is already ``error`` or ``warning``, which are
+    the workflow command names, so the mapping is the identity.
+    """
+    for report in reports:
+        file = relative_to_cwd(report.path / SKILL_FILE)
+        for finding in report.findings:
+            properties = [f"file={_escape_property(file)}"]
+            if finding.line is not None:
+                properties.append(f"line={finding.line}")
+            properties.append(f"title={_escape_property(finding.code)}")
+            print(
+                f"::{finding.severity} {','.join(properties)}::{_escape_data(finding.message)}",
+                file=out,
+            )
+
+    errors, warnings = count(reports)
+    print(
+        f"{plural(len(reports), 'skill')} checked, "
         f"{plural(errors, 'error')}, {plural(warnings, 'warning')}",
         file=out,
     )
