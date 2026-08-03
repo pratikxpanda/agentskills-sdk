@@ -17,6 +17,7 @@ import yaml
 
 from agentskills_core import (
     RESOURCE_KINDS,
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -123,6 +124,8 @@ class InMemorySkillProvider(SkillProvider):
         supports_resource_listing: Set ``False`` to emulate a backend
             that cannot enumerate, which is what the HTTP provider does
             without a manifest.
+        supports_discovery: Set ``False`` to emulate a backend that
+            cannot list the skills it holds.
 
     Example::
 
@@ -136,9 +139,11 @@ class InMemorySkillProvider(SkillProvider):
         skills: Mapping[str, InMemorySkill | str] | None = None,
         *,
         supports_resource_listing: bool = True,
+        supports_discovery: bool = True,
     ) -> None:
         self._skills: dict[str, InMemorySkill] = {}
         self.supports_resource_listing = supports_resource_listing
+        self.supports_discovery = supports_discovery
         for skill_id, skill in (skills or {}).items():
             self.add(skill_id, skill)
 
@@ -199,6 +204,19 @@ class InMemorySkillProvider(SkillProvider):
             )
         skill = self._get(skill_id)
         return {kind: sorted(skill.resources(kind)) for kind in RESOURCE_KINDS}
+
+    async def discover(self) -> list[str]:
+        """Return the stored skill IDs, sorted.
+
+        Raises:
+            DiscoveryNotSupportedError: If the provider was built with
+                ``supports_discovery=False``.
+        """
+        if not self.supports_discovery:
+            raise DiscoveryNotSupportedError(
+                "InMemorySkillProvider was built with discovery disabled."
+            )
+        return self.skill_ids()
 
     def _get(self, skill_id: str) -> InMemorySkill:
         _reject_unsafe(skill_id, SkillNotFoundError, "skill_id")

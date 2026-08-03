@@ -4,7 +4,8 @@ The :class:`SkillRegistry` is the main entry-point for agent code that
 needs to access Agent Skills.  Skills are registered explicitly by the
 application developer using :meth:`SkillRegistry.register`, which maps
 a skill ID to a :class:`~agentskills_core.Skill` handle backed by the
-given provider.
+given provider.  Backends that can enumerate themselves can be
+registered wholesale with :meth:`SkillRegistry.register_all`.
 
 Example::
 
@@ -13,7 +14,7 @@ Example::
 
     provider = LocalFileSystemSkillProvider(Path("./skills"))
     registry = SkillRegistry()
-    await registry.register("incident-response", provider)
+    await registry.register_all(provider)
 
     skill = registry.get_skill("incident-response")
     meta = await skill.get_metadata()
@@ -42,7 +43,8 @@ class SkillRegistry:
     """Unified index over explicitly registered skills.
 
     Skills are added via :meth:`register`, either one at a time or as a
-    batch of ``(skill_id, provider)`` tuples.  The registry enforces a
+    batch of ``(skill_id, provider)`` tuples, or via :meth:`register_all`
+    for a provider that can enumerate itself.  The registry enforces a
     **flat namespace**: each skill ID must be unique.  A :exc:`ValueError`
     is raised if a duplicate is detected.
 
@@ -137,13 +139,8 @@ class SkillRegistry:
         """Validate and register a single skill."""
         if skill_id in self._skills:
             raise ValueError(f"Duplicate skill_id '{skill_id}' -- already registered")
-        skill = Skill(skill_id=skill_id, provider=provider)
-        errors = await validate_skill(skill)
-        if errors:
-            raise ValueError(
-                f"Skill '{skill_id}' failed validation:\n" + "\n".join(f"  - {e}" for e in errors)
-            )
-        self._skills[skill_id] = skill
+        validated = await self._validate_all([(skill_id, provider)])
+        self._skills[skill_id] = validated[0][1]
         _logger.info("Registered skill %r from %s", skill_id, type(provider).__name__)
 
     async def _register_batch(self, skills: list[tuple[str, SkillProvider]]) -> None:
@@ -157,22 +154,91 @@ class SkillRegistry:
                 raise ValueError(f"Duplicate skill_id '{skill_id}' within the batch")
             seen.add(skill_id)
 
-        # Validate all skills first.
-        validated: list[tuple[str, Skill]] = []
-        for skill_id, prov in skills:
-            skill = Skill(skill_id=skill_id, provider=prov)
-            errors = await validate_skill(skill)
-            if errors:
-                raise ValueError(
-                    f"Skill '{skill_id}' failed validation:\n"
-                    + "\n".join(f"  - {e}" for e in errors)
-                )
-            validated.append((skill_id, skill))
+        validated = await self._validate_all(skills)
 
-        # All passed — commit.
+        # All passed -- commit.
         for skill_id, skill in validated:
             self._skills[skill_id] = skill
         _logger.info("Registered %d skills: %s", len(validated), [sid for sid, _ in validated])
+
+    async def register_all(self, provider: SkillProvider) -> list[str]:
+        """Register every skill a provider holds.
+
+        Asks the provider to enumerate itself and registers the result,
+        so a folder of thirty skills does not require thirty hard-coded
+        identifiers::
+
+            provider = LocalFileSystemSkillProvider(Path("./skills"))
+            registered = await registry.register_all(provider)
+
+        Discovery is an **optional capability**.  Providers that cannot
+        enumerate raise rather than returning an empty list, so a
+        misconfigured backend cannot look like an empty one -- check
+        :attr:`SkillProvider.supports_discovery
+        <agentskills_core.SkillProvider.supports_discovery>` first if
+        the provider may not support it.
+
+        Registration is **atomic** and reports every validation failure
+        at once.  Discovering thirty skills and being told only about
+        the first broken one turns a single fix into thirty rounds.
+
+        Args:
+            provider: The backend to enumerate and register.
+
+        Returns:
+            The registered skill IDs, sorted.
+
+        Raises:
+            DiscoveryNotSupportedError: If *provider* cannot enumerate
+                the skills it holds.
+            ValueError: If any discovered ID is already registered, or
+                if any discovered skill fails validation.  Nothing is
+                registered in either case.
+        """
+        skill_ids = await provider.discover()
+
+        clashes = [skill_id for skill_id in skill_ids if skill_id in self._skills]
+        if clashes:
+            raise ValueError(
+                f"{type(provider).__name__} discovered skills that are already "
+                f"registered: {', '.join(sorted(clashes))}"
+            )
+
+        validated = await self._validate_all([(skill_id, provider) for skill_id in skill_ids])
+
+        # All passed -- commit.
+        for skill_id, skill in validated:
+            self._skills[skill_id] = skill
+        _logger.info(
+            "Registered %d discovered skills from %s",
+            len(validated),
+            type(provider).__name__,
+        )
+        return sorted(skill_id for skill_id, _ in validated)
+
+    async def _validate_all(
+        self, skills: list[tuple[str, SkillProvider]]
+    ) -> list[tuple[str, Skill]]:
+        """Validate every skill, reporting all failures in one error.
+
+        Stopping at the first failure would make fixing a batch an
+        iterative game of whack-a-mole.
+        """
+        validated: list[tuple[str, Skill]] = []
+        failures: list[str] = []
+        for skill_id, provider in skills:
+            skill = Skill(skill_id=skill_id, provider=provider)
+            errors = await validate_skill(skill)
+            if errors:
+                failures.append(
+                    f"Skill '{skill_id}' failed validation:\n"
+                    + "\n".join(f"  - {e}" for e in errors)
+                )
+            else:
+                validated.append((skill_id, skill))
+        if failures:
+            raise ValueError("\n".join(failures))
+        return validated
 
     def list_skills(self) -> list[Skill]:
         """Return registered skills sorted by ID.

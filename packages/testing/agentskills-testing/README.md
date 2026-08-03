@@ -69,6 +69,9 @@ a string, and is what the default fixture prints when you forget to override it.
 - `list_resources()` agrees with `supports_resource_listing`. Callers branch on
   that flag, so a provider whose flag and behaviour disagree breaks them
   whichever way it lies.
+- `discover()` agrees with `supports_discovery`, and everything it reports can
+  actually be read. `register_all()` validates the whole list, so one phantom ID
+  fails the entire registration.
 - **Traversal identifiers are refused** — parent traversal, absolute paths,
   Windows separators, percent-encoded traversal, and embedded NUL bytes, as both
   skill IDs and resource names. These are not opt-out.
@@ -118,7 +121,7 @@ provider = InMemorySkillProvider(
 )
 
 registry = SkillRegistry()
-await registry.register("incident-response", provider)
+await registry.register_all(provider)
 ```
 
 A string value is taken as the body, for the common case where the content does
@@ -135,7 +138,8 @@ that does not care about metadata does not have to invent any.
 populate a temporary directory for the filesystem provider.
 
 To emulate a backend that cannot enumerate — a static HTTP host without a
-manifest, for instance — pass `supports_resource_listing=False`.
+manifest, for instance — pass `supports_resource_listing=False`, or
+`supports_discovery=False`, or both.
 
 ## Fixtures
 

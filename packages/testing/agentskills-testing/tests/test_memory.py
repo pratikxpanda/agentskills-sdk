@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from agentskills_core import (
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -150,6 +151,24 @@ class TestInMemorySkillProvider:
     async def test_listing_an_unknown_skill_raises_skill_not_found(self):
         with pytest.raises(SkillNotFoundError):
             await InMemorySkillProvider().list_resources("nope")
+
+    async def test_discovery_returns_sorted_ids(self):
+        provider = InMemorySkillProvider({"c": "", "a": "", "b": ""})
+
+        assert await provider.discover() == ["a", "b", "c"]
+
+    async def test_discovery_can_be_disabled(self):
+        provider = InMemorySkillProvider({"a": "body"}, supports_discovery=False)
+
+        assert provider.supports_discovery is False
+        with pytest.raises(DiscoveryNotSupportedError):
+            await provider.discover()
+
+    async def test_registers_wholesale(self):
+        provider = InMemorySkillProvider({"alpha": "# Alpha", "bravo": "# Bravo"})
+        registry = SkillRegistry()
+
+        assert await registry.register_all(provider) == ["alpha", "bravo"]
 
     @pytest.mark.parametrize("bad", ["../etc", "a/b", "a\\b", "x\x00y", ""])
     async def test_unsafe_skill_ids_are_refused(self, bad: str):

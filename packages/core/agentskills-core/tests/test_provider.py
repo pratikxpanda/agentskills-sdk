@@ -4,6 +4,7 @@ import pytest
 
 from agentskills_core import (
     RESOURCE_KINDS,
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     SkillProvider,
 )
@@ -59,6 +60,34 @@ class TestResourceListingCapability:
 
     def test_resource_kinds_are_the_spec_categories(self):
         assert RESOURCE_KINDS == ("references", "scripts", "assets")
+
+
+class TestDiscoveryCapability:
+    """Discovery is optional: opt in by overriding, declare via the flag."""
+
+    def test_default_flag_is_false(self):
+        assert _StubProvider().supports_discovery is False
+
+    async def test_default_raises_rather_than_returning_empty(self):
+        """'Cannot enumerate' must not be reported as 'holds no skills'."""
+        with pytest.raises(DiscoveryNotSupportedError, match="_StubProvider"):
+            await _StubProvider().discover()
+
+    async def test_is_a_not_implemented_error(self):
+        """Callers that only know the stdlib hierarchy can still catch it."""
+        with pytest.raises(NotImplementedError):
+            await _StubProvider().discover()
+
+    async def test_subclass_can_opt_in(self):
+        class DiscoverableProvider(_StubProvider):
+            supports_discovery = True
+
+            async def discover(self) -> list[str]:
+                return ["alpha", "bravo"]
+
+        provider = DiscoverableProvider()
+        assert provider.supports_discovery is True
+        assert await provider.discover() == ["alpha", "bravo"]
 
 
 class TestSkillProviderABC:

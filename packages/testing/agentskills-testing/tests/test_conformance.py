@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 from agentskills_core import (
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -66,6 +67,14 @@ class TestInMemoryProviderWithoutListing(ProviderConformanceSuite):
     @pytest.fixture
     def provider(self) -> SkillProvider:
         return conforming_provider(supports_resource_listing=False)
+
+
+class TestInMemoryProviderWithoutDiscovery(ProviderConformanceSuite):
+    """And with discovery switched off, which is the HTTP default."""
+
+    @pytest.fixture
+    def provider(self) -> SkillProvider:
+        return conforming_provider(supports_discovery=False)
 
 
 # ----------------------------------------------------------------------
@@ -156,6 +165,22 @@ class _ReadsOnce(InMemorySkillProvider):
         return await super().get_body(skill_id)
 
 
+class _LiesAboutDiscovery(InMemorySkillProvider):
+    """Advertises discovery, then refuses to enumerate."""
+
+    supports_discovery = True
+
+    async def discover(self) -> list[str]:
+        raise DiscoveryNotSupportedError("changed my mind")
+
+
+class _DiscoversPhantoms(InMemorySkillProvider):
+    """Reports a skill it cannot serve, which poisons ``register_all``."""
+
+    async def discover(self) -> list[str]:
+        return [*self.skill_ids(), MISSING_ID]
+
+
 class TestTheSuiteCatchesBrokenProviders:
     """Every clause of the contract, violated and caught."""
 
@@ -238,6 +263,32 @@ class TestTheSuiteCatchesBrokenProviders:
         with pytest.raises(FAILURE):
             await self._suite().test_listing_of_unknown_skill_is_refused(
                 _ListsAnything({SKILL_ID: build_skill(SKILL_ID)})
+            )
+
+    async def test_a_discovery_capability_that_lies_is_caught(self):
+        with pytest.raises(FAILURE):
+            await self._suite().test_discovery_matches_the_declared_capability(
+                _LiesAboutDiscovery()
+            )
+
+    async def test_discovery_that_reports_an_unreadable_skill_is_caught(self):
+        provider = _DiscoversPhantoms({SKILL_ID: build_skill(SKILL_ID)})
+
+        with pytest.raises(SkillNotFoundError):
+            await self._suite().test_discovered_skills_are_readable(provider)
+
+    async def test_a_silent_discovery_refusal_is_caught(self):
+        """Returning nothing instead of raising is the failure ADR 0002 exists to stop."""
+
+        class _EmptyInsteadOfRaising(InMemorySkillProvider):
+            supports_discovery = False
+
+            async def discover(self) -> list[str]:
+                return []
+
+        with pytest.raises(FAILURE):
+            await self._suite().test_discovery_matches_the_declared_capability(
+                _EmptyInsteadOfRaising({SKILL_ID: build_skill(SKILL_ID)})
             )
 
 

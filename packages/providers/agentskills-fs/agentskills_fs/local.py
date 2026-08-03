@@ -8,9 +8,10 @@ It follows the progressive-disclosure model defined in the specification:
 * **Body** is the markdown content after the frontmatter.
 * **Resources** (scripts, references, assets) are read on demand.
 
-The provider is a pure content accessor — it does not enumerate or
-discover skills.  Registration is handled explicitly by the application
-via :meth:`SkillRegistry.register <agentskills_core.SkillRegistry.register>`.
+The provider can enumerate itself: :meth:`LocalFileSystemSkillProvider.discover`
+lists the skill directories under the root, so an application can register a
+whole folder with :meth:`SkillRegistry.register_all
+<agentskills_core.SkillRegistry.register_all>` instead of naming each skill.
 
 All methods are ``async`` to satisfy the :class:`~agentskills_core.SkillProvider`
 interface.  Blocking file I/O runs in a worker thread via
@@ -34,6 +35,9 @@ from agentskills_core import (
 )
 
 _logger = get_logger(__name__)
+
+#: Filename that marks a directory as a skill.
+SKILL_FILE_NAME: str = "SKILL.md"
 
 #: Default maximum file size in bytes (10 MB).
 DEFAULT_MAX_FILE_BYTES: int = 10 * 1024 * 1024
@@ -81,6 +85,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
     change on disk.
 
     Resource listing is supported: see :meth:`list_resources`.
+    Skill discovery is supported: see :meth:`discover`.
 
     Raises:
         NotADirectoryError: If *root* does not exist or is not a
@@ -90,7 +95,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
 
         provider = LocalFileSystemSkillProvider(Path("./skills"))
         registry = SkillRegistry()
-        await registry.register("incident-response", provider)
+        await registry.register_all(provider)
 
         skill = registry.get_skill("incident-response")
         meta = await skill.get_metadata()
@@ -98,6 +103,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
     """
 
     supports_resource_listing = True
+    supports_discovery = True
 
     def __init__(self, root: Path, *, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> None:
         self._root = Path(root)
@@ -239,9 +245,43 @@ class LocalFileSystemSkillProvider(SkillProvider):
         """
         return await asyncio.to_thread(self._list_resources_sync, skill_id)
 
+    async def discover(self) -> list[str]:
+        """List the skill directories directly beneath the root.
+
+        A directory counts as a skill when it holds a ``SKILL.md``.
+        Dotted directories, loose files and symlinks pointing outside
+        the root are skipped, matching :meth:`list_resources`.
+
+        Discovery does not read or validate the skills it finds, so a
+        returned ID can still fail registration.  That is deliberate:
+        enumerating a folder should not cost one full parse per skill.
+
+        Returns:
+            Sorted skill IDs.  Empty when the root holds no skills.
+        """
+        return await asyncio.to_thread(self._discover_sync)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _discover_sync(self) -> list[str]:
+        """Enumerate skill directories under the root."""
+        root = self._root.resolve()
+        skill_ids: list[str] = []
+
+        for entry in root.iterdir():
+            if entry.name.startswith("."):
+                continue
+            if not entry.is_dir():
+                continue
+            if not entry.resolve().is_relative_to(root):
+                continue
+            if (entry / SKILL_FILE_NAME).is_file():
+                skill_ids.append(entry.name)
+
+        _logger.debug("Discovered %d skills under %s", len(skill_ids), root)
+        return sorted(skill_ids)
 
     def _list_resources_sync(self, skill_id: str) -> dict[str, list[str]]:
         """Enumerate a skill's resource directories."""
@@ -311,7 +351,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
         Raises:
             SkillNotFoundError: If the directory or file does not exist.
         """
-        skill_md = self._skill_dir(skill_id) / "SKILL.md"
+        skill_md = self._skill_dir(skill_id) / SKILL_FILE_NAME
         if not skill_md.is_file():
             raise SkillNotFoundError(f"SKILL.md not found for skill {skill_id!r}")
         size = skill_md.stat().st_size

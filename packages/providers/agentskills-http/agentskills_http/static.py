@@ -16,11 +16,15 @@ Expected URL layout::
     └── another-skill/
         └── SKILL.md
 
-The provider is a pure content accessor — it does not enumerate or
-discover skills.  Registration is handled explicitly by the application
-via :meth:`SkillRegistry.register <agentskills_core.SkillRegistry.register>`.
-Resource names (scripts, assets, references) are discovered by the agent
-from the skill body rather than from a manifest.
+The provider is a pure content accessor by default — a plain static host
+cannot be enumerated, so registration is explicit via
+:meth:`SkillRegistry.register <agentskills_core.SkillRegistry.register>` and
+resource names come from the skill body.  A host that publishes
+``index.json`` manifests can enable both optional capabilities: a manifest
+at ``{base_url}/index.json`` lists the skills, and one at
+``{base_url}/{skill_id}/index.json`` lists that skill's resources.  Same
+filename, same shape — a JSON object mapping a category to a list of names
+— at two depths, rather than two manifest formats to keep in step.
 
 All methods are ``async`` and use `httpx <https://www.python-httpx.org/>`_
 for non-blocking HTTP requests.
@@ -44,6 +48,7 @@ import httpx
 from agentskills_core import (
     RESOURCE_KINDS,
     AgentSkillsError,
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -83,8 +88,12 @@ _NOT_FOUND_STATUS_CODES: frozenset[int] = frozenset({404, 410})
 #: Non-5xx statuses worth retrying.
 _RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({408, 425, 429})
 
-#: Per-skill manifest filename used for resource listing.
-RESOURCE_MANIFEST_NAME: str = "index.json"
+#: Manifest filename.  Served at the root it lists skills; served inside a
+#: skill it lists that skill's resources.
+MANIFEST_NAME: str = "index.json"
+
+#: Manifest key holding skill IDs in a root manifest.
+SKILLS_MANIFEST_KEY: str = "skills"
 
 
 def _parse_retry_after(value: str | None) -> float | None:
@@ -120,7 +129,9 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     GitHub Pages, etc.) that hosts skill files at predictable URL paths.
     Resource names (scripts, assets, references) are discovered by the
     agent from the skill body, or from an optional per-skill
-    ``index.json`` manifest -- see *resource_manifest*.
+    ``index.json`` manifest -- see *resource_manifest*.  The set of
+    skills is likewise unknowable over plain HTTP unless the host
+    publishes a root ``index.json`` -- see *skill_manifest*.
 
     The provider owns an :class:`httpx.AsyncClient` for connection
     pooling.  If you supply your own client the provider will use it
@@ -158,6 +169,13 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             plain static host cannot be enumerated and claiming
             otherwise would make missing manifests look like skills with
             no resources.
+        skill_manifest: Set ``True`` if the host publishes a root
+            ``index.json`` with a ``"skills"`` list.  Enables
+            :meth:`discover`, and so
+            :meth:`SkillRegistry.register_all
+            <agentskills_core.SkillRegistry.register_all>`.  Defaults to
+            ``False`` for the same reason: without a manifest, "no
+            skills found" would be a lie.
         timeout: Request timeout in seconds.  Ignored when you supply
             your own *client*.
         max_retries: Retries after the initial attempt, for retryable
@@ -199,6 +217,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
         revalidate: bool = False,
         resource_manifest: bool = False,
+        skill_manifest: bool = False,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
         max_retries: int = DEFAULT_MAX_RETRIES,
         retry_backoff: float = DEFAULT_RETRY_BACKOFF_SECONDS,
@@ -237,6 +256,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._revalidate = revalidate
         self._skill_md_cache: dict[str, _CachedSkillMd] = {}
         self.supports_resource_listing = resource_manifest
+        self.supports_discovery = skill_manifest
         self._max_retries = max_retries
         self._retry_backoff = retry_backoff
         self._max_retry_delay = max_retry_delay
@@ -419,57 +439,120 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             ResourceListingNotSupportedError: If the provider was built
                 without ``resource_manifest=True``, or the skill has no
                 published manifest.
+            SkillNotFoundError: If the skill itself does not exist.
             AgentSkillsError: If the manifest is not a JSON object.
         """
         if not self.supports_resource_listing:
             raise ResourceListingNotSupportedError(
                 "This provider was not configured with a resource manifest. "
                 "A static HTTP host cannot be enumerated. Pass "
-                "resource_manifest=True if the host publishes "
-                f"{RESOURCE_MANIFEST_NAME} per skill, otherwise take resource "
-                "names from the skill body."
+                f"resource_manifest=True if the host publishes {MANIFEST_NAME} "
+                "per skill, otherwise take resource names from the skill body."
             )
 
         self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
-        url = f"{self._base_url}/{quote(skill_id, safe='')}/{RESOURCE_MANIFEST_NAME}"
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/{MANIFEST_NAME}"
+        subject = f"Resource manifest for skill {skill_id!r}"
         try:
-            raw = await self._get_bytes(url)
+            manifest = await self._fetch_manifest(url, subject)
         except ResourceNotFoundError as exc:
+            # A 404 here means either "this skill publishes no manifest" or
+            # "there is no such skill", and only SKILL.md can tell them
+            # apart. The extra request is on the failure path, and its
+            # result is cached for the caller who asks next.
+            await self._get_skill_md(skill_id)
             raise ResourceListingNotSupportedError(
-                f"No {RESOURCE_MANIFEST_NAME} manifest published for skill "
+                f"No {MANIFEST_NAME} manifest published for skill "
                 f"{skill_id!r}. Take resource names from the skill body instead."
             ) from exc
 
+        return {kind: self._manifest_names(manifest, kind, subject) for kind in RESOURCE_KINDS}
+
+    # ------------------------------------------------------------------
+    # Skill discovery
+    # ------------------------------------------------------------------
+
+    async def discover(self) -> list[str]:
+        """List the host's skills from the root ``index.json`` manifest.
+
+        Requires ``skill_manifest=True``.  The manifest is a JSON object
+        at ``{base_url}/index.json`` with a ``"skills"`` list::
+
+            {"skills": ["incident-response", "api-style-guide"]}
+
+        It is the same file format as the per-skill resource manifest,
+        one level up, so a host publishing both has one shape to
+        generate rather than two.  Other keys are ignored, and entries
+        that are not valid skill IDs are dropped -- a manifest is
+        host-supplied data and an ID is later interpolated into a URL.
+
+        Returns:
+            Sorted skill IDs.  Empty when the manifest lists none.
+
+        Raises:
+            DiscoveryNotSupportedError: If the provider was built
+                without ``skill_manifest=True``, or the host publishes
+                no root manifest.
+            AgentSkillsError: If the manifest is not a JSON object.
+        """
+        if not self.supports_discovery:
+            raise DiscoveryNotSupportedError(
+                "This provider was not configured with a skill manifest. "
+                "A static HTTP host cannot be enumerated. Pass "
+                f"skill_manifest=True if the host publishes a root {MANIFEST_NAME}, "
+                "otherwise register skills explicitly."
+            )
+
+        url = f"{self._base_url}/{MANIFEST_NAME}"
+        subject = "Skill manifest"
         try:
-            manifest = json.loads(raw)
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise AgentSkillsError(
-                f"Resource manifest for skill {skill_id!r} is not valid JSON"
+            manifest = await self._fetch_manifest(url, subject)
+        except ResourceNotFoundError as exc:
+            raise DiscoveryNotSupportedError(
+                f"No {MANIFEST_NAME} manifest published at {self._describe(url)}. "
+                "Register skills explicitly instead."
             ) from exc
 
-        if not isinstance(manifest, dict):
-            raise AgentSkillsError(
-                f"Resource manifest for skill {skill_id!r} must be a JSON object"
-            )
-
-        listing: dict[str, list[str]] = {}
-        for kind in RESOURCE_KINDS:
-            entries = manifest.get(kind) or []
-            if not isinstance(entries, list):
-                raise AgentSkillsError(
-                    f"Resource manifest for skill {skill_id!r} has a non-list value for {kind!r}"
-                )
-            listing[kind] = sorted(
-                name
-                for name in entries
-                if isinstance(name, str) and _SAFE_IDENTIFIER_RE.match(name)
-            )
-
-        return listing
+        skill_ids = self._manifest_names(manifest, SKILLS_MANIFEST_KEY, subject)
+        _logger.debug("Discovered %d skills from %s", len(skill_ids), self._describe(url))
+        return skill_ids
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    async def _fetch_manifest(self, url: str, subject: str) -> dict[str, Any]:
+        """Fetch and parse an ``index.json`` manifest.
+
+        Raises:
+            ResourceNotFoundError: If no manifest is published there.
+                Callers translate this into the "cannot enumerate"
+                error their own capability documents.
+            AgentSkillsError: If the manifest is not a JSON object.
+        """
+        raw = await self._get_bytes(url)
+        try:
+            manifest = json.loads(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise AgentSkillsError(f"{subject} is not valid JSON") from exc
+        if not isinstance(manifest, dict):
+            raise AgentSkillsError(f"{subject} must be a JSON object")
+        return manifest
+
+    @staticmethod
+    def _manifest_names(manifest: dict[str, Any], key: str, subject: str) -> list[str]:
+        """Return the safe, sorted, de-duplicated names under *key*.
+
+        A missing key means an empty list.  Unsafe entries are dropped
+        rather than raising: one bad name in a host-supplied manifest
+        should not make the whole listing unavailable.
+        """
+        entries = manifest.get(key) or []
+        if not isinstance(entries, list):
+            raise AgentSkillsError(f"{subject} has a non-list value for {key!r}")
+        return sorted(
+            {name for name in entries if isinstance(name, str) and _SAFE_IDENTIFIER_RE.match(name)}
+        )
 
     def _describe(self, url: str) -> str:
         """Describe *url* for an error message or log record without leaking secrets.

@@ -5,7 +5,7 @@ nothing about what they do.  The requirements that actually matter are
 the ones an ABC cannot express: that an unknown ID raises the documented
 exception rather than returning ``None``, that a traversal-shaped
 identifier is refused rather than resolved, and that a provider
-advertising resource listing can actually list.
+advertising resource listing or discovery can actually deliver it.
 
 Subclass :class:`ProviderConformanceSuite`, supply a ``provider``
 fixture populated per :data:`CONTRACT`, and pytest collects the whole
@@ -25,6 +25,7 @@ import pytest
 from agentskills_core import (
     RESOURCE_KINDS,
     AgentSkillsError,
+    DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -63,7 +64,8 @@ The `provider` fixture must expose exactly one skill:
   assets/      {ASSET_NAME} containing {ASSET_BYTES!r}
 
 It must not define a skill called {MISSING_ID!r} or any resource called
-{MISSING_RESOURCE!r}.
+{MISSING_RESOURCE!r}.  A provider that sets `supports_discovery` must
+report exactly one skill, {SKILL_ID!r}.
 """
 
 #: Identifiers a provider must refuse rather than resolve.  Each is a
@@ -223,6 +225,33 @@ class ProviderConformanceSuite:
 
         with pytest.raises(SkillNotFoundError):
             await provider.list_resources(MISSING_ID)
+
+    # -- Skill discovery ------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_discovery_matches_the_declared_capability(self, provider: SkillProvider) -> None:
+        if provider.supports_discovery:
+            try:
+                skill_ids = await provider.discover()
+            except DiscoveryNotSupportedError as exc:
+                pytest.fail(f"supports_discovery is True but discover() refused: {exc}")
+            assert isinstance(skill_ids, list)
+            # The contract fixture holds exactly one skill, so this also
+            # pins sortedness and the absence of duplicates.
+            assert skill_ids == [SKILL_ID]
+        else:
+            with pytest.raises(DiscoveryNotSupportedError):
+                await provider.discover()
+
+    @pytest.mark.asyncio
+    async def test_discovered_skills_are_readable(self, provider: SkillProvider) -> None:
+        if not provider.supports_discovery:
+            pytest.skip("provider does not support discovery")
+
+        # register_all() validates everything discover() returns, so an ID
+        # that cannot be read poisons the whole registration.
+        for skill_id in await provider.discover():
+            assert await provider.get_metadata(skill_id)
 
     # -- Security -------------------------------------------------------
 
