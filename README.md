@@ -317,15 +317,41 @@ agentskills serve ./skills                           # MCP server, no config fil
 
 `validate` is the one to put in CI. It exits `1` when a skill is broken and `2` when the
 invocation is, so a workflow can tell those apart, and `--format json` emits a documented,
-versioned schema:
-
-```yaml
-- run: pip install agentskills-cli
-- run: agentskills validate ./skills
-```
+versioned schema.
 
 See the [package README](packages/cli/agentskills-cli/README.md) for the lint rules, the JSON
 schema, and the exit codes.
+
+### GitHub Action
+
+If your skills live in a GitHub repository, the action wraps `validate` and `lint` and puts every
+finding on the pull request diff, on the line that caused it:
+
+```yaml
+name: Skills
+on: [pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pratikxpanda/agentskills-sdk/actions/validate@v1
+        with:
+          path: ./skills
+          fail-on-lint: false
+```
+
+| Input | Default | Purpose |
+| --- | --- | --- |
+| `path` | `.` | A skill folder, or a folder of skill folders. |
+| `fail-on-lint` | `false` | Fail on lint warnings too. They are annotated either way. |
+| `max-body-tokens` | CLI default | Body token budget before lint warns. |
+| `version` | latest | Version of `agentskills-cli` to install. An `agentskills` already on `PATH` is used as-is, so a repository that pins the CLI keeps its pin. |
+| `python-version` | `3.12` | Python to install the CLI on, when it installs one. |
+
+Lint runs only after `validate` passes. Linting a skill whose frontmatter did not parse repeats
+the same annotation, and a token budget is not the thing to fix first.
 
 ## Custom Providers
 

@@ -145,6 +145,30 @@ line of `SKILL.md`.
 
 ## Continuous integration
 
+The published action wraps `validate` and `lint` and annotates every finding
+on the pull request diff:
+
+```yaml
+- uses: pratikxpanda/agentskills-sdk/actions/validate@v1
+  with:
+    path: ./skills
+    fail-on-lint: false
+```
+
+To run it yourself, `validate` and `lint` also accept `--format github`, which
+emits [workflow commands](https://docs.github.com/actions/reference/workflow-commands-for-github-actions)
+instead of a report:
+
+```bash
+agentskills validate ./skills --format github
+```
+
+```text
+::error file=skills/deploy/SKILL.md,line=3,title=frontmatter-invalid-yaml::frontmatter is not valid YAML
+```
+
+Anywhere else, the exit code is enough:
+
 ```yaml
 - run: pip install agentskills-cli
 - run: agentskills validate ./skills

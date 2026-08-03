@@ -1,0 +1,102 @@
+name: Validate Agent Skills
+description: >-
+  Check a directory of skills against the Agent Skills specification and
+  annotate every failure on the pull request diff.
+author: pratikxpanda
+
+branding:
+  icon: check-square
+  color: blue
+
+inputs:
+  path:
+    description: A skill folder, or a folder of skill folders, to check.
+    required: false
+    default: "."
+  fail-on-lint:
+    description: >-
+      Fail the check on lint warnings as well as specification errors.
+      Warnings are annotated either way.
+    required: false
+    default: "false"
+  max-body-tokens:
+    description: >-
+      Estimated token budget for a skill body before lint warns. Empty
+      uses the CLI default.
+    required: false
+    default: ""
+  version:
+    description: >-
+      Version of agentskills-cli to install. Empty uses an agentskills
+      already on PATH, and installs the latest release if there is none.
+    required: false
+    default: ""
+  python-version:
+    description: Python version to install the CLI on, when it installs one.
+    required: false
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    # A repository that already pins the CLI should keep its pin; silently
+    # replacing it with the latest release would make this action the thing
+    # that decides which rules apply.
+    - name: Decide whether to install the CLI
+      id: cli
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        if [ -z "$VERSION" ] && command -v agentskills >/dev/null 2>&1; then
+          echo "Using $(command -v agentskills)"
+          echo "install=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "install=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Set up Python
+      if: steps.cli.outputs.install == 'true'
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install the CLI
+      if: steps.cli.outputs.install == 'true'
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        if [ -n "$VERSION" ]; then
+          python -m pip install --disable-pip-version-check "agentskills-cli==$VERSION"
+        else
+          python -m pip install --disable-pip-version-check agentskills-cli
+        fi
+
+    # Inputs reach the shell as environment variables, never interpolated
+    # into the script: an ${{ }} in a run block is a command injection an
+    # untrusted branch name can reach.
+    - name: Validate
+      shell: bash
+      env:
+        SKILLS_PATH: ${{ inputs.path }}
+      run: agentskills validate --format github "$SKILLS_PATH"
+
+    # A failed validate stops the action here, which is deliberate. Linting
+    # a skill whose frontmatter did not parse repeats the same annotation,
+    # and a token budget is not the thing to fix first.
+    - name: Lint
+      shell: bash
+      env:
+        SKILLS_PATH: ${{ inputs.path }}
+        FAIL_ON_LINT: ${{ inputs.fail-on-lint }}
+        MAX_BODY_TOKENS: ${{ inputs.max-body-tokens }}
+      run: |
+        args=(lint --format github)
+        if [ "$FAIL_ON_LINT" = "true" ]; then
+          args+=(--strict)
+        fi
+        if [ -n "$MAX_BODY_TOKENS" ]; then
+          args+=(--max-body-tokens "$MAX_BODY_TOKENS")
+        fi
+        agentskills "${args[@]}" "$SKILLS_PATH"
