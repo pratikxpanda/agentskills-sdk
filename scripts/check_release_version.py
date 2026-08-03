@@ -2,7 +2,7 @@
 
 Run before tagging a release::
 
-    python scripts/check_release_version.py            # the six packages agree
+    python scripts/check_release_version.py            # every package agrees
     python scripts/check_release_version.py --tag v0.3.0   # ...and match the tag
 
 The tag must be ``v`` followed by the exact version string, so ``0.3.0rc1`` is
@@ -27,6 +27,7 @@ DEPENDENTS = [
     "packages/integrations/agentskills-langchain",
     "packages/integrations/agentskills-agentframework",
     "packages/integrations/agentskills-mcp-server",
+    "packages/cli/agentskills-cli",
 ]
 
 PACKAGES = [CORE, *DEPENDENTS]
@@ -65,7 +66,7 @@ def _check_versions(tag: str | None) -> tuple[str | None, list[str]]:
 def _check_core_floor(version: str) -> list[str]:
     """Dependents must require the core they are released with.
 
-    The six ship in lockstep, so a floor below the release version lets pip
+    They ship in lockstep, so a floor below the release version lets pip
     resolve an older core against a newer dependent and fail at import.
     """
     expected = f">={version},<1.0"
@@ -96,7 +97,10 @@ def main() -> int:
             print(f"  - {error}", file=sys.stderr)
         return 1
 
-    print(f"\nOK: all six packages at {version}" + (f", matching {args.tag}" if args.tag else ""))
+    print(
+        f"\nOK: all {len(PACKAGES)} packages at {version}"
+        + (f", matching {args.tag}" if args.tag else "")
+    )
     return 0
 
 

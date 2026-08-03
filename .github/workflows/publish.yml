@@ -76,7 +76,8 @@ jobs:
             packages/providers/agentskills-http \
             packages/integrations/agentskills-langchain \
             packages/integrations/agentskills-agentframework \
-            packages/integrations/agentskills-mcp-server
+            packages/integrations/agentskills-mcp-server \
+            packages/cli/agentskills-cli
           do
             name="$(basename "$pkg")"
             (cd "$pkg" && poetry build)
@@ -96,7 +97,7 @@ jobs:
     name: Publish to ${{ needs.target.outputs.environment }}
     needs: [target, build]
     runs-on: ubuntu-latest
-    # One job, six sequential steps: the environment's reviewers approve the
+    # One job, one step per package: the environment's reviewers approve the
     # release once, not once per package.
     environment:
       name: ${{ needs.target.outputs.environment }}
@@ -157,6 +158,14 @@ jobs:
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: dist/agentskills-mcp-server
+          repository-url: ${{ env.REPO }}
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-cli
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-cli
           repository-url: ${{ env.REPO }}
           attestations: true
           skip-existing: true

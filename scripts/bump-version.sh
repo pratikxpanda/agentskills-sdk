@@ -21,6 +21,7 @@ PYPROJECT_FILES=(
     "packages/integrations/agentskills-langchain/pyproject.toml"
     "packages/integrations/agentskills-agentframework/pyproject.toml"
     "packages/integrations/agentskills-mcp-server/pyproject.toml"
+    "packages/cli/agentskills-cli/pyproject.toml"
 )
 
 BUMP="patch"
@@ -85,7 +86,7 @@ if $DRY_RUN; then
 else
     for rel_path in "${PYPROJECT_FILES[@]}"; do
         file_path="$REPO_ROOT/$rel_path"
-        # The six ship in lockstep, so a dependent must require the core it ships with.
+        # These ship in lockstep, so a dependent must require the core it ships with.
         sed_args=(
             -e "s/version = \"$current_version\"/version = \"$new_version\"/"
             -e "s/agentskills-core = \"[^\"]*\"/agentskills-core = \">=$new_version,<1.0\"/"

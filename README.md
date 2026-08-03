@@ -25,6 +25,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | **Integration** - expose skills to a LangChain agent as tools. | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-langchain?label=)](https://pepy.tech/project/agentskills-langchain) |
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | **Integration** - expose skills to a Microsoft Agent Framework agent, injected automatically through the agent lifecycle. | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-agentframework?label=)](https://pepy.tech/project/agentskills-agentframework) |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve skills over the Model Context Protocol to any MCP client, such as Claude Desktop, VS Code, or Cursor. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
+| [`agentskills-cli`](packages/cli/agentskills-cli/README.md) | **Tooling** - the `agentskills` command: scaffold, validate, lint, and inspect skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-cli?label=)](https://pypi.org/project/agentskills-cli/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-cli?label=)](https://pepy.tech/project/agentskills-cli) |
 
 **Which do I need?** One provider for wherever your skills live, plus the integration for your
 agent framework. Both pull in `agentskills-core`, so a LangChain app reading skills from disk
@@ -33,6 +34,8 @@ needs only:
 ```bash
 pip install agentskills-fs agentskills-langchain
 ```
+
+If you *write* skills rather than consume them, you want `agentskills-cli` instead.
 
 ## How It Works
 
@@ -295,6 +298,34 @@ async with mcp_skills:
 ```
 
 See [examples/agent-framework/](examples/agent-framework/) for full working demos.
+
+## Command Line
+
+`agentskills-cli` is for authoring skills rather than consuming them.
+
+```bash
+pip install agentskills-cli
+```
+
+```bash
+agentskills init incident-response --path ./skills   # scaffold a skill that validates
+agentskills validate ./skills                        # exits 1 on any error
+agentskills lint ./skills                            # legal, but costly
+agentskills inspect ./skills/incident-response       # what the agent actually receives
+agentskills serve ./skills                           # MCP server, no config file
+```
+
+`validate` is the one to put in CI. It exits `1` when a skill is broken and `2` when the
+invocation is, so a workflow can tell those apart, and `--format json` emits a documented,
+versioned schema:
+
+```yaml
+- run: pip install agentskills-cli
+- run: agentskills validate ./skills
+```
+
+See the [package README](packages/cli/agentskills-cli/README.md) for the lint rules, the JSON
+schema, and the exit codes.
 
 ## Custom Providers
 

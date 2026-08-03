@@ -76,7 +76,7 @@ provably correct. Specifications: [docs/issues/v0.4.md](./issues/v0.4.md).
 
 | Item | Theme | Package(s) | Notes |
 |---|---|---|---|
-| `agentskills` CLI | DX | new `agentskills-cli` | `init` (scaffold a skill), `validate <path>` (spec check, exit non-zero on failure), `lint` (style/token-budget warnings), `inspect` (render catalog/metadata), `serve` (run the MCP server without writing config by hand). |
+| `agentskills` CLI | DX | new `agentskills-cli` | **Implemented, awaiting release.** `init` (scaffold a skill), `validate <path>` (spec check, exit non-zero on failure), `lint` (style/token-budget warnings), `inspect` (render catalog/metadata), `serve` (run the MCP server without writing config by hand). Separate package and stdlib `argparse` so the validation Action inherits no dependencies; `serve` is an optional extra. |
 | Skill validation GitHub Action | DX | repo | Thin wrapper over `agentskills validate` so skill repos can gate PRs. Highest-leverage adoption lever — it puts the SDK in other people's CI. |
 | Provider conformance test kit | Correctness | new `agentskills-testing` | A published pytest suite any third-party provider can run to prove it satisfies the `SkillProvider` contract (traversal safety, size limits, error types, resource listing). Turns the protocol into a real, testable interface. |
 | Test doubles | DX | `agentskills-testing` | `InMemorySkillProvider` + fixtures so downstream users can unit-test agents without disk or network. |
@@ -87,7 +87,7 @@ provably correct. Specifications: [docs/issues/v0.4.md](./issues/v0.4.md).
 | Token cost reporting | DX | `agentskills-cli` | `agentskills inspect --cost` breaking down tokens by catalog entry, body section, and resource. Authors cannot budget what they cannot see. |
 | Documentation site | Project health | repo | MkDocs Material with API reference, versioned per release. README is already carrying more than it should. |
 | Architecture decision records | Project health | `docs/adr/` | Short ADRs for cross-package decisions (async model, caching strategy, error taxonomy, packaging). |
-| Simplify the publish workflow | Project health | repo | Drop the TestPyPI dry-run path. Pending trusted publishers must be uniquely identifiable by their claims, and all six distributions share owner, repo, workflow and environment — so only one pending publisher can exist at a time, and bootstrapping six projects on a fresh index takes six sequential publish rounds. The result is a dry run configured for one package out of six, which fails in a way that looks like a real problem. Replace the fall-through routing with an explicit refusal for unexpected tag shapes, make `workflow_dispatch` build-only, and let pre-releases go to PyPI, which handles them natively. |
+| Simplify the publish workflow | Project health | repo | Drop the TestPyPI dry-run path. Pending trusted publishers must be uniquely identifiable by their claims, and all seven distributions share owner, repo, workflow and environment — so only one pending publisher can exist at a time, and bootstrapping them on a fresh index takes one sequential publish round each. The result is a dry run configured for one package out of seven, which fails in a way that looks like a real problem. Replace the fall-through routing with an explicit refusal for unexpected tag shapes, make `workflow_dispatch` build-only, and let pre-releases go to PyPI, which handles them natively. |
 
 ---
 
