@@ -138,7 +138,21 @@ asyncio.run(main())
 Those two calls are the whole idea. The catalog is small and always present; the body is large and
 loaded on demand. Put the catalog in your system prompt, hand the agent the tools below, and it
 makes the second call itself, only when it needs to.
+
+"Small" stops being automatic once a registry grows, and the catalog is a fixed cost on every
+request. Narrow it, and cap it:
+
+```python
+catalog = await registry.get_skills_catalog(
+    tags=["incident"],              # any-of match on metadata.tags
+    exclude=["deprecated-runbook"], # deny-list of skill IDs
+    max_chars=8000,                 # hard ceiling on the returned string
+)
 ```
+
+`max_chars` drops whole entries from the end until the result fits, and says so in the output —
+the XML root gains `truncated`, `shown` and `total` attributes. A catalog that shrinks without
+saying so makes agent behaviour non-reproducible.
 
 ### With LangChain
 

@@ -92,6 +92,44 @@ Metadata for every registered skill is fetched concurrently, which matters when 
 registry = SkillRegistry(catalog_concurrency=4)   # default: 8
 ```
 
+### Narrowing and Capping the Catalog
+
+The catalog goes into every system prompt on every turn, so its size is a fixed cost per request. Four keyword arguments control it:
+
+```python
+catalog = await registry.get_skills_catalog(
+    tags=["incident"],              # any-of match, case-insensitive
+    include=["runbook-a"],          # allow-list of skill IDs
+    exclude=["deprecated-runbook"], # deny-list, applied last
+    max_chars=8000,                 # hard ceiling on the returned string
+)
+```
+
+`include` and `exclude` match skill IDs and run **before** any metadata is fetched, so narrowing a large registry costs proportionally fewer provider round-trips. `tags` needs metadata and runs after.
+
+The two ID filters are deliberately asymmetric about IDs that are not registered. `include` raises `SkillNotFoundError`, because an allow-list naming a skill that does not exist silently costs the agent a capability. `exclude` ignores them, because a deny-list is meant to outlive the thing it denies.
+
+Tags are read from the spec's free-form `metadata` mapping, not from a new top-level field:
+
+```yaml
+---
+name: incident-response
+description: Diagnose and mitigate a production incident.
+metadata:
+  tags: [incident, sev1]
+---
+```
+
+`max_chars` drops whole entries from the end until the result fits, so the output stays well-formed and the same arguments always produce the same catalog. Truncation is never silent — the XML root gains `truncated`, `shown` and `total` attributes, and the Markdown gains a closing note:
+
+```xml
+<available_skills truncated="true" shown="12" total="40">
+```
+
+A catalog that shrinks without saying so makes agent behaviour non-reproducible. Roughly four characters per token is the usual estimate; the ceiling is in characters so that core needs no tokenizer.
+
+There is no catalog cache today. If one is added, its key must cover the format and every filter argument above.
+
 ### Skill Versions (optional, non-spec)
 
 A skill may declare a `version` in its frontmatter. It is optional — skills without one remain
