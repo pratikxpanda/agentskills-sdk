@@ -24,6 +24,7 @@ Example::
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Iterable
 from typing import Any, Literal, overload
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
@@ -37,6 +38,32 @@ _logger = get_logger(__name__)
 
 #: Metadata fetches issued in parallel when building a catalog.
 DEFAULT_CATALOG_CONCURRENCY = 8
+
+#: Key under the spec's free-form ``metadata`` mapping holding a skill's tags.
+TAGS_METADATA_KEY = "tags"
+
+
+def _tags_of(skill_id: str, meta: dict[str, Any]) -> frozenset[str]:
+    """Return a skill's tags, case-folded, from ``metadata.tags``.
+
+    The Agent Skills spec already defines ``metadata`` as a free-form
+    mapping, so tags live there rather than in a new top-level field
+    this project would have to defend upstream.
+    """
+    container = meta.get("metadata")
+    if not isinstance(container, dict):
+        return frozenset()
+    raw = container.get(TAGS_METADATA_KEY)
+    if raw is None:
+        return frozenset()
+    if not isinstance(raw, list) or not all(isinstance(tag, str) for tag in raw):
+        _logger.warning(
+            "Skill '%s': metadata.%s must be a list of strings; ignoring it for filtering",
+            skill_id,
+            TAGS_METADATA_KEY,
+        )
+        return frozenset()
+    return frozenset(tag.strip().casefold() for tag in raw if tag.strip())
 
 
 class SkillRegistry:
@@ -270,6 +297,10 @@ class SkillRegistry:
         self,
         *,
         format: Literal["xml", "markdown"] = "xml",
+        tags: Iterable[str] | None = None,
+        include: Iterable[str] | None = None,
+        exclude: Iterable[str] | None = None,
+        max_chars: int | None = None,
     ) -> str:
         """Build a skill-catalog string for system-prompt injection.
 
@@ -287,33 +318,130 @@ class SkillRegistry:
         Only ``name`` and ``description`` are extracted from each
         skill's metadata, keeping token usage low.
 
+        The catalog is injected into every system prompt on every turn,
+        so its size is a fixed cost per request.  The filters below
+        narrow it, and *max_chars* caps it::
+
+            await registry.get_skills_catalog(
+                tags=["incident"],
+                exclude=["deprecated-runbook"],
+                max_chars=8000,
+            )
+
+        *include* and *exclude* match skill IDs and are applied before
+        any metadata is fetched, so narrowing a large registry costs
+        proportionally fewer provider round-trips.  *tags* needs
+        metadata and is applied after.
+
         Args:
             format: Output format — ``"xml"`` (default) or ``"markdown"``.
+            tags: Keep only skills carrying at least one of these tags,
+                read from the spec's free-form ``metadata`` mapping
+                under ``tags``.  Matching is case-insensitive.  A skill
+                with no tags matches no tag filter.
+            include: Allow-list of skill IDs.  Only these are
+                considered.  An ID that is not registered raises, since
+                an allow-list naming a skill that does not exist
+                silently costs the agent a capability.
+            exclude: Deny-list of skill IDs, applied after *include* and
+                winning over it — a deny-list that another argument can
+                override is not a deny-list.  Unregistered IDs are
+                ignored here, because a deny-list is meant to outlive
+                the thing it denies.
+            max_chars: Hard ceiling on the length of the returned
+                string, including the truncation note.  Whole entries
+                are dropped from the end until the result fits, so the
+                output stays valid and the same arguments always
+                produce the same catalog.  Roughly four characters per
+                token is the usual estimate.
 
         Returns:
-            A string ready for insertion into a system prompt.
+            A string ready for insertion into a system prompt.  When
+            entries were dropped, the XML root carries ``truncated``,
+            ``shown`` and ``total`` attributes and the Markdown gains a
+            closing note; nothing is ever dropped silently, because a
+            catalog that varies without saying so makes agent behaviour
+            non-reproducible.
 
         Raises:
-            ValueError: If *format* is not ``"xml"`` or ``"markdown"``.
+            ValueError: If *format* is not ``"xml"`` or ``"markdown"``,
+                or if *max_chars* is too small to hold even an empty
+                catalog and its note.
+            SkillNotFoundError: If *include* names an unregistered skill.
         """
         if format == "xml":
-            return await self._build_xml()
-        if format == "markdown":
-            return await self._build_markdown()
-        msg = f"Unsupported format {format!r}; expected 'xml' or 'markdown'."
-        raise ValueError(msg)
+            render = self._render_xml
+        elif format == "markdown":
+            render = self._render_markdown
+        else:
+            msg = f"Unsupported format {format!r}; expected 'xml' or 'markdown'."
+            raise ValueError(msg)
+
+        # No catalog cache exists yet. When one is added, its key must
+        # cover the format and every filter argument below.
+        entries = await self._gather_metadata(self._select(include, exclude))
+        if tags is not None:
+            wanted = {tag.strip().casefold() for tag in tags if tag.strip()}
+            entries = [
+                (skill, meta) for skill, meta in entries if wanted & _tags_of(skill.get_id(), meta)
+            ]
+
+        return self._fit(entries, max_chars, render)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
-    async def _gather_metadata(self) -> list[tuple[Skill, dict[str, Any]]]:
-        """Fetch metadata for every registered skill concurrently.
-
-        Ordering follows :meth:`list_skills` regardless of completion
-        order, so catalog output is deterministic.
-        """
+    def _select(self, include: Iterable[str] | None, exclude: Iterable[str] | None) -> list[Skill]:
+        """Apply the ID filters, which need no metadata."""
         skills = self.list_skills()
+
+        if include is not None:
+            wanted = set(include)
+            missing = sorted(wanted - self._skills.keys())
+            if missing:
+                raise SkillNotFoundError(
+                    f"include names skills that are not registered: {', '.join(missing)}"
+                )
+            skills = [skill for skill in skills if skill.get_id() in wanted]
+
+        if exclude is not None:
+            unwanted = set(exclude)
+            skills = [skill for skill in skills if skill.get_id() not in unwanted]
+
+        return skills
+
+    @staticmethod
+    def _fit(
+        entries: list[tuple[Skill, dict[str, Any]]],
+        max_chars: int | None,
+        render: Callable[[list[tuple[Skill, dict[str, Any]]], int], str],
+    ) -> str:
+        """Drop trailing entries until the rendered catalog fits.
+
+        Re-rendering after each drop measures the real thing.  A length
+        model would have to predict XML escaping and Markdown joining,
+        and be corrected every time either renderer changes.
+        """
+        total = len(entries)
+        shown = total
+        while True:
+            text = render(entries[:shown], total)
+            if max_chars is None or len(text) <= max_chars:
+                return text
+            if shown == 0:
+                raise ValueError(
+                    f"max_chars={max_chars} cannot hold the smallest possible "
+                    f"catalog, which needs {len(text)} characters."
+                )
+            shown -= 1
+
+    async def _gather_metadata(self, skills: list[Skill]) -> list[tuple[Skill, dict[str, Any]]]:
+        """Fetch metadata for the given skills concurrently.
+
+        Ordering follows the input regardless of completion order, so
+        catalog output is deterministic.
+        """
         semaphore = asyncio.Semaphore(self._catalog_concurrency)
 
         async def fetch(skill: Skill) -> dict[str, Any]:
@@ -332,13 +460,15 @@ class SkillRegistry:
         )
         return list(zip(skills, metadata, strict=True))
 
-    async def _build_xml(self) -> str:
+    @staticmethod
+    def _render_xml(entries: list[tuple[Skill, dict[str, Any]]], total: int) -> str:
         """Return an ``<available_skills>`` XML block."""
-        entries = await self._gather_metadata()
-        if not entries:
-            return "<available_skills />"
-
         root = Element("available_skills")
+        if len(entries) < total:
+            root.set("truncated", "true")
+            root.set("shown", str(len(entries)))
+            root.set("total", str(total))
+
         for skill, meta in entries:
             skill_el = SubElement(root, "skill")
             name_el = SubElement(skill_el, "name")
@@ -353,11 +483,15 @@ class SkillRegistry:
         indent(root, space="  ")
         return tostring(root, encoding="unicode")
 
-    async def _build_markdown(self) -> str:
+    @staticmethod
+    def _render_markdown(entries: list[tuple[Skill, dict[str, Any]]], total: int) -> str:
         """Return a Markdown-formatted skill catalog."""
-        entries = await self._gather_metadata()
+        truncated = len(entries) < total
         if not entries:
-            return "No skills are currently available."
+            base = "No skills are currently available."
+            if not truncated:
+                return base
+            return f"{base}\n\n_Catalog truncated: showing 0 of {total} skills._"
 
         lines: list[str] = [
             "# Available Skills",
@@ -374,5 +508,8 @@ class SkillRegistry:
             if version:
                 lines.append(f"- **Version**: {version}")
             lines.append("")
+
+        if truncated:
+            lines.append(f"_Catalog truncated: showing {len(entries)} of {total} skills._")
 
         return "\n".join(lines)
