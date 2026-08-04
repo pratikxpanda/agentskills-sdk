@@ -50,7 +50,12 @@ def render_text(reports: list[SkillReport], out: TextIO) -> None:
             print("  ok", file=out)
             continue
         for finding in report.findings:
-            location = f" (line {finding.line})" if finding.line is not None else ""
+            where = ", ".join(
+                part
+                for part in (finding.file, None if finding.line is None else f"line {finding.line}")
+                if part
+            )
+            location = f" ({where})" if where else ""
             print(
                 f"  {finding.severity:<7} {finding.code}{location}: {finding.message}",
                 file=out,
@@ -81,15 +86,16 @@ def _escape_property(value: str) -> str:
 def render_github(reports: list[SkillReport], out: TextIO) -> None:
     """Write findings as GitHub Actions workflow commands.
 
-    Every finding becomes an annotation against the skill's ``SKILL.md``
-    so it lands on the pull request diff rather than in a log nobody
-    opens.  ``severity`` is already ``error`` or ``warning``, which are
-    the workflow command names, so the mapping is the identity.
+    Every finding becomes an annotation against the file it is about —
+    the skill's ``SKILL.md`` unless the finding names another — so it
+    lands on the pull request diff rather than in a log nobody opens.
+    ``severity`` is already ``error`` or ``warning``, which are the
+    workflow command names, so the mapping is the identity.
     """
     for report in reports:
-        file = relative_to_cwd(report.path / SKILL_FILE)
+        default = relative_to_cwd(report.path / SKILL_FILE)
         for finding in report.findings:
-            properties = [f"file={_escape_property(file)}"]
+            properties = [f"file={_escape_property(finding.file or default)}"]
             if finding.line is not None:
                 properties.append(f"line={finding.line}")
             properties.append(f"title={_escape_property(finding.code)}")
@@ -135,6 +141,7 @@ def render_json(
                         "code": finding.code,
                         "message": finding.message,
                         "line": finding.line,
+                        "file": finding.file or relative_to_cwd(report.path / SKILL_FILE),
                     }
                     for finding in report.findings
                 ],

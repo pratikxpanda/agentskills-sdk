@@ -28,6 +28,7 @@ one containing `SKILL.md`, or the one containing directories that do.
 | `agentskills validate <path>` | Check skills against the specification. Exits `1` on any error. |
 | `agentskills lint <path>` | Report what is legal but still costly. |
 | `agentskills inspect <path>` | Show what an agent would actually receive. |
+| `agentskills eval <path>` | Measure what difference a skill makes. |
 | `agentskills serve <path>` | Run an MCP server over a folder of skills. |
 
 ### `init`
@@ -86,6 +87,109 @@ Prints the metadata, the resource list, the catalog entry the agent sees on
 every turn, and the body it loads on demand — each with an estimated token
 cost, so you can see the price before shipping.
 
+### `eval`
+
+A skill is a prompt, and nobody measures whether a given prompt makes an agent
+better. Authors ship on intuition, reviewers approve on prose quality, and
+editing a body can degrade task success with no signal anywhere.
+
+Write cases beside the skill, in `evals/` inside the skill folder:
+
+```yaml
+# skills/incident-response/evals/triage.yaml
+skill: incident-response      # optional; checked against the folder
+judge_model: gpt-4o           # required if any case uses `judge`
+cases:
+  - name: declares-and-triages
+    prompt: Checkout is returning 500s for a third of users.
+    repeat: 3                 # models are not deterministic
+    threshold: 0.67           # fraction of repeats that must pass
+    expect:
+      - contains: "Incident Commander"
+      - not_contains: "I don't have access"
+      - regex: "(?i)severity"
+      - judge: "Tells the responder to assess severity before attempting a fix"
+```
+
+`repeat` defaults to `1` and `threshold` to `1.0`. Every expectation must hold
+for a repeat to pass.
+
+Eval files are checked by `agentskills validate`, with no model and no API key,
+so a broken case fails in CI beside the skill rather than the first time
+somebody pays to run it.
+
+```bash
+agentskills eval ./skills --model mypkg.evals:openai_client
+```
+
+```text
+incident-response (triage.yaml)
+  pass declares-and-triages: with 100%, without 33%, delta +67%
+  FAIL postmortem-window: with 0%, without 0%, delta +0%
+         unmet contains: 48 hours
+  suite delta +33% on gpt-4o
+
+2 cases run, 1 failed, mean delta +33%
+```
+
+Every case runs twice: once with the skill's body in the system prompt, once
+without. Absolute pass rates mostly measure the underlying model, so the number
+that means anything is the difference. A skill whose cases pass equally well
+without it is not earning its tokens.
+
+#### Bringing your own model
+
+`--model` takes `module:factory` — a dotted path to a zero-argument callable
+returning a client. Nothing in this project depends on a provider SDK, and a
+ten-line adapter is a smaller ask than an opinion about which vendor you should
+install:
+
+```python
+# mypkg/evals.py
+from openai import AsyncOpenAI
+from agentskills_cli.evals import ModelResponse
+
+
+class OpenAIModel:
+    model_id = "gpt-4o"
+
+    def __init__(self) -> None:
+        self._client = AsyncOpenAI()
+
+    async def complete(self, *, system: str, prompt: str) -> ModelResponse:
+        reply = await self._client.chat.completions.create(
+            model=self.model_id,
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        return ModelResponse(reply.choices[0].message.content or "")
+
+
+openai_client = OpenAIModel
+```
+
+`model_id` is part of every report and of the cache key, because a pass rate
+without the model that produced it is not a measurement. Set temperature to
+zero if your provider allows it; this side has no opinion it could enforce.
+
+`--judge` names a second client for `judge` expectations and defaults to the
+model under test — the cheapest judge and the least independent one. When
+`repeat` is above `1`, the report flags cases whose repeats disagreed, because
+a case that passes three times in five has measured sampling noise rather than
+a skill.
+
+#### Cost
+
+These calls hit real APIs and cost real money. `eval` is never part of
+`pytest`: it runs only when you invoke it, with credentials you supply.
+Completions are cached under `.agentskills/eval-cache` by model, system prompt,
+user prompt, and repeat index — so editing a skill re-buys its runs, while
+tightening an expectation re-grades the answers already bought. `--no-cache`
+turns that off; `--cache-dir` moves it.
+
 ### `serve`
 
 ```bash
@@ -111,8 +215,8 @@ invocation is.
 
 ## JSON output
 
-`validate`, `lint`, and `inspect` accept `--format json`. The schema is a
-published contract; `schemaVersion` is bumped only for a breaking change, and
+`validate`, `lint`, `inspect`, and `eval` accept `--format json`. The schema is
+a published contract; `schemaVersion` is bumped only for a breaking change, and
 new fields are added rather than existing ones repurposed.
 
 ```json
@@ -131,7 +235,8 @@ new fields are added rather than existing ones repurposed.
           "severity": "error",
           "code": "frontmatter-invalid-yaml",
           "message": "frontmatter is not valid YAML: mapping values are not allowed here",
-          "line": 3
+          "line": 3,
+          "file": "skills/broken-skill/SKILL.md"
         }
       ]
     }
@@ -141,7 +246,8 @@ new fields are added rather than existing ones repurposed.
 
 `ok` mirrors the exit code, so a consumer never has to re-derive the
 strictness rules. `line` is `null` unless the problem can be attributed to one
-line of `SKILL.md`.
+line. `file` is the skill's `SKILL.md` unless the finding is about another file
+in the folder, such as an eval case file.
 
 ## Continuous integration
 

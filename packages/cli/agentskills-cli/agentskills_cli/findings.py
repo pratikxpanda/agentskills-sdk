@@ -26,14 +26,17 @@ class Finding:
             ``"frontmatter-invalid-yaml"``.  Callers may key off this;
             *message* is free to be reworded.
         message: Human-readable explanation.
-        line: 1-based line in ``SKILL.md``, when the problem can be
-            attributed to one.  ``None`` otherwise.
+        line: 1-based line in the file the finding is about, when the
+            problem can be attributed to one.  ``None`` otherwise.
+        file: Path the finding is about, relative to the working
+            directory, when it is not the skill's ``SKILL.md``.
     """
 
     severity: str
     code: str
     message: str
     line: int | None = None
+    file: str | None = None
 
 
 @dataclass(frozen=True)

@@ -326,12 +326,18 @@ agentskills init incident-response --path ./skills   # scaffold a skill that val
 agentskills validate ./skills                        # exits 1 on any error
 agentskills lint ./skills                            # legal, but costly
 agentskills inspect ./skills/incident-response       # what the agent actually receives
+agentskills eval ./skills --model mypkg:client       # does the skill actually help?
 agentskills serve ./skills                           # MCP server, no config file
 ```
 
 `validate` is the one to put in CI. It exits `1` when a skill is broken and `2` when the
 invocation is, so a workflow can tell those apart, and `--format json` emits a documented,
 versioned schema.
+
+`eval` is the one to run before shipping a change. It runs each case in the skill's `evals/`
+folder twice — once with the skill, once without — and reports the difference, because absolute
+pass rates mostly measure the model while the delta isolates the skill. It calls a real API with
+credentials you supply, and never runs as part of `pytest`.
 
 See the [package README](packages/cli/agentskills-cli/README.md) for the lint rules, the JSON
 schema, and the exit codes.
