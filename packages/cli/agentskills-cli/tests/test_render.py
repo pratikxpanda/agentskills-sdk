@@ -16,6 +16,9 @@ def _report(*findings: Finding) -> SkillReport:
 
 ERROR_FINDING = Finding(ERROR, "spec", "body is empty", line=7)
 WARNING_FINDING = Finding(WARNING, "missing-version", "no version field")
+OTHER_FILE_FINDING = Finding(
+    ERROR, "eval-no-cases", "needs cases", file="skills/alpha/evals/cases.yaml"
+)
 
 
 class TestCount:
@@ -56,6 +59,13 @@ class TestRenderText:
         assert "warning missing-version: no version field" in text
         assert "1 skill checked, 1 error, 1 warning" in text
 
+    def test_a_finding_about_another_file_names_it(self):
+        out = io.StringIO()
+
+        render_text([_report(OTHER_FILE_FINDING)], out)
+
+        assert "eval-no-cases (skills/alpha/evals/cases.yaml): needs cases" in out.getvalue()
+
 
 class TestRenderJson:
     def test_schema(self):
@@ -80,6 +90,7 @@ class TestRenderJson:
                             "code": "spec",
                             "message": "body is empty",
                             "line": 7,
+                            "file": "skills/alpha/SKILL.md",
                         }
                     ],
                 }
@@ -135,3 +146,10 @@ class TestRenderGithub:
         render_github([report], out)
 
         assert "file=a%2Cb/c%3Ad/SKILL.md" in out.getvalue()
+
+    def test_a_finding_about_another_file_annotates_that_file(self):
+        out = io.StringIO()
+
+        render_github([_report(OTHER_FILE_FINDING)], out)
+
+        assert "file=skills/alpha/evals/cases.yaml,title=eval-no-cases::" in out.getvalue()

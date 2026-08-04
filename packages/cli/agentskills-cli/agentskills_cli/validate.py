@@ -16,6 +16,7 @@ from pathlib import Path
 import yaml
 
 from agentskills_cli.discovery import SKILL_FILE, SkillLocation
+from agentskills_cli.evalspec import check_skill_evals
 from agentskills_cli.findings import ERROR, Finding, SkillReport
 from agentskills_core import Skill, get_logger, validate_skill
 from agentskills_core.parsing import MAX_FRONTMATTER_BYTES
@@ -128,7 +129,9 @@ async def validate_location(root: Path, location: SkillLocation) -> SkillReport:
     findings = check_frontmatter(text)
     if findings:
         # Spec checks read through the same forgiving parser, so they
-        # would only restate the damage in less useful terms.
+        # would only restate the damage in less useful terms.  Eval
+        # files are a separate document and stay worth checking.
+        findings.extend(check_skill_evals(location.path, location.skill_id))
         return SkillReport(location.skill_id, location.path, findings)
 
     skill = Skill(location.skill_id, LocalFileSystemSkillProvider(root))
@@ -137,6 +140,10 @@ async def validate_location(root: Path, location: SkillLocation) -> SkillReport:
         Finding(ERROR, "spec", message.removeprefix(prefix))
         for message in await validate_skill(skill)
     ]
+    # Eval cases are checked here, with no model and no API key, so a
+    # broken one fails beside the skill it belongs to rather than the
+    # first time somebody pays to run it.
+    findings.extend(check_skill_evals(location.path, location.skill_id))
     _logger.debug("Validated %s: %d findings", location.skill_id, len(findings))
     return SkillReport(location.skill_id, location.path, findings)
 

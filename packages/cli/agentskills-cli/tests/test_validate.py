@@ -94,6 +94,37 @@ class TestValidateLocation:
         assert [f.code for f in report.findings] == ["unreadable"]
 
 
+class TestEvalFiles:
+    async def test_a_good_eval_file_is_silent(self, write_skill, write_eval, skills_root):
+        path = write_skill("alpha")
+        write_eval("alpha", "cases:\n  - prompt: a\n    expect:\n      - contains: a\n")
+
+        report = await validate_location(skills_root, SkillLocation("alpha", path))
+
+        assert report.findings == []
+
+    async def test_a_broken_eval_file_fails_the_skill(self, write_skill, write_eval, skills_root):
+        path = write_skill("alpha")
+        write_eval("alpha", "cases: []\n")
+
+        report = await validate_location(skills_root, SkillLocation("alpha", path))
+
+        assert [f.code for f in report.findings] == ["eval-no-cases"]
+        assert not report.ok
+
+    async def test_eval_files_are_checked_even_when_the_frontmatter_is_broken(
+        self, write_skill, write_eval, skills_root
+    ):
+        # The two documents are independent; suppressing one because the
+        # other is damaged would only cost the author a second round trip.
+        path = write_skill("alpha", "no frontmatter here")
+        write_eval("alpha", "cases: []\n")
+
+        report = await validate_location(skills_root, SkillLocation("alpha", path))
+
+        assert [f.code for f in report.findings] == ["frontmatter-missing", "eval-no-cases"]
+
+
 class TestValidateLocations:
     async def test_reports_every_skill(self, write_skill, skills_root):
         alpha = write_skill("alpha")

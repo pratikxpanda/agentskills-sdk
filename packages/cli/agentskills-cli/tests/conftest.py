@@ -38,3 +38,17 @@ def write_skill(skills_root: Path) -> Callable[..., Path]:
         return path
 
     return _write
+
+
+@pytest.fixture
+def write_eval(skills_root: Path) -> Callable[..., Path]:
+    """Write an eval file into a skill folder."""
+
+    def _write(skill: str, text: str, name: str = "cases.yaml") -> Path:
+        evals = skills_root / skill / "evals"
+        evals.mkdir(parents=True, exist_ok=True)
+        path = evals / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    return _write

@@ -6,10 +6,12 @@ import json
 import logging
 import runpy
 import sys
+import types
 
 import pytest
 
 from agentskills_cli.cli import main
+from agentskills_cli.evals import ModelResponse
 from agentskills_core import LOGGER_NAMESPACE
 
 
@@ -116,6 +118,185 @@ class TestInspect:
         payload = json.loads(capsys.readouterr().out)
         assert payload["command"] == "inspect"
         assert payload["skills"][0]["id"] == "alpha"
+
+
+EVAL_FILE = """
+skill: alpha
+cases:
+  - name: only
+    prompt: What now?
+    expect:
+      - contains: rollback
+"""
+
+
+@pytest.fixture
+def eval_model(monkeypatch):
+    """Register an importable factory returning a scripted model."""
+    module = types.ModuleType("cli_eval_client")
+    module.calls = []
+
+    class _Model:
+        model_id = "fake"
+
+        async def complete(self, *, system: str, prompt: str):
+            module.calls.append(system)
+            return ModelResponse("rollback" if system else "no idea")
+
+    module.make = _Model
+    monkeypatch.setitem(sys.modules, "cli_eval_client", module)
+    return module
+
+
+class TestEval:
+    def test_reports_the_delta_and_exits_zero(
+        self, write_skill, write_eval, skills_root, eval_model, capsys
+    ):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE)
+
+        code = main(
+            [
+                "eval",
+                str(skills_root),
+                "--model",
+                "cli_eval_client:make",
+                "--no-cache",
+            ]
+        )
+
+        assert code == 0
+        assert "delta +100%" in capsys.readouterr().out
+
+    def test_a_failing_case_exits_one(
+        self, write_skill, write_eval, skills_root, eval_model, capsys
+    ):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE.replace("rollback", "roll forward"))
+
+        code = main(["eval", str(skills_root), "--model", "cli_eval_client:make", "--no-cache"])
+
+        assert code == 1
+        assert "FAIL only" in capsys.readouterr().out
+
+    def test_json_output(self, write_skill, write_eval, skills_root, eval_model, capsys):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE)
+
+        main(
+            [
+                "eval",
+                str(skills_root),
+                "--model",
+                "cli_eval_client:make",
+                "--no-cache",
+                "--format",
+                "json",
+            ]
+        )
+
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["command"] == "eval"
+        assert payload["schemaVersion"] >= 1
+        assert payload["suites"][0]["skill"] == "alpha"
+
+    def test_the_skill_body_is_what_gets_measured(
+        self, write_skill, write_eval, skills_root, eval_model
+    ):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE)
+
+        main(["eval", str(skills_root), "--model", "cli_eval_client:make", "--no-cache"])
+
+        assert eval_model.calls == ["# Test\n\nBody text.", ""]
+
+    def test_the_cache_spares_the_second_run(
+        self, write_skill, write_eval, skills_root, eval_model, tmp_path
+    ):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE)
+        argv = [
+            "eval",
+            str(skills_root),
+            "--model",
+            "cli_eval_client:make",
+            "--cache-dir",
+            str(tmp_path / "cache"),
+        ]
+
+        main(argv)
+        first = len(eval_model.calls)
+        main(argv)
+
+        assert first == 2
+        assert len(eval_model.calls) == 2
+
+    def test_a_broken_eval_file_is_reported_before_anything_is_spent(
+        self, write_skill, write_eval, skills_root, eval_model, capsys
+    ):
+        write_skill("alpha")
+        write_eval("alpha", "cases: []\n")
+
+        code = main(["eval", str(skills_root), "--model", "cli_eval_client:make", "--no-cache"])
+
+        assert code == 2
+        assert eval_model.calls == []
+        assert "eval-no-cases" in capsys.readouterr().err
+
+    def test_no_eval_files_exits_two(self, write_skill, skills_root, eval_model, capsys):
+        write_skill("alpha")
+
+        code = main(["eval", str(skills_root), "--model", "cli_eval_client:make", "--no-cache"])
+
+        assert code == 2
+        assert "no eval cases found" in capsys.readouterr().err
+
+    def test_an_unresolvable_model_exits_two(self, write_skill, write_eval, skills_root, capsys):
+        write_skill("alpha")
+        write_eval("alpha", EVAL_FILE)
+
+        assert main(["eval", str(skills_root), "--model", "nope:make"]) == 2
+        assert "cannot import" in capsys.readouterr().err
+
+    def test_a_separate_judge_can_be_named(
+        self, write_skill, write_eval, skills_root, eval_model, monkeypatch, capsys
+    ):
+        write_skill("alpha")
+        write_eval(
+            "alpha",
+            "judge_model: fake\ncases:\n  - prompt: a\n    expect:\n      - judge: is useful\n",
+        )
+        judged = types.ModuleType("cli_judge_client")
+
+        class _Judge:
+            model_id = "judge"
+
+            async def complete(self, *, system: str, prompt: str):
+                return ModelResponse("PASS")
+
+        judged.make = _Judge
+        monkeypatch.setitem(sys.modules, "cli_judge_client", judged)
+
+        code = main(
+            [
+                "eval",
+                str(skills_root),
+                "--model",
+                "cli_eval_client:make",
+                "--judge",
+                "cli_judge_client:make",
+                "--no-cache",
+            ]
+        )
+
+        assert code == 0
+        assert "delta +0%" in capsys.readouterr().out
+
+    def test_the_model_is_required(self, write_skill, skills_root):
+        write_skill("alpha")
+
+        with pytest.raises(SystemExit):
+            main(["eval", str(skills_root)])
 
 
 class TestServe:

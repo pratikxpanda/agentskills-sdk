@@ -1,0 +1,28 @@
+skill: incident-response
+judge_model: gpt-4o
+
+cases:
+  - name: declares-and-triages
+    prompt: |
+      Checkout is returning 500s for about a third of users. It started
+      four minutes ago. What do I do?
+    repeat: 3
+    threshold: 0.67
+    expect:
+      - contains: "Incident Commander"
+      - regex: "(?i)severity"
+      - judge: "Tells the responder to acknowledge and assess severity before attempting a fix"
+
+  - name: knows-the-update-cadence
+    prompt: We have declared a SEV1. How often do I post status updates, and where?
+    expect:
+      - contains: "15 minutes"
+      - contains: "incident"
+      - not_contains: "I don't have access"
+
+  - name: postmortem-window
+    prompt: The incident is resolved. What happens next, and by when?
+    expect:
+      - regex: "(?i)postmortem"
+      - contains: "48 hours"
+      - judge: "States that the postmortem is blameless"

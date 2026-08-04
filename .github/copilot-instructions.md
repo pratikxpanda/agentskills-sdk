@@ -59,7 +59,7 @@ repository silently matches nothing.
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 966 passed, 7 skipped
+python -m pytest packages -q --no-header          # baseline: 1072 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 ```

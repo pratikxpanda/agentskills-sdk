@@ -23,6 +23,17 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from agentskills_cli.discovery import CliError, SkillLocation, discover, relative_to_cwd
+from agentskills_cli.evals import (
+    DEFAULT_CACHE_DIR,
+    CompletionCache,
+    EvalRunner,
+    eval_exit_code,
+    load_model,
+    render_results_text,
+    results_payload,
+    run_suites,
+)
+from agentskills_cli.evalspec import EvalSuite, load_skill_evals
 from agentskills_cli.findings import SkillReport
 from agentskills_cli.inspection import inspect_location, render_inspection_text
 from agentskills_cli.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
@@ -37,7 +48,8 @@ from agentskills_cli.render import (
 from agentskills_cli.scaffold import DEFAULT_DESCRIPTION, init_skill
 from agentskills_cli.serve import build_registry, create_server
 from agentskills_cli.validate import validate_locations
-from agentskills_core import LOGGER_NAMESPACE
+from agentskills_core import LOGGER_NAMESPACE, Skill
+from agentskills_fs import LocalFileSystemSkillProvider
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -136,6 +148,39 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inspect.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
 
+    evaluate = subparsers.add_parser(
+        "eval",
+        parents=[common, formatted],
+        help="Measure what difference a skill makes.",
+        description=(
+            "Run each eval case twice, with and without the skill, and report "
+            "the delta. Calls a real model: opt in deliberately."
+        ),
+    )
+    evaluate.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
+    evaluate.add_argument(
+        "--model",
+        required=True,
+        metavar="MODULE:FACTORY",
+        help="Dotted path to a zero-argument callable returning a model client.",
+    )
+    evaluate.add_argument(
+        "--judge",
+        metavar="MODULE:FACTORY",
+        help="Model client for judged expectations (default: the model under test).",
+    )
+    evaluate.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=DEFAULT_CACHE_DIR,
+        help=f"Where to cache completions (default: {DEFAULT_CACHE_DIR}).",
+    )
+    evaluate.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Call the model for every attempt, ignoring and not writing the cache.",
+    )
+
     serve = subparsers.add_parser(
         "serve",
         parents=[common],
@@ -227,6 +272,54 @@ def _run_inspect(args: argparse.Namespace, out: TextIO) -> int:
     return EXIT_OK
 
 
+async def _collect_suites(
+    root: Path, locations: list[SkillLocation]
+) -> tuple[list[tuple[EvalSuite, str]], list[SkillReport]]:
+    """Load every eval suite, pairing each with its skill's body."""
+    provider = LocalFileSystemSkillProvider(root)
+    pairs: list[tuple[EvalSuite, str]] = []
+    broken: list[SkillReport] = []
+    for location in locations:
+        suites, findings = load_skill_evals(location.path, location.skill_id)
+        if findings:
+            broken.append(SkillReport(location.skill_id, location.path, findings))
+        if not suites:
+            continue
+        # The skill's body is the whole intervention being measured, so
+        # it is what goes in the system prompt for the "with" run.
+        body = await Skill(location.skill_id, provider).get_body()
+        pairs.extend((suite, body) for suite in suites)
+    return pairs, broken
+
+
+def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
+    root, locations = discover(args.path)
+    pairs, broken = asyncio.run(_collect_suites(root, locations))
+    if broken:
+        render_text(broken, sys.stderr)
+        print(
+            "error: fix the eval files above before spending money on them",
+            file=sys.stderr,
+        )
+        return EXIT_ERROR
+    if not pairs:
+        raise CliError(f"no eval cases found under {relative_to_cwd(root)}")
+
+    model = load_model(args.model)
+    judge = load_model(args.judge) if args.judge else None
+    cache = CompletionCache(None if args.no_cache else args.cache_dir)
+    runner = EvalRunner(model, judge=judge, cache=cache)
+    results = asyncio.run(run_suites(runner, pairs))
+
+    if args.format == "json":
+        payload = {"schemaVersion": SCHEMA_VERSION, **results_payload(results)}
+        json.dump(payload, out, indent=2)
+        print(file=out)
+    else:
+        render_results_text(results, out)
+    return eval_exit_code(results)
+
+
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
     registry = asyncio.run(build_registry(root, locations))
@@ -241,6 +334,7 @@ _COMMANDS = {
     "validate": _run_validate,
     "lint": _run_lint,
     "inspect": _run_inspect,
+    "eval": _run_eval,
     "serve": _run_serve,
 }
 
