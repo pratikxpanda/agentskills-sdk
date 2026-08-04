@@ -95,6 +95,10 @@ that task fails for reasons unrelated to your change.
   not in the job.
 - **Dependency ceilings need evidence.** Check the dependency's real `requires_python` and
   classifiers on PyPI before adding or trusting an upper bound.
+- **Dependabot mangles the version comment on action pins.** `# v4.37.4.4.37.42.4.37.4` has
+  appeared twice. The SHA is right and the comment is not, so read it as decoration and
+  confirm with `git ls-remote --tags <repo> 'refs/tags/vX.Y.Z^{}'` — annotated tags, which
+  `github/codeql-action` uses, need the `^{}` or you compare against the tag object.
 - **A 200 response does not mean a badge rendered.** shields.io returns 200 with the words
   "rate limited by upstream service" drawn into the SVG. Inspect the rendered text.
 - **An optional provider capability is a flag plus a raising default**, never an empty
