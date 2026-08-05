@@ -36,6 +36,11 @@ jobs:
       - name: Lint
         run: poetry run ruff check packages/ examples/
 
+      # Every package shares one virtualenv here, so a missing declaration is
+      # invisible until somebody installs a single package from PyPI.
+      - name: Check declared dependencies
+        run: poetry run python scripts/check_declared_dependencies.py
+
       - name: Audit dependencies
         run: poetry run pip-audit
 

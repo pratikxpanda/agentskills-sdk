@@ -62,6 +62,7 @@ poetry install                                    # after any pyproject change, 
 python -m pytest packages -q --no-header          # baseline: 1131 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
+python scripts/check_declared_dependencies.py     # a package must declare what it imports
 ```
 
 `scripts/dev.py check` also runs a `mypy` step, but `mypy` is not currently installed —
@@ -82,6 +83,12 @@ that task fails for reasons unrelated to your change.
   known-first-party`), `scripts/dev.py` `COVERAGE_FLOORS`, both `bump-version` scripts,
   `scripts/check_release_version.py`, and the build loop plus a publish step in
   `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
+  `scripts/check_declared_dependencies.py` has its own list too, so eight.
+- **A package can import what it never declared and nothing will notice**, because every
+  package is installed into one shared virtualenv here. `agentskills-cli` imported `yaml`
+  without declaring `pyyaml` for a whole milestone, riding on the copy `agentskills-core`
+  pulled in. `scripts/check_declared_dependencies.py` runs in the lint job now; an import
+  meant to stay optional belongs inside a function or behind `except ImportError`.
 - **A package with a `pytest11` entry point is invisible to `pytest --cov`.** Entry-point
   plugins are imported before pytest-cov starts measuring, so the package reports 0% and
   drags everything it imports down with it. `scripts/dev.py test:cov` runs

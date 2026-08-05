@@ -24,7 +24,7 @@ python = ">=3.12,<4.0"
 agentskills-core = ">=0.3.0,<1.0"
 pytest = ">=8.0"
 pytest-asyncio = ">=0.24"
-pyyaml = ">=6.0"
+pyyaml = ">=6.0,<7.0"
 
 [tool.poetry.plugins.pytest11]
 agentskills_testing = "agentskills_testing.fixtures"
