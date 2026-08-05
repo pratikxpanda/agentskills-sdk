@@ -59,7 +59,7 @@ repository silently matches nothing.
 
 ```bash
 poetry install                                    # after any pyproject change, run poetry lock first
-python -m pytest packages -q --no-header          # baseline: 1072 passed, 7 skipped
+python -m pytest packages -q --no-header          # baseline: 1131 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 ```
@@ -95,6 +95,10 @@ that task fails for reasons unrelated to your change.
   not in the job.
 - **Dependency ceilings need evidence.** Check the dependency's real `requires_python` and
   classifiers on PyPI before adding or trusting an upper bound.
+- **The local venv holds packages that `poetry.lock` does not.** `tiktoken` is one. Anything
+  imported optionally will therefore behave differently here and in CI, so a test that cares
+  must force the branch with `monkeypatch.setitem(sys.modules, ...)` rather than rely on what
+  happens to be importable.
 - **Dependabot mangles the version comment on action pins.** `# v4.37.4.4.37.42.4.37.4` has
   appeared twice. The SHA is right and the comment is not, so read it as decoration and
   confirm with `git ls-remote --tags <repo> 'refs/tags/vX.Y.Z^{}'` — annotated tags, which

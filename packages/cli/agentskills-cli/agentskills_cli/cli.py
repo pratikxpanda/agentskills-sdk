@@ -22,6 +22,15 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
+from agentskills_cli.cost import (
+    TOKENIZERS,
+    SkillCost,
+    cost_exit_code,
+    cost_payload,
+    cost_skill,
+    render_cost_text,
+    resolve_counter,
+)
 from agentskills_cli.discovery import CliError, SkillLocation, discover, relative_to_cwd
 from agentskills_cli.evals import (
     DEFAULT_CACHE_DIR,
@@ -147,6 +156,29 @@ def build_parser() -> argparse.ArgumentParser:
         description="Render the catalog entry, metadata, and body, with estimated token cost.",
     )
     inspect.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
+    inspect.add_argument(
+        "--cost",
+        action="store_true",
+        help="Report token cost per turn, per load, and on demand instead of the content.",
+    )
+    inspect.add_argument(
+        "--budget",
+        type=int,
+        metavar="N",
+        help="With --cost, exit 1 when catalog entry plus body exceeds N tokens.",
+    )
+    inspect.add_argument(
+        "--turn-budget",
+        type=int,
+        metavar="N",
+        help="With --cost, exit 1 when the catalog entry alone exceeds N tokens.",
+    )
+    inspect.add_argument(
+        "--tokenizer",
+        choices=list(TOKENIZERS),
+        default="auto",
+        help="Token counter (default: auto, which uses tiktoken when it is usable).",
+    )
 
     evaluate = subparsers.add_parser(
         "eval",
@@ -253,7 +285,46 @@ async def _inspect_all(root: Path, locations: list[SkillLocation]) -> list[dict[
     return [await inspect_location(root, location) for location in locations]
 
 
+async def _cost_all(root: Path, locations: list[SkillLocation], tokenizer: str) -> list[SkillCost]:
+    counter = resolve_counter(tokenizer)
+    provider = LocalFileSystemSkillProvider(root)
+    costs = []
+    for location in locations:
+        inspection = await inspect_location(root, location)
+        skill = Skill(location.skill_id, provider)
+        costs.append(
+            await cost_skill(
+                skill,
+                inspection["path"],
+                inspection["catalogEntry"],
+                inspection["body"],
+                counter,
+            )
+        )
+    return costs
+
+
+def _run_cost(args: argparse.Namespace, out: TextIO) -> int:
+    root, locations = discover(args.path)
+    costs = asyncio.run(_cost_all(root, locations, args.tokenizer))
+    budgets = {"budget": args.budget, "turn_budget": args.turn_budget}
+    if args.format == "json":
+        payload = {
+            "schemaVersion": SCHEMA_VERSION,
+            "command": "inspect",
+            "skills": cost_payload(costs, **budgets),
+        }
+        json.dump(payload, out, indent=2)
+        print(file=out)
+    else:
+        render_cost_text(costs, out, **budgets)
+    return cost_exit_code(costs, **budgets)
+
+
 def _run_inspect(args: argparse.Namespace, out: TextIO) -> int:
+    if args.cost:
+        return _run_cost(args, out)
+
     root, locations = discover(args.path)
     inspections = asyncio.run(_inspect_all(root, locations))
     if args.format == "json":

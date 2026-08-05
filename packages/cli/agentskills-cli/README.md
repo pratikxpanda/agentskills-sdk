@@ -27,7 +27,7 @@ one containing `SKILL.md`, or the one containing directories that do.
 | `agentskills init <name>` | Scaffold a skill that already validates. |
 | `agentskills validate <path>` | Check skills against the specification. Exits `1` on any error. |
 | `agentskills lint <path>` | Report what is legal but still costly. |
-| `agentskills inspect <path>` | Show what an agent would actually receive. |
+| `agentskills inspect <path>` | Show what an agent would actually receive, and what it costs. |
 | `agentskills eval <path>` | Measure what difference a skill makes. |
 | `agentskills serve <path>` | Run an MCP server over a folder of skills. |
 
@@ -86,6 +86,65 @@ agentskills inspect ./skills/incident-response
 Prints the metadata, the resource list, the catalog entry the agent sees on
 every turn, and the body it loads on demand — each with an estimated token
 cost, so you can see the price before shipping.
+
+#### Token cost
+
+```bash
+agentskills inspect ./skills --cost
+```
+
+```text
+skills/incident-response  (incident-response)
+  counted with tiktoken/cl100k_base
+  catalog entry                         66  every turn
+  body                                 439  on load
+    Incident Response                   14
+      When to Declare an Incident       50
+      Roles                             70
+      General Triage Steps             121
+  references/escalation-policy.md      448  on demand
+  assets/escalation-flowchart.mermaid  235  on demand
+  per turn 66, per load 505, all resources 2,197
+
+1 skill, 66 tokens charged every turn
+```
+
+The right-hand column is the point. A catalog entry is injected on **every
+turn** whether or not the skill is ever used; a body is charged **once per
+load**; a reference is charged **only if the agent goes and reads it**. Authors
+reliably get this backwards, trimming a body while ignoring a description that
+costs a hundred tokens a turn forever.
+
+Sections do not nest — a heading owns its own text up to the next heading of
+any level — so the parts sum to the body exactly. Depth shows in the indent
+instead. A `#` inside a fenced code block is a shell comment, not a heading.
+
+A resource that is not UTF-8 text reports its size in bytes and no token count,
+because an image has a size but not a token cost.
+
+| Flag | Effect |
+| --- | --- |
+| `--budget N` | Exit `1` when catalog entry plus body exceeds `N` tokens. |
+| `--turn-budget N` | Exit `1` when the catalog entry alone exceeds `N` tokens. |
+| `--tokenizer` | `auto` (default), `tiktoken`, or `heuristic`. |
+
+Two budgets rather than one, for the same reason: a single threshold is
+dominated by the body, so the per-turn cost stays invisible to exactly the gate
+meant to catch it.
+
+Counting is exact when [`tiktoken`](https://pypi.org/project/tiktoken/) is
+installed and a four-characters-per-token estimate otherwise. It is not a
+dependency here: it ships a compiled wheel and fetches its vocabulary over the
+network on first use, which is a poor trade for a tool whose main job is
+reading YAML in CI. Install it yourself if you want exact numbers.
+
+Whichever counter ran is named in every report, and `--tokenizer tiktoken`
+refuses to fall back — a budget gate that quietly changes its arithmetic
+depending on what happens to be installed is worse than no gate. Pin it in CI
+and leave `auto` for the terminal.
+
+`lint --max-body-tokens` keeps the estimate regardless, so its verdict never
+depends on the machine it ran on.
 
 ### `eval`
 
@@ -207,7 +266,7 @@ with a `server.json`.
 | Code | Meaning |
 | --- | --- |
 | `0` | Ran, found nothing wrong. |
-| `1` | Ran, found errors — or warnings under `--strict`. |
+| `1` | Ran, found errors — or warnings under `--strict`, or a cost over budget. |
 | `2` | Could not run: bad path, missing extra, unwritable directory. |
 
 The distinction matters in CI: `1` means a skill is broken, `2` means the
@@ -248,6 +307,12 @@ new fields are added rather than existing ones repurposed.
 strictness rules. `line` is `null` unless the problem can be attributed to one
 line. `file` is the skill's `SKILL.md` unless the finding is about another file
 in the folder, such as an eval case file.
+
+`inspect --cost --format json` reports each skill's `perTurn`, `perLoad` and
+`onDemand` totals, the `sections` and `resources` they were summed from, the
+`overBudget` messages, and the `counter` that produced the numbers — including
+whether it was `exact`. A consumer that charts these over time needs to know
+when the unit changed underneath it.
 
 ## Continuous integration
 
