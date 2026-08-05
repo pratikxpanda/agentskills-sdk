@@ -7,6 +7,7 @@ import logging
 import runpy
 import sys
 import types
+from typing import ClassVar
 
 import pytest
 
@@ -118,6 +119,82 @@ class TestInspect:
         payload = json.loads(capsys.readouterr().out)
         assert payload["command"] == "inspect"
         assert payload["skills"][0]["id"] == "alpha"
+
+
+class TestInspectCost:
+    ARGS: ClassVar[list[str]] = ["--cost", "--tokenizer", "heuristic"]
+
+    def test_reports_per_turn_and_per_load_separately(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        assert main(["inspect", str(skills_root), *self.ARGS]) == 0
+
+        out = capsys.readouterr().out
+        assert "every turn" in out
+        assert "on load" in out
+        assert "counted with heuristic, estimated" in out
+
+    def test_breaks_the_body_down_by_section(self, write_skill, skills_root, capsys):
+        write_skill(
+            "alpha",
+            "---\nname: alpha\ndescription: d\n---\n\n# Overview\n\na\n\n# Procedure\n\nb\n",
+        )
+
+        main(["inspect", str(skills_root), *self.ARGS])
+
+        out = capsys.readouterr().out
+        assert "Overview" in out
+        assert "Procedure" in out
+
+    def test_a_budget_breach_exits_one(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        assert main(["inspect", str(skills_root), *self.ARGS, "--budget", "1"]) == 1
+        assert "over budget: per-load" in capsys.readouterr().out
+
+    def test_a_turn_budget_breach_exits_one(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        assert main(["inspect", str(skills_root), *self.ARGS, "--turn-budget", "1"]) == 1
+        assert "over budget: per-turn" in capsys.readouterr().out
+
+    def test_a_budget_that_is_met_exits_zero(self, write_skill, skills_root):
+        write_skill("alpha")
+
+        assert main(["inspect", str(skills_root), *self.ARGS, "--budget", "10000"]) == 0
+
+    def test_json_output(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        main(["inspect", str(skills_root), *self.ARGS, "--format", "json"])
+
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["command"] == "inspect"
+        [skill] = payload["skills"]
+        assert skill["counter"] == {"name": "heuristic", "exact": False}
+        assert skill["perLoad"] == skill["catalogEntry"] + skill["body"]
+
+    def test_demanding_a_tokenizer_that_is_missing_exits_two(
+        self, write_skill, skills_root, monkeypatch, capsys
+    ):
+        write_skill("alpha")
+        monkeypatch.setitem(sys.modules, "tiktoken", None)
+
+        assert main(["inspect", str(skills_root), "--cost", "--tokenizer", "tiktoken"]) == 2
+        assert "error: tiktoken was requested" in capsys.readouterr().err
+
+    def test_cost_replaces_the_content_dump(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        main(["inspect", str(skills_root), *self.ARGS])
+
+        assert "catalog entry" in capsys.readouterr().out
+
+    def test_an_invalid_skill_exits_two(self, write_skill, skills_root, capsys):
+        write_skill("alpha", "---\nname: alpha\n---\n\nbody")
+
+        assert main(["inspect", str(skills_root), *self.ARGS]) == 2
+        assert "cannot inspect" in capsys.readouterr().err
 
 
 EVAL_FILE = """

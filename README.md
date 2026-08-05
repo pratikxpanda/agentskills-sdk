@@ -326,6 +326,7 @@ agentskills init incident-response --path ./skills   # scaffold a skill that val
 agentskills validate ./skills                        # exits 1 on any error
 agentskills lint ./skills                            # legal, but costly
 agentskills inspect ./skills/incident-response       # what the agent actually receives
+agentskills inspect ./skills --cost                  # what it costs, per turn and per load
 agentskills eval ./skills --model mypkg:client       # does the skill actually help?
 agentskills serve ./skills                           # MCP server, no config file
 ```
@@ -338,6 +339,10 @@ versioned schema.
 folder twice — once with the skill, once without — and reports the difference, because absolute
 pass rates mostly measure the model while the delta isolates the skill. It calls a real API with
 credentials you supply, and never runs as part of `pytest`.
+
+`inspect --cost` separates the tokens charged on every turn from those charged per load and
+those charged only if a reference is read. Authors reliably budget the body and ignore the
+description, which is backwards. `--turn-budget` and `--budget` gate each half in CI.
 
 See the [package README](packages/cli/agentskills-cli/README.md) for the lint rules, the JSON
 schema, and the exit codes.
