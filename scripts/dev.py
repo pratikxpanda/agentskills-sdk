@@ -80,11 +80,17 @@ def typecheck() -> None:
     _run([_PY, "-m", "mypy", "packages/"], check=False)
 
 
+def deps() -> None:
+    """Check that every package declares the third-party modules it imports."""
+    _run([_PY, "scripts/check_declared_dependencies.py"])
+
+
 def check() -> None:
-    """Run all checks (format check + lint + type check) without modifying files."""
+    """Run all checks (format check + lint + type check + deps) without modifying files."""
     fmt_check()
     lint()
     typecheck()
+    deps()
 
 
 def test() -> None:
@@ -192,6 +198,7 @@ TASKS = {
     "fmt": fmt,
     "format:check": fmt_check,
     "typecheck": typecheck,
+    "deps": deps,
     "check": check,
     "test": test,
     "test:cov": test_cov,

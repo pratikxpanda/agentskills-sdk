@@ -98,7 +98,8 @@ python scripts/dev.py lint:fix      # Auto-fix lint issues
 python scripts/dev.py format        # Auto-format code
 python scripts/dev.py format:check  # Check formatting without changes
 python scripts/dev.py typecheck     # Run mypy type checking
-python scripts/dev.py check         # Lint + format check + type check
+python scripts/dev.py deps          # Check every package declares what it imports
+python scripts/dev.py check         # Lint + format check + type check + deps
 python scripts/dev.py test          # Run all tests
 python scripts/dev.py test:cov      # Run tests with coverage
 python scripts/dev.py clean         # Remove cache files
@@ -109,7 +110,7 @@ python scripts/dev.py all           # Format + lint + test
 
 GitHub Actions runs automatically on every push and pull request to `main`. The pipeline is defined in `.github/workflows/ci.yml` and includes these jobs:
 
-- **Lint**: checks formatting (`ruff format --check`) and linting (`ruff check`)
+- **Lint**: checks formatting (`ruff format --check`), linting (`ruff check`), and that every package declares the third-party modules it imports
 - **Test**: runs `pytest` across Python 3.12, 3.13, and 3.14
 - **Coverage**: runs the coverage gate and publishes the report to the job summary
 - **Test (latest permitted dependencies)**: resolves without `poetry.lock` to surface upstream breakage; advisory only
@@ -133,6 +134,23 @@ python scripts/dev.py typecheck
 ```
 
 Type annotations are expected on all public functions and methods.
+
+## Dependency Declarations
+
+Every package here is installed into one shared virtualenv alongside its siblings, so a package
+can import a module it never declared and nothing will notice. The failure only appears for
+somebody who installed that one package from PyPI, and it appears as an `ImportError` on their
+first command. `agentskills-cli` shipped that way for a whole milestone, riding on the `pyyaml`
+that `agentskills-core` pulled in.
+
+```bash
+python scripts/check_declared_dependencies.py
+```
+
+It compares the module-level imports in each package's source against its declared dependencies.
+Imports nested in a function or guarded by `except ImportError` are ignored, because that is the
+pattern for an optional capability — `tiktoken` in the CLI, `agent_framework` in the MCP server —
+and declaring those would defeat the point of making them optional.
 
 ## Logging Conventions
 

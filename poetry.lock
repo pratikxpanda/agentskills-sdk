@@ -52,6 +52,7 @@ develop = true
 [package.dependencies]
 agentskills-core = ">=0.3.0,<1.0"
 agentskills-fs = ">=0.3.0,<1.0"
+pyyaml = ">=6.0,<7.0"
 
 [package.extras]
 serve = ["agentskills-mcp-server (>=0.3.0,<1.0)"]
@@ -170,7 +171,7 @@ develop = true
 agentskills-core = ">=0.3.0,<1.0"
 pytest = ">=8.0"
 pytest-asyncio = ">=0.24"
-pyyaml = ">=6.0"
+pyyaml = ">=6.0,<7.0"
 
 [package.source]
 type = "directory"
