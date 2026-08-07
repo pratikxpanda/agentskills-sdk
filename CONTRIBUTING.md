@@ -58,6 +58,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 - **Focused**: One feature or fix per PR. Avoid mixing unrelated changes.
 - **Tested**: Include unit tests that cover your changes.
 - **Documented**: Update READMEs or docstrings if your change affects the public API.
+- **Decision-recorded**: If a change affects architecture across packages, add or update an ADR in `docs/adr/`.
 - **Passing CI**: All checks (lint, format, type check, tests) must pass.
 
 ## Code Style
