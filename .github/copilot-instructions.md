@@ -58,7 +58,8 @@ repository silently matches nothing.
 ## Commands
 
 ```bash
-poetry install                                    # after any pyproject change, run poetry lock first
+poetry install                                    # local install/check loop
+# this laptop cannot reach PyPI file hosting directly; run poetry lock on a networked machine
 python -m pytest packages -q --no-header          # baseline: 1131 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
@@ -100,6 +101,10 @@ that task fails for reasons unrelated to your change.
   the published packages were broken for every new user. The advisory `test-unlocked` CI
   job resolves without the lock; when it fails, the fix belongs in a version constraint,
   not in the job.
+- **This laptop cannot reach PyPI file hosting directly.** Dependency changes that require
+  `poetry lock` must be resolved on a networked machine or CI runner. If the code change is
+  limited to path dependencies in this monorepo, update those lock entries carefully and verify
+  with `poetry check --lock` and `poetry install --dry-run`.
 - **Dependency ceilings need evidence.** Check the dependency's real `requires_python` and
   classifiers on PyPI before adding or trusting an upper bound.
 - **The local venv holds packages that `poetry.lock` does not.** `tiktoken` is one. Anything
