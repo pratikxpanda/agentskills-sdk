@@ -154,203 +154,38 @@ catalog = await registry.get_skills_catalog(
 the XML root gains `truncated`, `shown` and `total` attributes. A catalog that shrinks without
 saying so makes agent behaviour non-reproducible.
 
-### With LangChain
+## Documentation
 
-```python
-import os
+Full guides and API docs are published at:
 
-from langchain.agents import create_agent
-from langchain_openai import AzureChatOpenAI
-from agentskills_langchain import get_tools, get_tools_usage_instructions
+- <https://pratikxpanda.github.io/agentskills-sdk/>
 
-tools = get_tools(registry)
-skills_catalog = await registry.get_skills_catalog(format="xml")
-tools_usage_instructions = get_tools_usage_instructions()
+The site includes package-by-package API reference generated from docstrings,
+plus roadmap and ADR pages.
 
-llm = AzureChatOpenAI(
-    azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
-    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-    temperature=0,
-)
-agent = create_agent(
-    llm,
-    tools,
-    system_prompt=f"{skills_catalog}\n\n{tools_usage_instructions}",
-)
-```
+## Integrations
 
-The skill catalog tells the agent *what* skills exist, and the usage instructions tell it *how* to use the tools (`get_skill_body`, `get_skill_reference`, etc.).
-
-See [examples/langchain/](examples/langchain/) for full working demos with filesystem and HTTP providers.
-
-### With Microsoft Agent Framework
-
-**Context provider (recommended)** — plug into the agent lifecycle so skills are injected automatically:
-
-```python
-from agent_framework import Agent
-from agentskills_agentframework import AgentSkillsContextProvider
-
-skills_context_provider = AgentSkillsContextProvider(registry)
-
-agent = Agent(
-    client=client,  # any Agent Framework chat client
-    name="SREAssistant",
-    instructions="You are an SRE assistant.",
-    context_providers=[skills_context_provider],
-)
-response = await agent.run("What severity is a full DB outage?")
-```
-
-**Manual tools** — build the system prompt yourself for full control:
-
-```python
-from agent_framework import Agent
-from agentskills_agentframework import get_tools, get_tools_usage_instructions
-
-tools = get_tools(registry)
-skills_catalog = await registry.get_skills_catalog(format="xml")
-tools_usage_instructions = get_tools_usage_instructions()
-
-agent = Agent(
-    client=client,  # any Agent Framework chat client
-    name="SREAssistant",
-    instructions=f"{skills_catalog}\n\n{tools_usage_instructions}",
-    tools=tools,
-)
-```
-
-See [examples/agent-framework/](examples/agent-framework/) for full working demos including client setup.
-
-### With MCP
-
-#### Config-driven server (CLI)
-
-Create a `server.json` config file and run the built-in MCP server directly - any MCP-compatible client (Claude Desktop, VS Code, Cursor, etc.) can connect to it:
-
-```json
-{
-    "name": "My Skills Server",
-    "skills": [
-        {
-            "id": "incident-response",
-            "provider": "fs",
-            "options": { "root": "./skills" }
-        },
-        {
-            "id": "cloud-runbooks",
-            "provider": "http",
-            "options": {
-                "base_url": "https://cdn.example.com/skills",
-                "headers": { "Authorization": "Bearer ${API_TOKEN}" }
-            }
-        }
-    ]
-}
-```
-
-> **Environment variables** - String values may contain `${VAR}` placeholders that are resolved from environment variables at load time. This keeps secrets out of the config file.
-
-```bash
-# stdio transport (default - used by most MCP clients)
-python -m agentskills_mcp_server --config server.json
-
-# streamable-http transport
-python -m agentskills_mcp_server --config server.json --transport streamable-http
-```
-
-Point your MCP client at the server:
-
-```json
-{
-    "command": "python",
-    "args": ["-m", "agentskills_mcp_server", "--config", "server.json"]
-}
-```
-
-#### Programmatic server
-
-For custom setups, create the server in code:
-
-```python
-from agentskills_mcp_server import create_mcp_server
-
-server = create_mcp_server(registry, name="My Agent")
-server.run()  # stdio by default
-```
-
-Both approaches expose the same tools (`get_skill_metadata`, `get_skill_body`, etc.) and resources (`skills://catalog/xml`, `skills://catalog/markdown`, `skills://tools-usage-instructions`).
-
-#### Agent Framework + MCP context provider
-
-If you're using Agent Framework with an MCP-based skill server, `AgentSkillsMcpContextProvider` bridges the MCP session into the agent lifecycle — skills are injected automatically on every `agent.run()` call:
-
-```bash
-pip install agentskills-mcp-server[agentframework]
-```
-
-```python
-from agent_framework import Agent, MCPStdioTool
-from agentskills_mcp_server import AgentSkillsMcpContextProvider
-
-mcp_skills = MCPStdioTool(
-    name="skills",
-    command="python",
-    args=["-m", "agentskills_mcp_server", "--config", "server.json"],
-)
-
-async with mcp_skills:
-    skills_context = AgentSkillsMcpContextProvider(session=mcp_skills.session)
-    agent = Agent(
-        client=client,
-        name="SREAssistant",
-        instructions="You are an SRE assistant.",
-        tools=mcp_skills,
-        context_providers=[skills_context],
-    )
-    response = await agent.run("What severity is a full DB outage?")
-```
-
-See [examples/agent-framework/](examples/agent-framework/) for full working demos.
+- LangChain: [examples/langchain/](examples/langchain/)
+- Microsoft Agent Framework: [examples/agent-framework/](examples/agent-framework/)
+- MCP server: [packages/integrations/agentskills-mcp-server/README.md](packages/integrations/agentskills-mcp-server/README.md)
 
 ## Command Line
 
-`agentskills-cli` is for authoring skills rather than consuming them.
+For skill authoring:
 
 ```bash
 pip install agentskills-cli
+agentskills validate ./skills
+agentskills lint ./skills
+agentskills inspect ./skills --cost
 ```
 
-```bash
-agentskills init incident-response --path ./skills   # scaffold a skill that validates
-agentskills validate ./skills                        # exits 1 on any error
-agentskills lint ./skills                            # legal, but costly
-agentskills inspect ./skills/incident-response       # what the agent actually receives
-agentskills inspect ./skills --cost                  # what it costs, per turn and per load
-agentskills eval ./skills --model mypkg:client       # does the skill actually help?
-agentskills serve ./skills                           # MCP server, no config file
-```
+See [packages/cli/agentskills-cli/README.md](packages/cli/agentskills-cli/README.md)
+for full command and JSON schema details.
 
-`validate` is the one to put in CI. It exits `1` when a skill is broken and `2` when the
-invocation is, so a workflow can tell those apart, and `--format json` emits a documented,
-versioned schema.
+## GitHub Action
 
-`eval` is the one to run before shipping a change. It runs each case in the skill's `evals/`
-folder twice — once with the skill, once without — and reports the difference, because absolute
-pass rates mostly measure the model while the delta isolates the skill. It calls a real API with
-credentials you supply, and never runs as part of `pytest`.
-
-`inspect --cost` separates the tokens charged on every turn from those charged per load and
-those charged only if a reference is read. Authors reliably budget the body and ignore the
-description, which is backwards. `--turn-budget` and `--budget` gate each half in CI.
-
-See the [package README](packages/cli/agentskills-cli/README.md) for the lint rules, the JSON
-schema, and the exit codes.
-
-### GitHub Action
-
-If your skills live in a GitHub repository, the action wraps `validate` and `lint` and puts every
-finding on the pull request diff, on the line that caused it:
+If your skills live in GitHub, use the validation action:
 
 ```yaml
 name: Skills
@@ -367,219 +202,21 @@ jobs:
           fail-on-lint: false
 ```
 
-| Input | Default | Purpose |
-| --- | --- | --- |
-| `path` | `.` | A skill folder, or a folder of skill folders. |
-| `fail-on-lint` | `false` | Fail on lint warnings too. They are annotated either way. |
-| `max-body-tokens` | CLI default | Body token budget before lint warns. |
-| `version` | latest | Version of `agentskills-cli` to install. An `agentskills` already on `PATH` is used as-is, so a repository that pins the CLI keeps its pin. |
-| `python-version` | `3.12` | Python to install the CLI on, when it installs one. |
+## Custom providers and testing
 
-Lint runs only after `validate` passes. Linting a skill whose frontmatter did not parse repeats
-the same annotation, and a token budget is not the thing to fix first.
-
-## Custom Providers
-
-The `SkillProvider` ABC is storage-agnostic. Implement it to back skills with any source:
-
-```python
-from agentskills_core import SkillProvider, SkillRegistry
-
-class DatabaseSkillProvider(SkillProvider):
-    async def get_metadata(self, skill_id: str) -> dict: ...
-    async def get_body(self, skill_id: str) -> str: ...
-    async def get_script(self, skill_id: str, name: str) -> bytes: ...
-    async def get_asset(self, skill_id: str, name: str) -> bytes: ...
-    async def get_reference(self, skill_id: str, name: str) -> bytes: ...
-```
-
-### Resource listing
-
-`list_resources()` lets an agent discover which references, scripts, and assets a skill has,
-instead of inferring them from the prose in `SKILL.md`. It is **optional**, because some backends
-genuinely cannot enumerate — a static CDN has no directory listing.
-
-Providers that can enumerate override the method and advertise it:
-
-```python
-class DatabaseSkillProvider(SkillProvider):
-    supports_resource_listing = True
-
-    async def list_resources(self, skill_id: str) -> dict[str, list[str]]:
-        return {"references": [...], "scripts": [...], "assets": [...]}
-```
-
-Leave both alone and the default raises `ResourceListingNotSupportedError`. That is deliberate:
-returning an empty dict would tell an agent the skill *has* no resources, when the truth is that
-this provider cannot say. `LocalFileSystemSkillProvider` supports listing; the HTTP provider does
-so only when the skill publishes an `index.json`.
-
-### Skill discovery
-
-`discover()` is the same idea one level up: it returns the IDs of every skill the backend holds,
-so the registry can take them all without being told any of them.
-
-```python
-class DatabaseSkillProvider(SkillProvider):
-    supports_discovery = True
-
-    async def discover(self) -> list[str]:
-        return [row.skill_id for row in ...]
-```
-
-The default raises `DiscoveryNotSupportedError` for the same reason: an empty list would say the
-backend is empty, and a caller told that stops looking. `LocalFileSystemSkillProvider` supports
-discovery; the HTTP provider does so when the host publishes a root `index.json` listing its
-skills.
-
-Register a custom provider:
-
-```python
-registry = SkillRegistry()
-await registry.register("customer-onboarding", DatabaseSkillProvider(conn))  # conn: your DB handle
-```
-
-Register everything a provider holds:
-
-```python
-skill_ids = await registry.register_all(DatabaseSkillProvider(conn))
-```
-
-Register multiple providers at once:
-
-```python
-registry = SkillRegistry()
-await registry.register([
-    ("customer-onboarding", DatabaseSkillProvider(conn)),
-    ("incident-response", LocalFileSystemSkillProvider(path)),
-])
-```
-
-All three are atomic - if any skill fails validation, none are registered, and the error names
-every skill that failed rather than only the first.
-
-### Testing a provider
-
-An ABC enforces that five methods exist and nothing about what they do. The requirements that
-actually matter are the ones it cannot express: that an unknown skill ID raises
-`SkillNotFoundError` rather than returning `{}`, that `../../etc/passwd` is refused rather than
-resolved, and that a provider advertising `supports_resource_listing` can actually list.
-
-`agentskills-testing` turns those into tests you inherit:
-
-```bash
-pip install agentskills-testing
-```
-
-```python
-import pytest
-
-from agentskills_testing import ProviderConformanceSuite
-
-
-class TestDatabaseProvider(ProviderConformanceSuite):
-    @pytest.fixture
-    def provider(self):
-        return DatabaseSkillProvider(conn)
-```
-
-The fixture must expose one skill laid out per the documented contract — the package README lists
-it, and every name and byte string is exported as a constant so you can build the fixture from
-them rather than from copied literals. Both built-in providers are tested this way.
-
-Traversal assertions are not opt-out. Size limits live in a separate `ContentLimitConformanceSuite`,
-because an in-memory provider has no external source to bound — but any provider reading bytes it
-did not author should pass it.
-
-The same package ships `InMemorySkillProvider`, a real provider backed by a dict, for testing code
-that *consumes* skills. Prefer it to an `AsyncMock`: a mock agrees with whatever the test asserts,
-including the assertions that are wrong.
-
-```python
-from agentskills_testing import InMemorySkillProvider, build_skill
-
-provider = InMemorySkillProvider({"incident-response": build_skill("incident-response")})
-```
-
-See the [package README](packages/testing/agentskills-testing/README.md) for the full fixture
-contract and the pytest fixtures it registers.
-
-## Error Handling
-
-Failures are typed so that a caller can tell "this will never work" from "try again later":
-
-| Exception | Meaning |
-| --- | --- |
-| `SkillNotFoundError` | The skill does not exist. Retrying will not help. |
-| `ResourceNotFoundError` | The skill exists; that reference, script, or asset does not. |
-| `SkillUnavailableError` | The backend is temporarily unable to answer — a `5xx`, a timeout, a rate limit. Carries `retry_after` when the server advised one. |
-| `ResourceListingNotSupportedError` | This provider cannot enumerate resources. Not the same as having none. |
-| `DiscoveryNotSupportedError` | This provider cannot enumerate the skills it holds. Not the same as holding none. |
-
-All of them derive from `AgentSkillsError`.
-
-```python
-import asyncio
-from agentskills_core import SkillNotFoundError, SkillUnavailableError
-
-try:
-    body = await registry.get_skill("incident-response").get_body()
-except SkillNotFoundError:
-    ...                                   # a real 404 — surface it
-except SkillUnavailableError as exc:
-    await asyncio.sleep(exc.retry_after or 5.0)
-```
-
-The HTTP provider already retries transient failures with bounded, jittered backoff and honours
-`Retry-After`, so a `SkillUnavailableError` means retrying did not help.
-
-## Logging
-
-Everything logs under a single `agentskills` namespace, so one call turns on the whole SDK:
-
-```python
-import logging
-
-logging.getLogger("agentskills").setLevel(logging.DEBUG)
-```
-
-Sub-loggers follow the package layout — `agentskills.http.static`, `agentskills.core.registry` —
-so you can raise the level on one provider alone. Only a `NullHandler` is attached by default; the
-SDK never configures handlers or touches the root logger.
-
-`DEBUG` covers fetches, cache hits, and parses. `INFO` records registration outcomes. `WARNING`
-means degraded but recovered, such as a retry after a `503`. There is deliberately no `ERROR`
-level: failures raise, and logging them as well would report the same event twice.
-
-URLs are redacted before they are logged or embedded in exceptions, so query strings — SAS tokens,
-signed-URL signatures — do not reach your logs or your tracebacks. Headers are never logged.
-
-## Development
-
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, testing, linting, CI, releasing, and project structure.
-
-## Roadmap
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for planned themes, non-goals, and how work is tracked.
-
-## Related Resources
-
-- [Agent Skills specification](https://agentskills.io/specification)
-- [What are skills?](https://agentskills.io/what-are-skills)
-- [Integrate skills into your agent](https://agentskills.io/integrate-skills)
-- [Agent Skills Directory](docs/SKILLS-DIRECTORY.md)
+- Provider contract and exceptions: `agentskills-core`
+- Conformance suite and in-memory provider: `agentskills-testing`
+- Development/test commands: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ## Security
 
-Agent Skills are **equivalent to executable code** - skill content is injected into an LLM agent's context verbatim. **Only load skills from sources you trust.**
-
-The SDK includes built-in protections: input validation, TLS enforcement options, response size limits, path-traversal guards, credential redaction in logs and tracebacks, and safe XML generation. See each package's README for provider-specific security controls.
-
-To report a vulnerability, see [SECURITY.md](SECURITY.md).
+Agent Skills are equivalent to executable prompt instructions. Only load skills
+from sources you trust. See [SECURITY.md](SECURITY.md) for vulnerability
+reporting and threat-model notes.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setup, code style, testing, and pull requests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, style, and PR expectations.
 
 ## License
 

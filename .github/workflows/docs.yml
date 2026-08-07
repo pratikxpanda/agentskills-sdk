@@ -1,0 +1,86 @@
+name: Docs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "README.md"
+      - "packages/**"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "README.md"
+      - "packages/**"
+      - ".github/workflows/docs.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install docs tooling and local packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mkdocs-material mike "mkdocstrings[python]"
+          python -m pip install \
+            ./packages/core/agentskills-core \
+            ./packages/providers/agentskills-fs \
+            ./packages/providers/agentskills-http \
+            ./packages/integrations/agentskills-langchain \
+            ./packages/integrations/agentskills-agentframework \
+            ./packages/integrations/agentskills-mcp-server \
+            ./packages/cli/agentskills-cli \
+            ./packages/testing/agentskills-testing
+
+      - name: Build site
+        run: mkdocs build --strict
+
+  deploy:
+    name: Deploy versioned docs
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install docs tooling and local packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mkdocs-material mike "mkdocstrings[python]"
+          python -m pip install \
+            ./packages/core/agentskills-core \
+            ./packages/providers/agentskills-fs \
+            ./packages/providers/agentskills-http \
+            ./packages/integrations/agentskills-langchain \
+            ./packages/integrations/agentskills-agentframework \
+            ./packages/integrations/agentskills-mcp-server \
+            ./packages/cli/agentskills-cli \
+            ./packages/testing/agentskills-testing
+
+      - name: Publish docs for release tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mike deploy --push --update-aliases "$VERSION" latest
+          mike set-default --push latest
