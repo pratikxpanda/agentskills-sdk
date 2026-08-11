@@ -1,6 +1,6 @@
 # Agent Skills Directory
 
-A curated directory of [Agent Skills](https://agentskills.io) repositories, awesome lists, and community resources. Use these as inspiration, reference implementations, or load them into your own agents using the [HTTP provider](../packages/providers/agentskills-http/README.md).
+A curated directory of [Agent Skills](https://agentskills.io) repositories, awesome lists, and community resources. Use these as inspiration, reference implementations, or load them into your own agents using the [HTTP provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-http/README.md).
 
 ---
 
@@ -37,7 +37,7 @@ Top community repositories sorted by [GitHub stars](https://github.com/search?q=
 
 ## Using Skills with This SDK
 
-Any skill hosted on a web server can be loaded using the [HTTP provider](../packages/providers/agentskills-http/README.md):
+Any skill hosted on a web server can be loaded using the [HTTP provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-http/README.md):
 
 ```python
 from agentskills_core import SkillRegistry
@@ -48,7 +48,7 @@ registry = SkillRegistry()
 await registry.register("my-skill", provider)
 ```
 
-For skills stored locally, use the [filesystem provider](../packages/providers/agentskills-fs/README.md):
+For skills stored locally, use the [filesystem provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-fs/README.md):
 
 ```python
 from pathlib import Path

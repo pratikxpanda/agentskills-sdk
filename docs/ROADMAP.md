@@ -1,6 +1,6 @@
 # Agent Skills SDK — Roadmap
 
-> Public roadmap for the [Agent Skills SDK](../README.md). Themes and ordering, not dates.
+> Public roadmap for the [Agent Skills SDK](index.md). Themes and ordering, not dates.
 
 This document describes **what we intend to build and why**. It is intentionally coarse-grained:
 detailed scoping, discussion, and progress tracking live in
