@@ -29,6 +29,7 @@ PACKAGES_DIR = ROOT / "packages"
 #: one when its package moves up; never lower one without saying why in the PR.
 COVERAGE_FLOORS: dict[str, int] = {
     "agentskills_core": 99,
+    "agentskills_adapters": 99,
     "agentskills_fs": 97,
     "agentskills_http": 96,
     "agentskills_langchain": 100,
@@ -41,9 +42,9 @@ COVERAGE_FLOORS: dict[str, int] = {
 
 def _run(cmd: list[str], *, check: bool = True) -> int:
     """Run a command and return its exit code."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {' '.join(cmd)}")
-    print(f"{'='*60}\n", flush=True)  # or every banner lands after every subprocess
+    print(f"{'=' * 60}\n", flush=True)  # or every banner lands after every subprocess
     result = subprocess.run(cmd, cwd=ROOT, check=False)
     if check and result.returncode != 0:
         sys.exit(result.returncode)

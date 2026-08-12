@@ -11,6 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from agentskills_adapters import adapt_path
+from agentskills_adapters import render_skill_md as render_imported_skill_md
 from agentskills_cli.discovery import SKILL_FILE, CliError
 from agentskills_core import (
     ResourceNotFoundError,
@@ -122,4 +124,32 @@ async def init_skill(name: str, parent: Path, description: str = DEFAULT_DESCRIP
         raise CliError(f"cannot write to {target}: {exc}") from exc
 
     _logger.info("Scaffolded skill %s at %s", name, target)
+    return target
+
+
+async def init_from(
+    source: Path,
+    parent: Path,
+    name: str | None = None,
+    description: str | None = None,
+) -> Path:
+    """Convert an external instruction source into a native ``SKILL.md``."""
+    try:
+        imported = adapt_path(source, name=name, description=description)
+        errors = await validate_skill(imported.skill)
+    except (OSError, ValueError) as exc:
+        raise CliError(f"cannot import {source}: {exc}") from exc
+    if errors:
+        raise CliError("cannot import skill: " + "; ".join(errors))
+
+    target_name = imported.skill.get_id()
+    target = parent.expanduser().resolve() / target_name
+    if (target / SKILL_FILE).exists():
+        raise CliError(f"{target / SKILL_FILE} already exists")
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        (target / SKILL_FILE).write_text(render_imported_skill_md(imported), encoding="utf-8")
+    except OSError as exc:
+        raise CliError(f"cannot write to {target}: {exc}") from exc
+    _logger.info("Imported skill %s at %s", target_name, target)
     return target

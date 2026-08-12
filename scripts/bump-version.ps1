@@ -39,6 +39,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $pyprojectFiles = @(
     "pyproject.toml",
     "packages/core/agentskills-core/pyproject.toml",
+    "packages/adapters/agentskills-adapters/pyproject.toml",
     "packages/providers/agentskills-fs/pyproject.toml",
     "packages/providers/agentskills-http/pyproject.toml",
     "packages/integrations/agentskills-langchain/pyproject.toml",

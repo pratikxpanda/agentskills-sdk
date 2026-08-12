@@ -39,6 +39,7 @@ jobs:
           python -m pip install mkdocs-material mike "mkdocstrings[python]"
           python -m pip install \
             ./packages/core/agentskills-core \
+            ./packages/adapters/agentskills-adapters \
             ./packages/providers/agentskills-fs \
             ./packages/providers/agentskills-http \
             ./packages/integrations/agentskills-langchain \
@@ -71,6 +72,7 @@ jobs:
           python -m pip install mkdocs-material mike "mkdocstrings[python]"
           python -m pip install \
             ./packages/core/agentskills-core \
+            ./packages/adapters/agentskills-adapters \
             ./packages/providers/agentskills-fs \
             ./packages/providers/agentskills-http \
             ./packages/integrations/agentskills-langchain \

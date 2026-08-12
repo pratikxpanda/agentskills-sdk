@@ -75,6 +75,7 @@ jobs:
           set -euo pipefail
           for pkg in \
             packages/core/agentskills-core \
+            packages/adapters/agentskills-adapters \
             packages/providers/agentskills-fs \
             packages/providers/agentskills-http \
             packages/integrations/agentskills-langchain \
@@ -124,6 +125,13 @@ jobs:
           packages-dir: dist/agentskills-core
           attestations: true
           skip-existing: true # so a half-finished release can be re-run
+
+      - name: agentskills-adapters
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-adapters
+          attestations: true
+          skip-existing: true
 
       - name: agentskills-fs
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

@@ -10,6 +10,7 @@ nav:
   - Concepts: concepts.md
   - Packages:
       - Core: packages/core.md
+      - Format adapters: packages/adapters.md
       - Filesystem provider: packages/fs.md
       - HTTP provider: packages/http.md
       - LangChain integration: packages/langchain.md
