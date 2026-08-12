@@ -1,6 +1,6 @@
 # Development
 
-> Part of the [Agent Skills SDK](../README.md).
+> Part of the [Agent Skills SDK](index.md).
 
 ## Prerequisites
 
@@ -123,7 +123,7 @@ All checks must pass before a PR can be merged. The CI status badge is shown on 
 - **CodeQL**: static application security testing for Python (`.github/workflows/codeql.yml`)
 - **Dependabot**: automated dependency updates for `pip` and `github-actions` (`.github/dependabot.yml`)
 
-For the full security policy and threat model, see [SECURITY.md](../SECURITY.md).
+For the full security policy and threat model, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
 ## Type Checking
 

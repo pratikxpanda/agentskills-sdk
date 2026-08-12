@@ -40,3 +40,6 @@ htmlcov/
 
 # Distribution
 *.tar.gz
+
+# Documentation
+site/

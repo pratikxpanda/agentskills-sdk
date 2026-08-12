@@ -1,0 +1,51 @@
+site_name: Agent Skills SDK
+site_description: Python SDK for discovering, retrieving, and serving Agent Skills
+site_url: https://pratikxpanda.github.io/agentskills-sdk/
+repo_url: https://github.com/pratikxpanda/agentskills-sdk
+repo_name: pratikxpanda/agentskills-sdk
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Concepts: concepts.md
+  - Packages:
+      - Core: packages/core.md
+      - Filesystem provider: packages/fs.md
+      - HTTP provider: packages/http.md
+      - LangChain integration: packages/langchain.md
+      - Agent Framework integration: packages/agentframework.md
+      - MCP server integration: packages/mcp-server.md
+      - CLI tooling: packages/cli.md
+      - Testing toolkit: packages/testing.md
+  - Roadmap: ROADMAP.md
+  - ADRs: adr/README.md
+  - v0.4 issue plan: issues/v0.4.md
+  - Development: DEVELOPMENT.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            show_signature_annotations: true
+            separate_signature: true
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+
+extra:
+  version:
+    provider: mike
