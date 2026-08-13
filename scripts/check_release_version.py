@@ -22,6 +22,7 @@ ROOT = Path(__file__).parent.parent
 CORE = "packages/core/agentskills-core"
 
 DEPENDENTS = [
+    "packages/adapters/agentskills-adapters",
     "packages/providers/agentskills-fs",
     "packages/providers/agentskills-http",
     "packages/integrations/agentskills-langchain",

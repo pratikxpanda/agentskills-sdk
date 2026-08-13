@@ -1,10 +1,11 @@
 # Working in this repository
 
-Poetry monorepo. Eight packages, versioned and released together.
+Poetry monorepo. Nine packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
 | `packages/core/agentskills-core` | Registry, `SkillProvider` ABC, spec validation. Only dependency is `pyyaml`. |
+| `packages/adapters/agentskills-adapters` | Import common agent instruction formats as native skills |
 | `packages/providers/agentskills-fs` | Local filesystem provider |
 | `packages/providers/agentskills-http` | Static HTTP / CDN provider |
 | `packages/integrations/agentskills-langchain` | LangChain tools |
@@ -60,7 +61,7 @@ repository silently matches nothing.
 ```bash
 poetry install                                    # local install/check loop
 # this laptop cannot reach PyPI file hosting directly; run poetry lock on a networked machine
-python -m pytest packages -q --no-header          # baseline: 1131 passed, 7 skipped
+python -m pytest packages -q --no-header          # baseline: 1142 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 python scripts/check_declared_dependencies.py     # a package must declare what it imports
@@ -79,12 +80,12 @@ that task fails for reasons unrelated to your change.
 
 ## Traps worth knowing
 
-- **A new package must be registered in seven places.** Root `pyproject.toml` (path
+- **A new package must be registered in eight places.** Root `pyproject.toml` (path
   dependency, `[tool.coverage.run] source_pkgs`, `[tool.ruff.lint.isort]
   known-first-party`), `scripts/dev.py` `COVERAGE_FLOORS`, both `bump-version` scripts,
   `scripts/check_release_version.py`, and the build loop plus a publish step in
   `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
-  `scripts/check_declared_dependencies.py` has its own list too, so eight.
+  `scripts/check_declared_dependencies.py` has its own list too, so nine.
 - **A package can import what it never declared and nothing will notice**, because every
   package is installed into one shared virtualenv here. `agentskills-cli` imported `yaml`
   without declaring `pyyaml` for a whole milestone, riding on the copy `agentskills-core`

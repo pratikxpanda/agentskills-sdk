@@ -8,6 +8,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
 agentskills-core = { path = "packages/core/agentskills-core", develop = true }
+agentskills-adapters = { path = "packages/adapters/agentskills-adapters", develop = true }
 agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
 agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
@@ -40,6 +41,7 @@ branch = true
 # files themselves, and a test file is trivially covered by running it.
 source_pkgs = [
     "agentskills_core",
+    "agentskills_adapters",
     "agentskills_fs",
     "agentskills_http",
     "agentskills_langchain",
@@ -79,4 +81,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_cli", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_cli", "agentskills_testing"]

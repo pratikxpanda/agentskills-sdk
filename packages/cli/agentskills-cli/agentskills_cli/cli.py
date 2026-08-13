@@ -54,7 +54,7 @@ from agentskills_cli.render import (
     render_json,
     render_text,
 )
-from agentskills_cli.scaffold import DEFAULT_DESCRIPTION, init_skill
+from agentskills_cli.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
 from agentskills_cli.serve import build_registry, create_server
 from agentskills_cli.validate import validate_locations
 from agentskills_core import LOGGER_NAMESPACE, Skill
@@ -108,7 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Scaffold a new skill.",
         description="Scaffold a new skill directory that already validates.",
     )
-    init.add_argument("name", help="Skill name, also used as the directory name.")
+    init.add_argument("name", nargs="?", help="Skill name, also used as the directory name.")
     init.add_argument(
         "--path",
         type=Path,
@@ -117,8 +117,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init.add_argument(
         "--description",
-        default=DEFAULT_DESCRIPTION,
+        default=None,
         help="Frontmatter description for the new skill.",
+    )
+    init.add_argument(
+        "--from",
+        dest="source",
+        type=Path,
+        help="Import an AGENTS.md, Copilot file, Cursor rule, or Claude skill folder.",
     )
 
     validate = subparsers.add_parser(
@@ -245,7 +251,14 @@ def _enable_debug_logging() -> None:
 
 
 def _run_init(args: argparse.Namespace, out: TextIO) -> int:
-    target = asyncio.run(init_skill(args.name, args.path, args.description))
+    if args.source:
+        target = asyncio.run(init_from(args.source, args.path, args.name, args.description))
+    elif args.name:
+        target = asyncio.run(
+            init_skill(args.name, args.path, args.description or DEFAULT_DESCRIPTION)
+        )
+    else:
+        raise CliError("init requires a skill name or --from source")
     print(f"Created {relative_to_cwd(target)}", file=out)
     return EXIT_OK
 

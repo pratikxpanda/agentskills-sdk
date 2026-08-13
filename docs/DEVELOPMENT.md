@@ -27,6 +27,7 @@ Run tests for a single package:
 
 ```bash
 poetry run pytest packages/core/agentskills-core -v
+poetry run pytest packages/adapters/agentskills-adapters -v
 poetry run pytest packages/providers/agentskills-fs -v
 poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/integrations/agentskills-langchain -v
@@ -321,6 +322,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | Package | Description |
 | --- | --- |
 | `packages/core/agentskills-core` | Storage-agnostic abstractions (`SkillProvider`, `Skill`, `SkillRegistry`, `validate_skill`) |
+| `packages/adapters/agentskills-adapters` | Import AGENTS.md, Copilot instructions, Cursor rules, and Claude skills as native `Skill` objects |
 | `packages/providers/agentskills-fs` | Load skills from the local filesystem |
 | `packages/providers/agentskills-http` | Load skills from a static HTTP server |
 | `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |

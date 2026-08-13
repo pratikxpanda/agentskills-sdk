@@ -95,6 +95,20 @@ class TestInit:
         assert main(["init", "Bad Name", "--path", str(tmp_path)]) == 2
         assert "error: cannot scaffold" in capsys.readouterr().err
 
+    def test_imports_agents_file(self, tmp_path, capsys):
+        source = tmp_path / "AGENTS.md"
+        source.write_text("# Repository instructions\n\nUse the conventions.\n", encoding="utf-8")
+
+        assert main(["init", "--from", str(source), "--path", str(tmp_path)]) == 0
+
+        skill_md = tmp_path / "repository-instructions" / "SKILL.md"
+        assert skill_md.is_file()
+        assert (
+            "description: Imported instructions for Repository instructions."
+            in skill_md.read_text(encoding="utf-8")
+        )
+        assert "Created" in capsys.readouterr().out
+
 
 class TestInspect:
     def test_text_output(self, write_skill, skills_root, capsys):

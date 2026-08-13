@@ -30,6 +30,7 @@ ROOT = Path(__file__).parent.parent
 
 PACKAGES = [
     "packages/core/agentskills-core",
+    "packages/adapters/agentskills-adapters",
     "packages/providers/agentskills-fs",
     "packages/providers/agentskills-http",
     "packages/integrations/agentskills-langchain",
