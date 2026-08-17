@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-adapters"
-version = "0.3.0"
+version = "0.4.0"
 description = "Adapters from common agent instruction formats to Agent Skills (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
@@ -19,7 +19,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.3.0,<1.0"
+agentskills-core = ">=0.4.0,<1.0"
 pyyaml = ">=6.0,<7.0"
 
 [build-system]

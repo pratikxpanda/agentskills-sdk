@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-testing"
-version = "0.3.0"
+version = "0.4.0"
 description = "Conformance suite and test doubles for Agent Skills providers (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
@@ -21,7 +21,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.3.0,<1.0"
+agentskills-core = ">=0.4.0,<1.0"
 pytest = ">=8.0"
 pytest-asyncio = ">=0.24"
 pyyaml = ">=6.0,<7.0"
