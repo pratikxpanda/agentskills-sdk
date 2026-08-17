@@ -15,12 +15,12 @@ from pathlib import Path
 
 import yaml
 
-from agentskills_cli.discovery import SKILL_FILE, SkillLocation
-from agentskills_cli.evalspec import check_skill_evals
-from agentskills_cli.findings import ERROR, Finding, SkillReport
 from agentskills_core import Skill, get_logger, validate_skill
 from agentskills_core.parsing import MAX_FRONTMATTER_BYTES
 from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.discovery import SKILL_FILE, SkillLocation
+from agentskills_tools.evalspec import check_skill_evals
+from agentskills_tools.findings import ERROR, Finding, SkillReport
 
 _logger = get_logger(__name__)
 

@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 from typing import Any, TextIO
 
-from agentskills_cli.discovery import SKILL_FILE, relative_to_cwd
-from agentskills_cli.findings import SkillReport
+from agentskills_tools.discovery import SKILL_FILE, relative_to_cwd
+from agentskills_tools.findings import SkillReport
 
 SCHEMA_VERSION = 1
 

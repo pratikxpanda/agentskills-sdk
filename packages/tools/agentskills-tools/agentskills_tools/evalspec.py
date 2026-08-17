@@ -30,8 +30,8 @@ from pathlib import Path
 
 import yaml
 
-from agentskills_cli.discovery import relative_to_cwd
-from agentskills_cli.findings import ERROR, Finding
+from agentskills_tools.discovery import relative_to_cwd
+from agentskills_tools.findings import ERROR, Finding
 
 #: Directory inside a skill folder holding its eval suites.
 EVALS_DIR = "evals"

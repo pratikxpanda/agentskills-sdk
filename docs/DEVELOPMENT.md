@@ -33,7 +33,7 @@ poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/integrations/agentskills-langchain -v
 poetry run pytest packages/integrations/agentskills-agentframework -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
-poetry run pytest packages/cli/agentskills-cli -v
+poetry run pytest packages/tools/agentskills-tools -v
 poetry run pytest packages/testing/agentskills-testing -v
 ```
 
@@ -141,7 +141,7 @@ Type annotations are expected on all public functions and methods.
 Every package here is installed into one shared virtualenv alongside its siblings, so a package
 can import a module it never declared and nothing will notice. The failure only appears for
 somebody who installed that one package from PyPI, and it appears as an `ImportError` on their
-first command. `agentskills-cli` shipped that way for a whole milestone, riding on the `pyyaml`
+first command. `agentskills-tools` shipped that way for a whole milestone, riding on the `pyyaml`
 that `agentskills-core` pulled in.
 
 ```bash
@@ -328,7 +328,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |
 | `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
 | `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
-| `packages/cli/agentskills-cli` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
+| `packages/tools/agentskills-tools` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, and pytest fixtures |
 
 Each package has its own `pyproject.toml` under `packages/` and can be published independently. Every package except `agentskills-core` depends on it. The root `pyproject.toml` uses Poetry to manage workspace-level dependencies and installs all packages in editable mode.

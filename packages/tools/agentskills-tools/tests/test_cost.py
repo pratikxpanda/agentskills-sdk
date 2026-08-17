@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from agentskills_cli.cost import (
+from agentskills_core import Skill
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.cost import (
     HEURISTIC,
     PREAMBLE_TITLE,
     ResourceCost,
@@ -25,9 +27,7 @@ from agentskills_cli.cost import (
     resolve_counter,
     split_sections,
 )
-from agentskills_cli.discovery import CliError
-from agentskills_core import Skill
-from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.discovery import CliError
 
 WORDS = TokenCounter("words", True, lambda text: len(text.split()))
 

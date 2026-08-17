@@ -64,7 +64,7 @@ jobs:
           ./packages/core/agentskills-core
           ./packages/adapters/agentskills-adapters
           ./packages/providers/agentskills-fs
-          ./packages/cli/agentskills-cli
+          ./packages/tools/agentskills-tools
 
       - name: Validate the example skills
         uses: ./actions/validate

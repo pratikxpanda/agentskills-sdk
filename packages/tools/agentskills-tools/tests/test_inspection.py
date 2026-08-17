@@ -6,8 +6,8 @@ import io
 
 import pytest
 
-from agentskills_cli.discovery import CliError, SkillLocation
-from agentskills_cli.inspection import inspect_location, render_inspection_text
+from agentskills_tools.discovery import CliError, SkillLocation
+from agentskills_tools.inspection import inspect_location, render_inspection_text
 
 
 class TestInspectLocation:

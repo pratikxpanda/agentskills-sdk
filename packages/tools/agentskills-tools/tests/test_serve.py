@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from agentskills_cli.discovery import CliError, SkillLocation
-from agentskills_cli.serve import build_registry, create_server
+from agentskills_tools.discovery import CliError, SkillLocation
+from agentskills_tools.serve import build_registry, create_server
 
 
 class TestBuildRegistry:
@@ -46,5 +46,5 @@ class TestCreateServer:
         registry = await build_registry(skills_root, [SkillLocation("alpha", path)])
         monkeypatch.setitem(sys.modules, "agentskills_mcp_server.server", None)
 
-        with pytest.raises(CliError, match=r"agentskills-cli\[serve\]"):
+        with pytest.raises(CliError, match=r"agentskills-tools\[serve\]"):
             create_server(registry, name="Test")

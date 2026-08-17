@@ -11,9 +11,9 @@ from typing import ClassVar
 
 import pytest
 
-from agentskills_cli.cli import main
-from agentskills_cli.evals import ModelResponse
 from agentskills_core import LOGGER_NAMESPACE
+from agentskills_tools.cli import main
+from agentskills_tools.evals import ModelResponse
 
 
 class TestValidate:
@@ -402,7 +402,7 @@ class TestServe:
                 started["transport"] = transport
 
         monkeypatch.setattr(
-            "agentskills_cli.cli.create_server", lambda registry, name: _FakeServer()
+            "agentskills_tools.cli.create_server", lambda registry, name: _FakeServer()
         )
 
         assert main(["serve", str(skills_root), "--transport", "streamable-http"]) == 0
@@ -424,7 +424,7 @@ class TestVerbose:
 
         try:
             main(["validate", str(skills_root), "-v"])
-            assert "agentskills.cli" in capsys.readouterr().err
+            assert "agentskills.tools" in capsys.readouterr().err
         finally:
             logger.handlers = before
             logger.setLevel(logging.NOTSET)
@@ -444,13 +444,13 @@ class TestParser:
 
 
 class TestModuleEntryPoint:
-    def test_python_m_agentskills_cli_exits_with_the_command_status(
+    def test_python_m_agentskills_tools_exits_with_the_command_status(
         self, write_skill, skills_root, monkeypatch
     ):
         write_skill("alpha", "no frontmatter")
         monkeypatch.setattr(sys, "argv", ["agentskills", "validate", str(skills_root)])
 
         with pytest.raises(SystemExit) as exit_info:
-            runpy.run_module("agentskills_cli", run_name="__main__")
+            runpy.run_module("agentskills_tools", run_name="__main__")
 
         assert exit_info.value.code == 1

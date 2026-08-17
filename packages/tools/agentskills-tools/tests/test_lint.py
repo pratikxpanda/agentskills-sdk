@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentskills_cli.discovery import SkillLocation
-from agentskills_cli.lint import (
+from agentskills_core import ResourceNotFoundError, Skill, SkillProvider
+from agentskills_tools.discovery import SkillLocation
+from agentskills_tools.lint import (
     CATALOG_DESCRIPTION_CHARS,
     _unreferenced_resources,
     estimate_tokens,
     lint_location,
     lint_locations,
 )
-from agentskills_core import ResourceNotFoundError, Skill, SkillProvider
 
 
 class _BareProvider(SkillProvider):

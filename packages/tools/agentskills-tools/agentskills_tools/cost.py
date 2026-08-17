@@ -19,9 +19,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TextIO
 
-from agentskills_cli.discovery import CliError
-from agentskills_cli.lint import estimate_tokens
 from agentskills_core import RESOURCE_KINDS, Skill, get_logger
+from agentskills_tools.discovery import CliError
+from agentskills_tools.lint import estimate_tokens
 
 _logger = get_logger(__name__)
 

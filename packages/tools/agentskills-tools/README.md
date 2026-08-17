@@ -1,4 +1,4 @@
-# agentskills-cli
+# agentskills-tools
 
 Command line tools for authoring and validating [Agent Skills](https://agentskills.io).
 
@@ -7,14 +7,14 @@ Part of the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).
 ## Install
 
 ```bash
-pip install agentskills-cli
+pip install agentskills-tools
 ```
 
 The `serve` command needs the MCP server, which is an optional extra so that
 validating skills in CI does not pull in `mcp` and `pydantic`:
 
 ```bash
-pip install "agentskills-cli[serve]"
+pip install "agentskills-tools[serve]"
 ```
 
 ## Commands
@@ -206,7 +206,7 @@ install:
 ```python
 # mypkg/evals.py
 from openai import AsyncOpenAI
-from agentskills_cli.evals import ModelResponse
+from agentskills_tools.evals import ModelResponse
 
 
 class OpenAIModel:
@@ -341,7 +341,7 @@ agentskills validate ./skills --format github
 Anywhere else, the exit code is enough:
 
 ```yaml
-- run: pip install agentskills-cli
+- run: pip install agentskills-tools
 - run: agentskills validate ./skills
 ```
 

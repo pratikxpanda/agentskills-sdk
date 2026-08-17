@@ -27,7 +27,7 @@ inputs:
     default: ""
   version:
     description: >-
-      Version of agentskills-cli to install. Empty uses an agentskills
+      Version of agentskills-tools to install. Empty uses an agentskills
       already on PATH, and installs the latest release if there is none.
     required: false
     default: ""
@@ -68,9 +68,9 @@ runs:
         VERSION: ${{ inputs.version }}
       run: |
         if [ -n "$VERSION" ]; then
-          python -m pip install --disable-pip-version-check "agentskills-cli==$VERSION"
+          python -m pip install --disable-pip-version-check "agentskills-tools==$VERSION"
         else
-          python -m pip install --disable-pip-version-check agentskills-cli
+          python -m pip install --disable-pip-version-check agentskills-tools
         fi
 
     # Inputs reach the shell as environment variables, never interpolated

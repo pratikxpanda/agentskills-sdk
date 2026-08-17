@@ -10,9 +10,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from agentskills_cli.discovery import CliError, SkillLocation
 from agentskills_core import SkillRegistry, get_logger
 from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.discovery import CliError, SkillLocation
 
 _logger = get_logger(__name__)
 
@@ -46,6 +46,6 @@ def create_server(registry: SkillRegistry, *, name: str) -> Any:
     except ImportError as exc:
         raise CliError(
             "`agentskills serve` needs the MCP server. "
-            "Install it with:  pip install 'agentskills-cli[serve]'"
+            "Install it with:  pip install 'agentskills-tools[serve]'"
         ) from exc
     return create_mcp_server(registry, name=name)

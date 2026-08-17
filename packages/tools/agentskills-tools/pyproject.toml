@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "agentskills-cli"
+name = "agentskills-tools"
 version = "0.4.0"
 description = "Command line tools for authoring and validating Agent Skills (https://agentskills.io)"
 license = "MIT"
@@ -7,7 +7,7 @@ authors = ["Pratik Panda"]
 readme = "README.md"
 homepage = "https://agentskills.io"
 repository = "https://github.com/pratikxpanda/agentskills-sdk"
-packages = [{include = "agentskills_cli"}]
+packages = [{include = "agentskills_tools"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -30,7 +30,7 @@ agentskills-mcp-server = {version = ">=0.3.0,<1.0", optional = true}
 serve = ["agentskills-mcp-server"]
 
 [tool.poetry.scripts]
-agentskills = "agentskills_cli.__main__:main"
+agentskills = "agentskills_tools.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]

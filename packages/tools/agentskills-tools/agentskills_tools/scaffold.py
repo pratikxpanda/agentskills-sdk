@@ -13,7 +13,6 @@ from typing import Any
 
 from agentskills_adapters import adapt_path
 from agentskills_adapters import render_skill_md as render_imported_skill_md
-from agentskills_cli.discovery import SKILL_FILE, CliError
 from agentskills_core import (
     ResourceNotFoundError,
     Skill,
@@ -21,6 +20,7 @@ from agentskills_core import (
     get_logger,
     validate_skill,
 )
+from agentskills_tools.discovery import SKILL_FILE, CliError
 
 RESOURCE_DIRS = ("references", "scripts", "assets")
 

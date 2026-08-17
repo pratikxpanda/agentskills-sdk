@@ -11,10 +11,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, TextIO
 
-from agentskills_cli.discovery import CliError, SkillLocation, relative_to_cwd
-from agentskills_cli.lint import estimate_tokens
 from agentskills_core import Skill, SkillRegistry, get_logger
 from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.discovery import CliError, SkillLocation, relative_to_cwd
+from agentskills_tools.lint import estimate_tokens
 
 _logger = get_logger(__name__)
 

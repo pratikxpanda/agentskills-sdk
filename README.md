@@ -26,7 +26,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | **Integration** - expose skills to a LangChain agent as tools. | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-langchain?label=)](https://pepy.tech/project/agentskills-langchain) |
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | **Integration** - expose skills to a Microsoft Agent Framework agent, injected automatically through the agent lifecycle. | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-agentframework?label=)](https://pepy.tech/project/agentskills-agentframework) |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve skills over the Model Context Protocol to any MCP client, such as Claude Desktop, VS Code, or Cursor. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
-| [`agentskills-cli`](packages/cli/agentskills-cli/README.md) | **Tooling** - the `agentskills` command: scaffold, validate, lint, and inspect skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-cli?label=)](https://pypi.org/project/agentskills-cli/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-cli?label=)](https://pepy.tech/project/agentskills-cli) |
+| [`agentskills-tools`](packages/tools/agentskills-tools/README.md) | **Tooling** - the `agentskills` command: scaffold, validate, lint, and inspect skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-tools?label=)](https://pypi.org/project/agentskills-tools/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-tools?label=)](https://pepy.tech/project/agentskills-tools) |
 | [`agentskills-testing`](packages/testing/agentskills-testing/README.md) | **Tooling** - the provider conformance suite and an in-memory provider, for anyone writing a provider or testing against one. | [![PyPI](https://img.shields.io/pypi/v/agentskills-testing?label=)](https://pypi.org/project/agentskills-testing/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-testing?label=)](https://pepy.tech/project/agentskills-testing) |
 
 **Which do I need?** One provider for wherever your skills live, plus the integration for your
@@ -37,7 +37,7 @@ needs only:
 pip install agentskills-fs agentskills-langchain
 ```
 
-If you *write* skills rather than consume them, you want `agentskills-cli` instead.
+If you *write* skills rather than consume them, you want `agentskills-tools` instead.
 
 ## How It Works
 
@@ -175,13 +175,13 @@ plus roadmap and ADR pages.
 For skill authoring:
 
 ```bash
-pip install agentskills-cli
+pip install agentskills-tools
 agentskills validate ./skills
 agentskills lint ./skills
 agentskills inspect ./skills --cost
 ```
 
-See [packages/cli/agentskills-cli/README.md](packages/cli/agentskills-cli/README.md)
+See [packages/tools/agentskills-tools/README.md](packages/tools/agentskills-tools/README.md)
 for full command and JSON schema details.
 
 ## GitHub Action

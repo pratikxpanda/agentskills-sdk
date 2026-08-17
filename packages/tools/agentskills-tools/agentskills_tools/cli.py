@@ -22,7 +22,9 @@ import sys
 from pathlib import Path
 from typing import Any, TextIO
 
-from agentskills_cli.cost import (
+from agentskills_core import LOGGER_NAMESPACE, Skill
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.cost import (
     TOKENIZERS,
     SkillCost,
     cost_exit_code,
@@ -31,8 +33,8 @@ from agentskills_cli.cost import (
     render_cost_text,
     resolve_counter,
 )
-from agentskills_cli.discovery import CliError, SkillLocation, discover, relative_to_cwd
-from agentskills_cli.evals import (
+from agentskills_tools.discovery import CliError, SkillLocation, discover, relative_to_cwd
+from agentskills_tools.evals import (
     DEFAULT_CACHE_DIR,
     CompletionCache,
     EvalRunner,
@@ -42,11 +44,11 @@ from agentskills_cli.evals import (
     results_payload,
     run_suites,
 )
-from agentskills_cli.evalspec import EvalSuite, load_skill_evals
-from agentskills_cli.findings import SkillReport
-from agentskills_cli.inspection import inspect_location, render_inspection_text
-from agentskills_cli.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
-from agentskills_cli.render import (
+from agentskills_tools.evalspec import EvalSuite, load_skill_evals
+from agentskills_tools.findings import SkillReport
+from agentskills_tools.inspection import inspect_location, render_inspection_text
+from agentskills_tools.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
+from agentskills_tools.render import (
     SCHEMA_VERSION,
     exit_code,
     plural,
@@ -54,11 +56,9 @@ from agentskills_cli.render import (
     render_json,
     render_text,
 )
-from agentskills_cli.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
-from agentskills_cli.serve import build_registry, create_server
-from agentskills_cli.validate import validate_locations
-from agentskills_core import LOGGER_NAMESPACE, Skill
-from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
+from agentskills_tools.serve import build_registry, create_server
+from agentskills_tools.validate import validate_locations
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1

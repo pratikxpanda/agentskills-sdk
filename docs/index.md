@@ -21,7 +21,7 @@ pip install agentskills-fs agentskills-langchain
 Or install the authoring CLI:
 
 ```bash
-pip install agentskills-cli
+pip install agentskills-tools
 ```
 
 ## Quick start
