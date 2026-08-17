@@ -1,0 +1,1613 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python SDK for discovering, retrieving, and serving Agent Skills">
+      
+      
+      
+        <link rel="canonical" href="https://pratikxpanda.github.io/agentskills-sdk/0.4.0/ROADMAP/">
+      
+      
+        <link rel="prev" href="../packages/testing/">
+      
+      
+        <link rel="next" href="../adr/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Roadmap - Agent Skills SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent-skills-sdk-roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Agent Skills SDK" class="md-header__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agent Skills SDK" class="md-nav__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agent Skills SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/fs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/langchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/agentframework/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Framework integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP server integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#product-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Product Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shipped-v03-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped — v0.3 "Foundations"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shipped-v04-developer-experience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped — v0.4 "Developer Experience"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#now-v05-agent-effectiveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Now — v0.5 "Agent Effectiveness"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-v06-trust-operability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next — v0.6 "Trust &amp; Operability"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#later-v07-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later — v0.7 "Ecosystem"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v10-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0 — Stability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-we-plan-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How We Plan Work
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 issue plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#product-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Product Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shipped-v03-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped — v0.3 "Foundations"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shipped-v04-developer-experience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shipped — v0.4 "Developer Experience"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#now-v05-agent-effectiveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Now — v0.5 "Agent Effectiveness"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-v06-trust-operability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next — v0.6 "Trust &amp; Operability"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#later-v07-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later — v0.7 "Ecosystem"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v10-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0 — Stability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-we-plan-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How We Plan Work
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="agent-skills-sdk-roadmap">Agent Skills SDK — Roadmap<a class="headerlink" href="#agent-skills-sdk-roadmap" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Public roadmap for the <a href="../">Agent Skills SDK</a>. Themes and ordering, not dates.</p>
+</blockquote>
+<p>This document describes <strong>what we intend to build and why</strong>. It is intentionally coarse-grained:
+detailed scoping, discussion, and progress tracking live in
+<a href="https://github.com/pratikxpanda/agentskills-sdk/issues">GitHub Issues</a>, grouped by milestone.</p>
+<p>Written-up specifications for the items below — problem, approach, open questions, acceptance
+criteria — live in <a href="./issues/">docs/issues/</a>, one file per milestone.</p>
+<h2 id="product-principles">Product Principles<a class="headerlink" href="#product-principles" title="Permanent link">&para;</a></h2>
+<p>These constrain every item below. If a proposal conflicts with one of these, it needs an
+explicit design doc arguing the trade-off.</p>
+<ol>
+<li><strong>Spec-first.</strong> The SDK implements the <a href="https://agentskills.io/specification">Agent Skills open format</a>.
+   We do not invent proprietary extensions to the skill format; where we need more (e.g. <code>version</code>),
+   we use optional, backward-compatible frontmatter fields and push for upstream adoption.</li>
+<li><strong>Progressive disclosure is the contract.</strong> Every abstraction must let an agent pay only for
+   the tokens it actually needs. Anything that forces eager loading of full skill bodies is a bug.</li>
+<li><strong>Skills are untrusted code.</strong> Skill content lands verbatim in an agent's context. Trust,
+   provenance, and integrity are first-class product features, not documentation footnotes.</li>
+<li><strong>Small, composable packages.</strong> <code>agentskills-core</code> stays dependency-light. Providers and
+   framework integrations are optional installs and never leak into core.</li>
+<li><strong>Framework-agnostic core, thin adapters.</strong> Framework-specific behaviour belongs in the
+   integration package. If two integrations need the same logic, it moves to core.</li>
+</ol>
+<h2 id="themes">Themes<a class="headerlink" href="#themes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Theme</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Correctness &amp; spec coverage</strong></td>
+<td>Close the gaps between the SDK and the full skill format so real-world skills work unmodified.</td>
+</tr>
+<tr>
+<td><strong>Performance &amp; resilience</strong></td>
+<td>Skills are fetched on the hot path of an agent turn. Redundant I/O is latency and cost.</td>
+</tr>
+<tr>
+<td><strong>Agent effectiveness</strong></td>
+<td>Retrieval is table stakes. The product question is whether an agent holding a skill actually performs better — and whether anyone can prove it.</td>
+</tr>
+<tr>
+<td><strong>Interoperability</strong></td>
+<td>Teams already have instructions written in other formats. Meeting them where they are beats asking them to start over.</td>
+</tr>
+<tr>
+<td><strong>Trust &amp; supply chain</strong></td>
+<td>The differentiator for enterprise adoption. Skills are code; treat them like it.</td>
+</tr>
+<tr>
+<td><strong>Operability</strong></td>
+<td>Platform teams cannot run what they cannot see. Logs, traces, metrics, usage signals.</td>
+</tr>
+<tr>
+<td><strong>Developer experience</strong></td>
+<td>Adoption is gated on how fast someone can author, validate, and ship a skill.</td>
+</tr>
+<tr>
+<td><strong>Ecosystem breadth</strong></td>
+<td>More providers and framework integrations widen the addressable surface.</td>
+</tr>
+<tr>
+<td><strong>Project health</strong></td>
+<td>An open-source project is a product; release engineering and governance are features.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="shipped-v03-foundations">Shipped — v0.3 "Foundations"<a class="headerlink" href="#shipped-v03-foundations" title="Permanent link">&para;</a></h2>
+<p>Released 2026-07-31. Closed the highest-severity correctness and performance gaps before the API
+surface widened. Specifications and implementation notes: <a href="../issues/v0.3/">docs/issues/v0.3.md</a>.</p>
+<p>Two changes are breaking for existing users, which a minor version is entitled to pre-1.0 but
+which the release notes should state plainly: <code>SkillProvider</code> gained resource discovery, and a
+skill carrying an invalid <code>version</code> in its frontmatter now fails registration instead of being
+registered with a warning.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Theme</th>
+<th>Package(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Provider content caching</td>
+<td>Performance</td>
+<td><code>agentskills-fs</code>, <code>agentskills-http</code></td>
+<td>A single skill's <code>SKILL.md</code> was fetched up to 5x per session — twice during registration (<code>validate_skill()</code> calls <code>get_body()</code> and <code>get_metadata()</code> independently), once per catalog build, and again on each tool call. Now cached per provider instance with an explicit <code>invalidate()</code>. HTTP revalidation via <code>ETag</code> / <code>Last-Modified</code> is opt-in (<code>revalidate=True</code>) rather than default, since a conditional request per access defeats the point for the common static-host case.</td>
+</tr>
+<tr>
+<td>Concurrent catalog build</td>
+<td>Performance</td>
+<td><code>agentskills-core</code></td>
+<td><code>get_skills_catalog()</code> fetched metadata serially. Now fans out with <code>asyncio.gather</code> under a bounded semaphore (<code>SkillRegistry(catalog_concurrency=8)</code>); output ordering is unchanged.</td>
+</tr>
+<tr>
+<td>Non-blocking filesystem I/O</td>
+<td>Performance</td>
+<td><code>agentskills-fs</code></td>
+<td>The provider was <code>async</code> but read synchronously, blocking the event loop. Path resolution, stat and read now run in a worker thread via <code>asyncio.to_thread</code>.</td>
+</tr>
+<tr>
+<td>Resource discovery API</td>
+<td>Correctness</td>
+<td><code>agentskills-core</code> + providers</td>
+<td>Agents had no way to learn which references/scripts/assets exist; discovery depended entirely on SKILL.md prose. <code>list_resources(skill_id)</code> is now an <em>optional</em> provider capability paired with a <code>supports_resource_listing</code> flag (<a href="../adr/0002-optional-provider-capabilities/">ADR 0002</a>). The default implementation raises <code>ResourceListingNotSupportedError</code> rather than returning <code>{}</code>, so "cannot enumerate" is never mistaken for "has no resources". Filesystem enumerates directly; HTTP requires an opt-in per-skill <code>index.json</code>, which also gives the supply-chain work a natural home for integrity hashes.</td>
+</tr>
+<tr>
+<td>Binary-safe resources</td>
+<td>Correctness</td>
+<td><code>agentskills-core</code> + all integrations</td>
+<td>All three integrations decoded provider bytes with <code>.decode("utf-8", errors="replace")</code>, silently destroying images, PDFs, and archives. A shared <code>encode_resource_content()</code> now returns valid UTF-8 verbatim and wraps everything else in a base64 JSON envelope. Using MCP's native binary content blocks instead of a JSON string remains a follow-up.</td>
+</tr>
+<tr>
+<td>Optional <code>version</code> frontmatter</td>
+<td>Correctness</td>
+<td><code>agentskills-core</code></td>
+<td>Skills had no version, so nothing could be pinned, compared, or checked for drift. <code>version</code> is now optional, validated as semver when present, returned by <code>get_metadata()</code>, and rendered in both catalog formats only when set. Two things surfaced during the work. First, the acceptance criteria were self-contradictory: "fully backward-compatible" and "invalid semver fails registration" cannot both hold, so this is recorded as a deliberate breaking change for skills carrying a non-semver <code>version</code> today. Second, YAML types the field before validation ever sees it — <code>1.0</code> is a float, <code>2024-01-15</code> a date — so non-string values get an error naming the coercion instead of a bare type mismatch. No new dependency: the semver.org regex is inlined rather than pulling a package in for one match.</td>
+</tr>
+<tr>
+<td>HTTP error classification</td>
+<td>Resilience</td>
+<td><code>agentskills-http</code></td>
+<td>Every non-2xx mapped to <code>SkillNotFoundError</code>, so a <code>503</code> and a genuine <code>404</code> were indistinguishable. Now <code>404</code>/<code>410</code> → <code>SkillNotFoundError</code>, and <code>5xx</code>/<code>408</code>/<code>425</code>/<code>429</code>/timeouts/connection errors → a new <code>SkillUnavailableError</code> carrying <code>retry_after</code>, with bounded jittered-backoff retry that honours <code>Retry-After</code>. Also fixed a credential leak found during the work: chaining <code>httpx.HTTPStatusError</code> put the full request URL — query string included — into every traceback, exposing SAS tokens and signed-URL signatures.</td>
+</tr>
+<tr>
+<td>Structured logging</td>
+<td>Operability</td>
+<td>all</td>
+<td>Outside one warning the SDK was silent, so retries, cache hits and registration outcomes were invisible in production. Everything now logs under one <code>agentskills.*</code> namespace via <code>get_logger(__name__)</code>, which rewrites the distribution prefix so <code>agentskills_http.static</code> becomes <code>agentskills.http.static</code> — plain <code>logging.getLogger(__name__)</code> produced names that did <em>not</em> descend from a common root, so a host could not raise the level on the library with one call. Only a <code>NullHandler</code> is attached. There is deliberately no <code>ERROR</code> level: failures raise, and logging them too would report the same event twice. <code>redact_url()</code> is the shared sanitiser for anything URL-shaped, lifted out of the HTTP provider's private <code>_describe()</code> so errors and logs cannot drift apart; headers are never logged at all, on the grounds that a redactor you must remember to call is a trap.</td>
+</tr>
+<tr>
+<td>Coverage gate in CI</td>
+<td>Project health</td>
+<td>repo</td>
+<td><code>pytest-cov</code> was not even a dev dependency. Coverage is now measured by <em>import name</em> rather than by path — measuring <code>packages/</code> counted the test files, which are trivially covered by being run, and inflated the figure from a real 96% to a meaningless 99%. Floors are enforced twice: an aggregate <code>fail_under</code> that <code>coverage report</code> applies on its own, and a per-package floor in <code>scripts/dev.py</code>, because an aggregate alone lets one package rot behind the others. Demonstrated: five uncovered statements in core drop that package from 99% to 97% while the aggregate never moves. Both sets start at the measured value and ratchet. The badge states the enforced floor (<code>coverage ≥96%</code>) rather than a per-commit number, since a live figure needs a third-party account the project does not have.</td>
+</tr>
+<tr>
+<td>Automated PyPI publish</td>
+<td>Project health</td>
+<td>repo</td>
+<td>Releasing was six <code>poetry publish</code> runs from a workstation holding a long-lived PyPI token. Now tag-triggered, with <strong>Trusted Publishing</strong> (OIDC) so no token exists in the repo, in Actions secrets, or on a laptop, and PEP 740 provenance attestations on every artifact. Only a bare <code>vX.Y.Z</code> tag reaches PyPI; every other tag shape falls through to TestPyPI, so a malformed tag cannot burn a real version. A guard refuses to build unless all six packages agree on the version <em>and</em> match the tag. One environment approval gates the whole release rather than one per package, and re-running a half-finished release is safe. The GitHub Release moved to the end of the same workflow, because it was previously created on tag push regardless of whether publishing succeeded.</td>
+</tr>
+<tr>
+<td>Agent Framework 1.x API rename</td>
+<td>Correctness</td>
+<td><code>agentskills-agentframework</code>, <code>agentskills-mcp-server</code></td>
+<td><code>agent-framework-core</code> 1.12.1 renamed <code>BaseContextProvider</code> to <code>ContextProvider</code>; our constraint <code>&gt;=1.0.0rc3,&lt;2.0</code> admitted it, so a fresh install raised <code>ImportError</code> on import. Masked locally because <code>poetry.lock</code> pinned 1.0.0rc3. Floor raised to <code>&gt;=1.0</code>.</td>
+</tr>
+<tr>
+<td>Python 3.14 support</td>
+<td>Project health</td>
+<td>all</td>
+<td>Every package capped <code>python</code> at <code>&lt;3.14</code>, so installs failed on current stable Python. Ceiling raised to <code>&lt;4.0</code>; no dependency justified the old cap.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="shipped-v04-developer-experience">Shipped — v0.4 "Developer Experience"<a class="headerlink" href="#shipped-v04-developer-experience" title="Permanent link">&para;</a></h2>
+<p>Released 2026-08-17. Made authoring and validating skills a first-class workflow, and third-party
+providers provably correct. Specifications and implementation notes:
+<a href="../issues/v0.4/">docs/issues/v0.4.md</a>.</p>
+<p>Three new distributions ship with this milestone — <code>agentskills-tools</code>, <code>agentskills-testing</code> and
+<code>agentskills-adapters</code> — bringing the lockstep-versioned set to nine. Nothing is breaking for
+existing users.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Theme</th>
+<th>Package(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agentskills</code> CLI</td>
+<td>DX</td>
+<td>new <code>agentskills-tools</code></td>
+<td><code>init</code> (scaffold a skill), <code>validate &lt;path&gt;</code> (spec check, exit non-zero on failure), <code>lint</code> (style/token-budget warnings), <code>inspect</code> (render catalog/metadata), <code>serve</code> (run the MCP server without writing config by hand). Separate package and stdlib <code>argparse</code> so the validation Action inherits no dependencies; <code>serve</code> is an optional extra.</td>
+</tr>
+<tr>
+<td>Skill validation GitHub Action</td>
+<td>DX</td>
+<td>repo</td>
+<td>Composite action at <code>actions/validate</code> wrapping <code>agentskills validate</code> and <code>lint</code>. Findings land on the pull request diff via the CLI's own <code>--format github</code>, so the annotation logic is unit-tested in the package rather than in a script beside the workflow. Highest-leverage adoption lever — it puts the SDK in other people's CI.</td>
+</tr>
+<tr>
+<td>Provider conformance test kit</td>
+<td>Correctness</td>
+<td>new <code>agentskills-testing</code></td>
+<td><code>ProviderConformanceSuite</code> — subclass it, supply a <code>provider</code> fixture, and pytest runs the whole contract against your implementation: error types, traversal rejection, <code>bytes</code> not <code>str</code>, metadata that is neither shared nor carrying the body, and a <code>list_resources()</code> that agrees with the flag callers branch on. Size limits sit in an opt-in <code>ContentLimitConformanceSuite</code>, since an in-memory provider has no external source to bound. Its first run found that <code>agentskills-http</code> raised a plain <code>ValueError</code> for traversal where <code>agentskills-fs</code> raised <code>SkillNotFoundError</code> — an ABC cannot catch that, which is the argument for the kit.</td>
+</tr>
+<tr>
+<td>Test doubles</td>
+<td>DX</td>
+<td><code>agentskills-testing</code></td>
+<td><code>InMemorySkillProvider</code> — a real provider backed by a dict that passes the suite above — plus <code>build_skill()</code> and pytest fixtures registered via an entry point. Replaced the four duplicated <code>_mock_provider</code> helpers in this repo, which had been raising <code>KeyError</code> where a real provider raises <code>ResourceNotFoundError</code>.</td>
+</tr>
+<tr>
+<td>Registry-level discovery</td>
+<td>DX</td>
+<td><code>agentskills-core</code> + providers</td>
+<td>Optional <code>discover()</code> on providers, following ADR 0002, plus <code>registry.register_all(provider)</code> — atomic, and reporting every validation failure at once rather than the first. The filesystem provider enumerates subdirectories holding a <code>SKILL.md</code>; the HTTP provider reads a root <code>index.json</code>, the same filename and shape as the per-skill resource manifest one level up. Registering N skills no longer requires knowing all N IDs up front.</td>
+</tr>
+<tr>
+<td>Catalog filtering &amp; budget</td>
+<td>DX / Perf</td>
+<td><code>agentskills-core</code></td>
+<td><code>get_skills_catalog(tags=…, include=…, exclude=…, max_chars=…)</code>. Tags come from the spec's free-form <code>metadata</code> mapping rather than a new top-level field, so nothing has to be defended upstream. The ID filters run before any metadata is fetched, so narrowing a large registry costs proportionally fewer provider round-trips. <code>max_chars</code> drops whole entries from the end and says so — <code>truncated</code>/<code>shown</code>/<code>total</code> on the XML root, a closing note in Markdown — because a catalog that shrinks silently makes agent behaviour non-reproducible.</td>
+</tr>
+<tr>
+<td>Skill evaluation harness</td>
+<td>Agent effectiveness</td>
+<td><code>agentskills-tools</code></td>
+<td><code>agentskills eval</code> runs each case in a skill's <code>evals/</code> folder twice — once with the skill's body in the system prompt, once without — and reports the delta, because absolute pass rates mostly measure the model while the difference isolates the skill. Assertions are deterministic (<code>contains</code>, <code>not_contains</code>, <code>regex</code>) or judged by a declared model; <code>repeat</code>/<code>threshold</code> make sampling noise visible instead of letting one lucky sample pass as a measurement. Model access is a one-method protocol resolved from a dotted path, so no provider SDK is a dependency anywhere. Completions cache by model, prompts, and repeat index, so tightening an expectation re-grades answers already bought. Landed in the CLI rather than <code>agentskills-testing</code>: the requirement is that it <em>never</em> runs in the default <code>pytest</code> run, which makes it a command, not a test kit.</td>
+</tr>
+<tr>
+<td>Foreign format adapters</td>
+<td>Interoperability</td>
+<td>new <code>agentskills-adapters</code></td>
+<td><code>agentskills-adapters</code> imports <code>AGENTS.md</code>, <code>.github/copilot-instructions.md</code>, Cursor <code>.mdc</code> rules, and Claude skill folders as ordinary <code>Skill</code> objects. Missing descriptions become explicit synthesized catalog text, Cursor <code>globs</code> stay in native metadata, and <code>agentskills init --from</code> writes a validated editable <code>SKILL.md</code>. It is an import layer, not a spec fork: a migration path for existing instructions rather than a second runtime model.</td>
+</tr>
+<tr>
+<td>Token cost reporting</td>
+<td>DX</td>
+<td><code>agentskills-tools</code></td>
+<td><code>agentskills inspect --cost</code> splits a skill into what is charged on every turn (the catalog entry), what is charged per load (the body, broken down by section), and what is charged only if the agent reads it (each resource). Authors reliably budget the body while ignoring a description that costs a hundred tokens a turn forever, so <code>--budget</code> and <code>--turn-budget</code> gate the two halves separately — one threshold would be dominated by the body and hide exactly the number the feature exists to surface. Sections do not nest, so the parts sum to the whole, which is the only property that makes a breakdown checkable. <code>tiktoken</code> is used when importable and a character heuristic otherwise, but the counter is named in every report and <code>--tokenizer tiktoken</code> refuses to fall back: a budget gate whose arithmetic depends on what happens to be installed is worse than no gate. It stays out of the dependency list — a compiled wheel that downloads its vocabulary on first use is a poor trade for a tool whose main job is reading YAML in CI.</td>
+</tr>
+<tr>
+<td>Documentation site</td>
+<td>Project health</td>
+<td>repo</td>
+<td>Added a MkDocs Material site with a docs-first navigation (getting started, concepts, one page per package, roadmap and ADRs) and API pages generated via <code>mkdocstrings</code> from existing docstrings. New docs workflow builds the site in CI (<code>mkdocs build --strict</code>) and deploys versioned docs on published releases via <code>mike</code>, with <code>latest</code> as the default alias. Root README was reduced to overview + quick start + links.</td>
+</tr>
+<tr>
+<td>Architecture decision records</td>
+<td>Project health</td>
+<td><code>docs/adr/</code></td>
+<td>Added an ADR index and template plus backfilled records for six cross-package decisions: fully async provider interface, multi-package lockstep versioning, provider caching/invalidation, exception taxonomy (<code>not found</code> vs <code>unavailable</code>), binary resource envelope, and logging namespace/severity conventions. Each ADR links back to the issue section where the decision was made so future reversals are explicit rather than accidental.</td>
+</tr>
+<tr>
+<td>Simplify the publish workflow</td>
+<td>Project health</td>
+<td>repo</td>
+<td>Dropped the TestPyPI dry-run path. Pending trusted publishers must be uniquely identifiable by their claims, and all seven distributions share owner, repo, workflow and environment — so only one pending publisher can exist at a time, and bootstrapping them on a fresh index takes one sequential publish round each. The result was a dry run configured for one package out of seven, which failed in a way that looked like a real problem. An unrecognised tag now fails the run instead of falling through to another index, <code>workflow_dispatch</code> builds without uploading, and pre-release tags go to PyPI, which handles them natively.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="now-v05-agent-effectiveness">Now — v0.5 "Agent Effectiveness"<a class="headerlink" href="#now-v05-agent-effectiveness" title="Permanent link">&para;</a></h2>
+<p>Everything before this makes skills safe and cheap to ship. This milestone is about making them
+<strong>worth</strong> shipping — the point where the SDK stops being a loader and starts changing how well the
+agent performs.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Theme</th>
+<th>Package(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Semantic skill selection</td>
+<td>Agent effectiveness</td>
+<td>new <code>agentskills-retrieval</code></td>
+<td>The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one.</td>
+</tr>
+<tr>
+<td>Section-level disclosure</td>
+<td>Agent effectiveness</td>
+<td><code>agentskills-core</code> + integrations</td>
+<td><code>get_skill_body()</code> is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus <code>get_skill_section(skill_id, heading)</code>. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills.</td>
+</tr>
+<tr>
+<td>Stateful / session-aware disclosure</td>
+<td>Agent effectiveness</td>
+<td><code>agentskills-agentframework</code></td>
+<td>Use the context provider's session <code>state</code> and <code>after_run</code> hook to track which skills the agent already loaded, prune the advertised catalog to the active domain, and inject resource-level tools only for loaded skills. Turns progressive disclosure into a framework-level behaviour rather than a prompt instruction.</td>
+</tr>
+<tr>
+<td>Vision-native assets</td>
+<td>Agent effectiveness</td>
+<td>integrations</td>
+<td>Once binary resources are safe (v0.3), stop stringifying them: hand images to multimodal models as native content. A skill can then carry an architecture diagram or a UI screenshot that the model actually sees.</td>
+</tr>
+<tr>
+<td>Selection metadata</td>
+<td>Correctness</td>
+<td><code>agentskills-core</code></td>
+<td>Optional <code>when_to_use</code> / <code>when_not_to_use</code> frontmatter. False activation is as damaging as non-activation, and a description alone carries no negative signal. Improves both LLM selection and retrieval ranking. Optional and backward-compatible per principle 1; push upstream.</td>
+</tr>
+<tr>
+<td>Single-skill fast path</td>
+<td>Performance</td>
+<td>integrations</td>
+<td>When exactly one skill is registered or selected, inject the body directly instead of advertising a tool and waiting for the agent to call it. Removes a full round-trip from the common single-purpose-agent case.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="next-v06-trust-operability">Next — v0.6 "Trust &amp; Operability"<a class="headerlink" href="#next-v06-trust-operability" title="Permanent link">&para;</a></h2>
+<p>The enterprise story. This is the work that makes the SDK viable as the substrate for
+<a href="https://github.com/pratikxpanda/agentskills-hub">Agent Skills Hub</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Theme</th>
+<th>Package(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skill integrity &amp; provenance</td>
+<td>Trust</td>
+<td><code>agentskills-core</code></td>
+<td>Optional manifest with per-file SHA-256, verified on load. Then detached signature verification (Sigstore) and an "unverified skill" policy switch. Skills are code — this is the missing supply-chain control.</td>
+</tr>
+<tr>
+<td>Content policy pipeline</td>
+<td>Trust</td>
+<td><code>agentskills-core</code></td>
+<td>Pluggable <code>SkillPolicy</code> hooks that run before content enters agent context: reject, redact, or annotate. Ships with a heuristic prompt-injection scanner and a max-token guard; enterprises plug in their own.</td>
+</tr>
+<tr>
+<td><code>allowed-tools</code> enforcement</td>
+<td>Trust</td>
+<td>integrations</td>
+<td>The field is validated but never enforced. Integrations should be able to constrain the agent's tool surface while a skill is active.</td>
+</tr>
+<tr>
+<td>SSRF hardening</td>
+<td>Trust</td>
+<td><code>agentskills-http</code></td>
+<td>Host allow/deny lists, private/link-local IP range blocking by default, DNS-rebinding-aware connection checks. <code>require_tls</code> alone is not an SSRF control.</td>
+</tr>
+<tr>
+<td>Secret redaction</td>
+<td>Trust</td>
+<td><code>agentskills-core</code>, <code>agentskills-http</code></td>
+<td>Central redaction helper applied to exception messages and log records so <code>Authorization</code> headers and SAS tokens never surface in tracebacks.</td>
+</tr>
+<tr>
+<td>OpenTelemetry instrumentation</td>
+<td>Operability</td>
+<td><code>agentskills-core</code> + providers</td>
+<td>Spans for fetch/parse/validate, metrics for fetch latency, cache hit ratio, and payload size. Optional dependency, no-op when OTel is absent.</td>
+</tr>
+<tr>
+<td>Skill usage telemetry hooks</td>
+<td>Operability</td>
+<td><code>agentskills-core</code></td>
+<td>Callback protocol emitting "skill X disclosed at level Y". Answers the question every platform team asks: <em>which skills are actually being used?</em> Feeds Hub analytics directly.</td>
+</tr>
+<tr>
+<td>Startup health check</td>
+<td>Resilience</td>
+<td><code>agentskills-core</code></td>
+<td><code>registry.health()</code> verifying every provider is reachable and every skill parses, at boot. A misconfigured provider should fail deployment, not fail silently mid-conversation.</td>
+</tr>
+<tr>
+<td>Serve-stale on provider failure</td>
+<td>Resilience</td>
+<td>providers</td>
+<td>If a refresh fails but cached content exists, serve the stale copy and flag it rather than failing the agent turn. A registry outage should degrade the agent, not break it. Builds on v0.3 caching and error classification.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="later-v07-ecosystem">Later — v0.7 "Ecosystem"<a class="headerlink" href="#later-v07-ecosystem" title="Permanent link">&para;</a></h2>
+<p>Breadth, once the core contracts are stable enough that each new package is cheap to add.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Theme</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skills as MCP prompts</td>
+<td>Interoperability</td>
+<td>The MCP server exposes skills as tools only. Many clients surface <em>prompts</em> as slash commands, so the same registry becomes user-invocable in Claude Desktop, VS Code, and others for very little work.</td>
+</tr>
+<tr>
+<td>Git provider</td>
+<td>Ecosystem</td>
+<td>Most skills live in Git repos. Clone/fetch with ref or commit pinning, sparse checkout, local cache. Likely the single most requested provider.</td>
+</tr>
+<tr>
+<td>Object storage provider</td>
+<td>Ecosystem</td>
+<td>S3 / Azure Blob / GCS via a common abstraction, with native credential chains instead of hand-rolled headers.</td>
+</tr>
+<tr>
+<td>OCI artifact provider</td>
+<td>Ecosystem</td>
+<td>Skills as OCI artifacts in any container registry — inherits existing signing, replication, and RBAC infrastructure. Pairs naturally with the integrity work in v0.5.</td>
+</tr>
+<tr>
+<td>Database provider</td>
+<td>Ecosystem</td>
+<td>Reference implementation over SQL for teams storing skills in an existing system of record.</td>
+</tr>
+<tr>
+<td>OpenAI Agents SDK integration</td>
+<td>Ecosystem</td>
+<td>Notable gap in the current integration matrix.</td>
+</tr>
+<tr>
+<td>Additional framework adapters</td>
+<td>Ecosystem</td>
+<td>Pydantic AI, Semantic Kernel, LlamaIndex, CrewAI. Prioritize by inbound demand rather than building all of them speculatively.</td>
+</tr>
+<tr>
+<td>Node/TypeScript port</td>
+<td>Ecosystem</td>
+<td>Large commitment. Only if there is clear pull — the MCP server already serves TS agents today, which may be sufficient.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="v10-stability">v1.0 — Stability<a class="headerlink" href="#v10-stability" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API freeze</td>
+<td>Public surface documented and frozen; anything not documented is explicitly private.</td>
+</tr>
+<tr>
+<td>Compatibility policy</td>
+<td>SemVer commitments, a written deprecation policy with a minimum support window, and coordinated cross-package version guarantees.</td>
+</tr>
+<tr>
+<td>Release automation end-to-end</td>
+<td>Changelog generation, signed artifacts with build provenance/attestations, automated publish on tag.</td>
+</tr>
+<tr>
+<td>Hub interoperability</td>
+<td>The SDK contracts the Hub depends on (versioning, integrity, telemetry, MCP gateway composition) are stable and documented.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="explicit-non-goals">Explicit Non-Goals<a class="headerlink" href="#explicit-non-goals" title="Permanent link">&para;</a></h2>
+<p>Stating these prevents recurring proposals and scope creep.</p>
+<ul>
+<li><strong>Executing skill scripts.</strong> The SDK retrieves scripts; it does not run them. Sandboxed
+  execution is the host application's responsibility. We will document the hazard, not own it.</li>
+<li><strong>Authoring or hosting UI.</strong> That is <a href="https://github.com/pratikxpanda/agentskills-hub">Agent Skills Hub</a>'s job.</li>
+<li><strong>Authentication and authorization.</strong> Providers accept caller-supplied credentials. The SDK
+  is not an identity or policy system.</li>
+<li><strong>Being an agent framework.</strong> We integrate with frameworks; we do not compete with them.</li>
+<li><strong>Forking the skill format.</strong> Divergence from the open spec is a last resort.</li>
+</ul>
+<hr />
+<h2 id="how-we-plan-work">How We Plan Work<a class="headerlink" href="#how-we-plan-work" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>This roadmap</strong></td>
+<td>Direction and sequencing. Reviewed at the start of each minor version. No dates.</td>
+</tr>
+<tr>
+<td><strong>GitHub Milestones</strong></td>
+<td>One per minor version (<code>v0.3</code>, <code>v0.4</code>, …). An item is committed when it has an issue in a milestone.</td>
+</tr>
+<tr>
+<td><strong>GitHub Issues</strong></td>
+<td>The single unit of work. Status, assignment, discussion, and linked PRs. Labelled by <code>theme:*</code>, <code>package:*</code>, <code>type:*</code>, and <code>good-first-issue</code>.</td>
+</tr>
+<tr>
+<td><strong><a href="./issues/">docs/issues/</a></strong></td>
+<td>The durable specification behind each roadmap item, one file per milestone. Filed issues link back here instead of duplicating the text; shipped items stay for the record.</td>
+</tr>
+<tr>
+<td><strong>GitHub Project board</strong></td>
+<td>Now / Next / Later / Done view across issues, linked from the README.</td>
+</tr>
+<tr>
+<td><strong><a href="./adr/">docs/adr/</a></strong></td>
+<td>Short, immutable records of decisions already made and their trade-offs. Written when a decision is hard to reverse or likely to be questioned later.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Contributing to the roadmap:</strong> open a GitHub Discussion for an idea, or an issue for
+something concrete. Changes to a public contract should be agreed on the issue before a PR
+is opened. Items marked <code>good-first-issue</code> are the recommended entry point.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
