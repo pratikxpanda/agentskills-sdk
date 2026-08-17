@@ -12,7 +12,7 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 |---|---|---|
 | [v0.3 — Foundations](./v0.3.md) | 12 | Specified |
 | [v0.4 — Developer Experience](./v0.4.md) | 12 | Specified |
-| [v0.5 — Agent Effectiveness](./v0.5.md) | 1 of 6 | Partly specified — the remaining items need design work first |
+| [v0.5 — Agent Effectiveness](./v0.5.md) | 6 | Specified |
 | v0.6 — Trust & Operability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 | v0.7 — Ecosystem | — | Not specified; see the [roadmap](../ROADMAP.md) |
 | v1.0 — Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
@@ -46,6 +46,6 @@ than being quietly deleted.
 | Prefix | Values |
 |---|---|
 | `theme:` | `correctness`, `performance`, `resilience`, `agent-effectiveness`, `interoperability`, `trust`, `operability`, `dx`, `ecosystem`, `project-health` |
-| `package:` | `core`, `fs`, `http`, `langchain`, `agentframework`, `mcp-server`, `cli`, `testing`, `retrieval`, `adapters` |
+| `package:` | `core`, `fs`, `http`, `langchain`, `agentframework`, `mcp-server`, `tools`, `testing`, `retrieval`, `adapters` |
 | `type:` | `bug`, `feature`, `docs`, `chore` |
 | flat | `good-first-issue`, `help-wanted`, `breaking-change` |
