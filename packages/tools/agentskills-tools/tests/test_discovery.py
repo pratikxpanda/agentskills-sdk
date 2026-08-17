@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from agentskills_cli.discovery import CliError, discover, relative_to_cwd
+from agentskills_tools.discovery import CliError, discover, relative_to_cwd
 
 
 class TestDiscover:

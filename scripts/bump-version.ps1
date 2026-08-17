@@ -45,7 +45,7 @@ $pyprojectFiles = @(
     "packages/integrations/agentskills-langchain/pyproject.toml",
     "packages/integrations/agentskills-agentframework/pyproject.toml",
     "packages/integrations/agentskills-mcp-server/pyproject.toml",
-    "packages/cli/agentskills-cli/pyproject.toml",
+    "packages/tools/agentskills-tools/pyproject.toml",
     "packages/testing/agentskills-testing/pyproject.toml"
 )
 

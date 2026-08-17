@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from agentskills_cli.discovery import CliError
-from agentskills_cli.scaffold import RESOURCE_DIRS, _TemplateProvider, init_skill, render_skill_md
 from agentskills_core import ResourceNotFoundError
+from agentskills_tools.discovery import CliError
+from agentskills_tools.scaffold import RESOURCE_DIRS, _TemplateProvider, init_skill, render_skill_md
 
 
 class TestInitSkill:
     async def test_creates_a_skill_that_validates(self, tmp_path):
-        from agentskills_cli.discovery import discover
-        from agentskills_cli.validate import validate_locations
+        from agentskills_tools.discovery import discover
+        from agentskills_tools.validate import validate_locations
 
         target = await init_skill("incident-response", tmp_path)
 

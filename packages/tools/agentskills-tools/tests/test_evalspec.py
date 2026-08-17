@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from agentskills_cli.evalspec import (
+from agentskills_tools.evalspec import (
     Assertion,
     check_skill_evals,
     find_suites,
@@ -118,7 +118,7 @@ class TestLoadSuite:
         def explode(_: str) -> None:
             raise yaml.YAMLError("nothing useful")
 
-        monkeypatch.setattr("agentskills_cli.evalspec.yaml.safe_load", explode)
+        monkeypatch.setattr("agentskills_tools.evalspec.yaml.safe_load", explode)
         _, [finding] = _load(write_eval(MINIMAL))
 
         assert finding.code == "eval-invalid-yaml"

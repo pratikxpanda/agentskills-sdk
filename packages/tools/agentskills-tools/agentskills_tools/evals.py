@@ -29,9 +29,9 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Protocol, TextIO, runtime_checkable
 
-from agentskills_cli.discovery import CliError
-from agentskills_cli.evalspec import Assertion, EvalCase, EvalSuite
 from agentskills_core import get_logger
+from agentskills_tools.discovery import CliError
+from agentskills_tools.evalspec import Assertion, EvalCase, EvalSuite
 
 _logger = get_logger(__name__)
 

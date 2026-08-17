@@ -1,11 +1,11 @@
-# CLI Tooling (`agentskills-cli`)
+# CLI Tooling (`agentskills-tools`)
 
 Scaffold, validate, lint, inspect, evaluate, and serve skills.
 
 ```bash
-pip install agentskills-cli
+pip install agentskills-tools
 ```
 
-::: agentskills_cli
+::: agentskills_tools
     options:
       show_root_heading: true

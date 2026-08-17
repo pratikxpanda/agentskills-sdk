@@ -6,8 +6,8 @@ import io
 import json
 from pathlib import Path
 
-from agentskills_cli.findings import ERROR, WARNING, Finding, SkillReport
-from agentskills_cli.render import count, exit_code, render_github, render_json, render_text
+from agentskills_tools.findings import ERROR, WARNING, Finding, SkillReport
+from agentskills_tools.render import count, exit_code, render_github, render_json, render_text
 
 
 def _report(*findings: Finding) -> SkillReport:

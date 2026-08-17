@@ -38,7 +38,7 @@ are fetched only on demand through tools.
 ## Author and validate skills
 
 ```bash
-pip install agentskills-cli
+pip install agentskills-tools
 agentskills init incident-response --path ./skills
 agentskills validate ./skills
 agentskills lint ./skills

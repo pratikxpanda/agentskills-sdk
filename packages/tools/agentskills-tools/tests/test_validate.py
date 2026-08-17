@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import yaml
 
-from agentskills_cli.discovery import SkillLocation
-from agentskills_cli.validate import (
+from agentskills_tools.discovery import SkillLocation
+from agentskills_tools.validate import (
     _yaml_detail,
     check_frontmatter,
     validate_location,

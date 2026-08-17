@@ -16,7 +16,7 @@ nav:
       - LangChain integration: packages/langchain.md
       - Agent Framework integration: packages/agentframework.md
       - MCP server integration: packages/mcp-server.md
-      - CLI tooling: packages/cli.md
+      - CLI tooling: packages/tools.md
       - Testing toolkit: packages/testing.md
   - Roadmap: ROADMAP.md
   - ADRs: adr/README.md

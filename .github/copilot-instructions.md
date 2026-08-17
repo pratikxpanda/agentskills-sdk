@@ -11,7 +11,7 @@ Poetry monorepo. Nine packages, versioned and released together.
 | `packages/integrations/agentskills-langchain` | LangChain tools |
 | `packages/integrations/agentskills-agentframework` | Microsoft Agent Framework context provider |
 | `packages/integrations/agentskills-mcp-server` | MCP server + Agent Framework MCP bridge |
-| `packages/cli/agentskills-cli` | `agentskills` command: init, validate, lint, inspect, serve |
+| `packages/tools/agentskills-tools` | `agentskills` command: init, validate, lint, inspect, serve |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, pytest fixtures |
 
 Planning lives in `docs/ROADMAP.md`, per-milestone specs in `docs/issues/`, settled
@@ -87,7 +87,7 @@ that task fails for reasons unrelated to your change.
   `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
   `scripts/check_declared_dependencies.py` has its own list too, so nine.
 - **A package can import what it never declared and nothing will notice**, because every
-  package is installed into one shared virtualenv here. `agentskills-cli` imported `yaml`
+  package is installed into one shared virtualenv here. `agentskills-tools` imported `yaml`
   without declaring `pyyaml` for a whole milestone, riding on the copy `agentskills-core`
   pulled in. `scripts/check_declared_dependencies.py` runs in the lint job now; an import
   meant to stay optional belongs inside a function or behind `except ImportError`.

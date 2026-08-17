@@ -7,7 +7,7 @@ Run it like the other release checks::
 A missing declaration is invisible in this repo, because every package is
 installed into one shared virtualenv alongside its siblings. It only appears
 for somebody who installed a single package from PyPI, and it appears as an
-ImportError on their first command. ``agentskills-cli`` shipped that way for a
+ImportError on their first command. ``agentskills-tools`` shipped that way for a
 whole milestone: it imports ``yaml`` and never declared ``pyyaml``, riding on
 the copy that ``agentskills-core`` pulled in.
 
@@ -36,7 +36,7 @@ PACKAGES = [
     "packages/integrations/agentskills-langchain",
     "packages/integrations/agentskills-agentframework",
     "packages/integrations/agentskills-mcp-server",
-    "packages/cli/agentskills-cli",
+    "packages/tools/agentskills-tools",
     "packages/testing/agentskills-testing",
 ]
 

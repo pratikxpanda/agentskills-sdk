@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentskills_cli.discovery import SkillLocation
-from agentskills_cli.findings import WARNING, Finding, SkillReport
-from agentskills_cli.validate import check_frontmatter, read_skill_md, unreadable
 from agentskills_core import RESOURCE_KINDS, Skill, get_logger
 from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_tools.discovery import SkillLocation
+from agentskills_tools.findings import WARNING, Finding, SkillReport
+from agentskills_tools.validate import check_frontmatter, read_skill_md, unreadable
 
 # Every catalog entry is injected into the system prompt on every turn,
 # so a description is charged for far more often than a body is.

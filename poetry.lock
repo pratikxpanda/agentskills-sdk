@@ -58,7 +58,7 @@ type = "directory"
 url = "packages/adapters/agentskills-adapters"
 
 [[package]]
-name = "agentskills-cli"
+name = "agentskills-tools"
 version = "0.3.0"
 description = "Command line tools for authoring and validating Agent Skills (https://agentskills.io)"
 optional = false
@@ -78,7 +78,7 @@ serve = ["agentskills-mcp-server (>=0.3.0,<1.0)"]
 
 [package.source]
 type = "directory"
-url = "packages/cli/agentskills-cli"
+url = "packages/tools/agentskills-tools"
 
 [[package]]
 name = "agentskills-core"
@@ -2746,4 +2746,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "6a9087ecc8371cdb53abcaa9294d8ab1bf546afca70197cfb679422fe9a4dc6c"
+content-hash = "e544b363d79b0a912222248279062ee830b588a24df0ffcf3cd335c091dd74eb"

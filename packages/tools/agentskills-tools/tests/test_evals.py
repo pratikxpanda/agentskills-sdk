@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from agentskills_cli.discovery import CliError
-from agentskills_cli.evals import (
+from agentskills_tools.discovery import CliError
+from agentskills_tools.evals import (
     BASELINE_SYSTEM,
     AssertionResult,
     AttemptResult,
@@ -27,7 +27,7 @@ from agentskills_cli.evals import (
     results_payload,
     run_suites,
 )
-from agentskills_cli.evalspec import Assertion, EvalCase, EvalSuite
+from agentskills_tools.evalspec import Assertion, EvalCase, EvalSuite
 
 
 class ScriptedModel:
