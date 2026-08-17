@@ -102,14 +102,18 @@ Everything before this makes skills safe and cheap to ship. This milestone is ab
 **worth** shipping — the point where the SDK stops being a loader and starts changing how well the
 agent performs.
 
+The first two items change contracts the rest build on — the frontmatter schema and the shape of a
+body fetch — so the table is ordered by dependency rather than by value. Specifications:
+[docs/issues/v0.5.md](./issues/v0.5.md).
+
 | Item | Theme | Package(s) | Notes |
 |---|---|---|---|
-| Semantic skill selection | Agent effectiveness | new `agentskills-retrieval` | The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one. |
-| Section-level disclosure | Agent effectiveness | `agentskills-core` + integrations | `get_skill_body()` is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus `get_skill_section(skill_id, heading)`. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills. |
-| Stateful / session-aware disclosure | Agent effectiveness | `agentskills-agentframework` | Use the context provider's session `state` and `after_run` hook to track which skills the agent already loaded, prune the advertised catalog to the active domain, and inject resource-level tools only for loaded skills. Turns progressive disclosure into a framework-level behaviour rather than a prompt instruction. |
-| Vision-native assets | Agent effectiveness | integrations | Once binary resources are safe (v0.3), stop stringifying them: hand images to multimodal models as native content. A skill can then carry an architecture diagram or a UI screenshot that the model actually sees. |
 | Selection metadata | Correctness | `agentskills-core` | Optional `when_to_use` / `when_not_to_use` frontmatter. False activation is as damaging as non-activation, and a description alone carries no negative signal. Improves both LLM selection and retrieval ranking. Optional and backward-compatible per principle 1; push upstream. |
+| Section-level disclosure | Agent effectiveness | `agentskills-core` + integrations | `get_skill_body()` is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus `get_skill_section(skill_id, heading)`. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills. |
+| Semantic skill selection | Agent effectiveness | new `agentskills-retrieval` | The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one. |
+| Stateful / session-aware disclosure | Agent effectiveness | `agentskills-agentframework` | Use the context provider's session `state` and `after_run` hook to track which skills the agent already loaded, prune the advertised catalog to the active domain, and inject resource-level tools only for loaded skills. Turns progressive disclosure into a framework-level behaviour rather than a prompt instruction. |
 | Single-skill fast path | Performance | integrations | When exactly one skill is registered or selected, inject the body directly instead of advertising a tool and waiting for the agent to call it. Removes a full round-trip from the common single-purpose-agent case. |
+| Vision-native assets | Agent effectiveness | integrations | Once binary resources are safe (v0.3), stop stringifying them: hand images to multimodal models as native content. A skill can then carry an architecture diagram or a UI screenshot that the model actually sees. |
 
 ---
 
