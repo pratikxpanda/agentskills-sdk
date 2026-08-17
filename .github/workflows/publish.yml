@@ -6,7 +6,9 @@ name: Publish
 on:
   push:
     tags:
-      - "v*"
+      # Not `v*`: `actions/validate` is advertised as `@v1`, and moving that tag
+      # must not look like a release.
+      - "v*.*.*"
   workflow_dispatch: # build-only dry run, publishes nothing
 
 permissions: {}

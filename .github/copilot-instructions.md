@@ -118,6 +118,12 @@ that task fails for reasons unrelated to your change.
   `github/codeql-action` uses, need the `^{}` or you compare against the tag object.
 - **A 200 response does not mean a badge rendered.** shields.io returns 200 with the words
   "rate limited by upstream service" drawn into the SVG. Inspect the rendered text.
+- **A `GITHUB_TOKEN`-created event never triggers another workflow.** `publish.yml` creates
+  the GitHub Release, so a `release:` trigger anywhere else is dead code — the versioned
+  docs deploy sat unreachable through two releases. `docs.yml` chains off `workflow_run` of
+  `Publish` instead. The exceptions are `workflow_dispatch` and `repository_dispatch`.
+- **`publish.yml` triggers on `v*.*.*`, not `v*`.** `actions/validate` is advertised as
+  `@v1`, and moving that tag used to start a publish run that failed the tag guard.
 - **An optional provider capability is a flag plus a raising default**, never an empty
   return. See [ADR 0002](../docs/adr/0002-optional-provider-capabilities.md):
   `supports_resource_listing` / `supports_discovery` are plain attributes, not `ClassVar`,
