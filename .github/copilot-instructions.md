@@ -116,6 +116,10 @@ that task fails for reasons unrelated to your change.
   appeared twice. The SHA is right and the comment is not, so read it as decoration and
   confirm with `git ls-remote --tags <repo> 'refs/tags/vX.Y.Z^{}'` — annotated tags, which
   `github/codeql-action` uses, need the `^{}` or you compare against the tag object.
+- **`codeql-action/init` and `/analyze` must be pinned to the same version.** A mismatch fails
+  the scan with "Loaded a configuration file for version X, but running version Y". Dependabot
+  raises one PR per sub-action, so merging either alone breaks CodeQL until the other lands;
+  `dependabot.yml` now groups them under `codeql-action` to stop that.
 - **A 200 response does not mean a badge rendered.** shields.io returns 200 with the words
   "rate limited by upstream service" drawn into the SVG. Inspect the rendered text.
 - **A `GITHUB_TOKEN`-created event never triggers another workflow.** `publish.yml` creates

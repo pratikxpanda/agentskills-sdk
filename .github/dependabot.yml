@@ -20,3 +20,9 @@ updates:
       - ci
     commit-message:
       prefix: "ci:"
+    groups:
+      # codeql-action/init and /analyze are one product; bumping them in separate
+      # PRs breaks the scan for however long the second one sits unmerged.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
