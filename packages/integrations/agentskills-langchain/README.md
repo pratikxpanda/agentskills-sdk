@@ -124,6 +124,35 @@ Base64 costs roughly 1.37 characters per byte, so binaries above 64 KiB are desc
 tools = get_tools(registry, max_inline_binary_bytes=256 * 1024)
 ```
 
+## Images
+
+A base64 envelope is the right answer for an opaque binary and the wrong one for
+a diagram: the model gets a wall of characters where a picture was. Pass
+`vision=True` and bundled images come back as native LangChain image content
+blocks instead:
+
+```python
+tools = get_tools(registry, vision=True)
+```
+
+```python
+[{"type": "image", "source_type": "base64", "mime_type": "image/png", "data": "iVBORw0..."}]
+```
+
+It is off by default because handing an image block to a text-only model is an
+API error from the provider, not a degraded answer, and there is no reliable way
+to ask a model whether it can see. You know which model your tools are bound to;
+the library does not.
+
+PNG, JPEG, GIF and WebP qualify, and only when the leading bytes say so - a name
+is a claim, bytes are evidence. PDF is excluded because support varies by model,
+and SVG because it is already text the model can read. Everything else keeps the
+JSON envelope exactly as above, including images past `max_inline_image_bytes`
+(5 MiB by default, against 64 KiB for opaque binaries - base64 in a text field is
+billed per byte, while a native image is billed by tile count).
+
+See [ADR 0009](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0009-native-image-content.md).
+
 ## License
 
 MIT

@@ -63,3 +63,6 @@ An incident should be declared when:
 ## Available Assets
 
 - `escalation-flowchart.mermaid` - Visual flowchart of the escalation process
+- `severity-ladder.png` - The four severity bands, most severe at the top.
+  Fetch this with `get_skill_asset` when you need to see the ladder rather
+  than read it; on a vision-capable setup it arrives as an image.

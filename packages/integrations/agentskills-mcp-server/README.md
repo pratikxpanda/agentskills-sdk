@@ -245,7 +245,7 @@ The ceiling, the arithmetic behind its default, and why resource tools stay are 
 
 A `ContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
-### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536, fast_path=None) -> FastMCP`
+### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536, fast_path=None, vision=False, max_inline_image_bytes=5242880) -> FastMCP`
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -254,6 +254,8 @@ A `ContextProvider` that reads the skills catalog and tools-usage-instructions f
 | `instructions` | `str \| None` | Optional server-level instructions sent to clients |
 | `max_inline_binary_bytes` | `int` | Size ceiling for inlining binary resources as base64 |
 | `fast_path` | `FastPath \| None` | From `resolve_fast_path`; inlines a lone skill's body and drops the body-access tools |
+| `vision` | `bool` | Return bundled images as native `ImageContent` instead of a base64 envelope |
+| `max_inline_image_bytes` | `int` | Size ceiling for native images; only consulted when `vision` is on |
 
 Returns a configured `FastMCP` instance ready for `server.run()`.
 
@@ -274,6 +276,30 @@ Skill resources may be arbitrary files. Valid UTF-8 is returned as-is; anything 
 ```
 
 Base64 costs roughly 1.37 characters per byte, so binaries above 64 KiB are described rather than inlined - `"encoding": "none"` plus a `note` explaining the omission. Adjust the ceiling with `create_mcp_server(..., max_inline_binary_bytes=256 * 1024)`.
+
+## Images
+
+A base64 envelope is the right answer for an opaque binary and the wrong one for
+a diagram: the model gets a wall of characters where a picture was. Pass
+`vision=True` and bundled images come back as native `ImageContent` instead:
+
+```python
+server = create_mcp_server(registry, name="skills", vision=True)
+```
+
+It is off by default because handing an image to a text-only model is an API
+error from the provider, not a degraded answer, and there is no reliable way to
+ask a model whether it can see. The client knows which model is on the other end;
+the server does not.
+
+PNG, JPEG, GIF and WebP qualify, and only when the leading bytes say so - a name
+is a claim, bytes are evidence. PDF is excluded because support varies by model,
+and SVG because it is already text the model can read. Everything else keeps the
+JSON envelope exactly as above, including images past `max_inline_image_bytes`
+(5 MiB by default, against 64 KiB for opaque binaries - base64 in a text field is
+billed per byte, while a native image is billed by tile count).
+
+See [ADR 0009](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0009-native-image-content.md).
 
 ## License
 
