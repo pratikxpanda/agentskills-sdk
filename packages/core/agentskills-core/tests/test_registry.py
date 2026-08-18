@@ -160,6 +160,30 @@ class TestSkillRegistry:
         assert len(registry.list_skills()) == 0
 
 
+class TestSectionAccess:
+    """The registry's section shortcuts, which the integrations wrap."""
+
+    @pytest.fixture()
+    async def registry(self) -> SkillRegistry:
+        reg = SkillRegistry()
+        body = "# Title\n\nintro\n\n## Triage\n\npage the on-call"
+        await reg.register("incident-response", _mock_provider(body=body))
+        return reg
+
+    async def test_get_skill_outline(self, registry):
+        outline = await registry.get_skill_outline("incident-response")
+
+        assert outline.skill_id == "incident-response"
+        assert [ref.key for ref in outline.sections] == ["title", "triage"]
+
+    async def test_get_skill_section(self, registry):
+        assert "page the on-call" in await registry.get_skill_section("incident-response", "triage")
+
+    async def test_unknown_skill_raises(self, registry):
+        with pytest.raises(SkillNotFoundError):
+            await registry.get_skill_outline("nonexistent")
+
+
 class TestBatchRegistration:
     async def test_register_batch(self):
         registry = SkillRegistry()

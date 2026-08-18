@@ -45,9 +45,9 @@ The SDK uses **progressive disclosure** to deliver skill content efficiently - e
 
 1. **Register** skills from any source (filesystem, HTTP, database, etc.)
 2. **Inject** the skills catalog and tool usage instructions into the system prompt
-3. **Disclose on demand** - the agent uses tools (`get_skill_body`, `get_skill_reference`, etc.) to retrieve content as needed
+3. **Disclose on demand** - the agent uses tools (`get_skill_body`, `get_skill_section`, `get_skill_reference`, etc.) to retrieve content as needed
 
-The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API - the agent fetches metadata, then the full body, then individual references, scripts, or assets, only when needed.
+The system prompt tells the agent *what* skills exist and *how* to use the tools. The tools themselves are the progressive-disclosure API - the agent fetches metadata, then the full body (or, for a large skill, an outline and then a single section of it), then individual references, scripts, or assets, only when needed.
 
 ## What a Skill Looks Like
 

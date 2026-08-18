@@ -10,11 +10,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentskills_core import RESOURCE_KINDS, SELECTION_FIELDS, Skill, get_logger
+from agentskills_core import (
+    RESOURCE_KINDS,
+    SELECTION_FIELDS,
+    Skill,
+    estimate_tokens,
+    get_logger,
+)
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.discovery import SkillLocation
 from agentskills_tools.findings import WARNING, Finding, SkillReport
 from agentskills_tools.validate import check_frontmatter, read_skill_md, unreadable
+
+__all__ = ["estimate_tokens"]
 
 # Every catalog entry is injected into the system prompt on every turn,
 # so a description is charged for far more often than a body is.
@@ -27,16 +35,7 @@ SELECTION_METADATA_DESCRIPTION_CHARS = 200
 
 DEFAULT_BODY_TOKEN_BUDGET = 5000
 
-# Rough enough to flag an outlier, and honest about being rough: a real
-# count needs the tokenizer of whichever model is being targeted.
-_CHARS_PER_TOKEN = 4
-
 _logger = get_logger(__name__)
-
-
-def estimate_tokens(text: str) -> int:
-    """Estimate the token cost of *text* at four characters per token."""
-    return -(-len(text) // _CHARS_PER_TOKEN)
 
 
 async def lint_location(

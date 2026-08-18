@@ -32,6 +32,7 @@ from xml.etree.ElementTree import Element, SubElement, indent, tostring
 from agentskills_core.exceptions import SkillNotFoundError
 from agentskills_core.logging import get_logger
 from agentskills_core.provider import SkillProvider
+from agentskills_core.sections import SkillOutline
 from agentskills_core.skill import Skill
 from agentskills_core.validation import SELECTION_FIELDS, validate_skill
 
@@ -321,6 +322,36 @@ class SkillRegistry:
             return self._skills[skill_id]
         except KeyError:
             raise SkillNotFoundError(f"Skill '{skill_id}' not found in registry") from None
+
+    async def get_skill_outline(self, skill_id: str) -> SkillOutline:
+        """Return a registered skill's body outline.
+
+        Args:
+            skill_id: Skill name to look up.
+
+        Returns:
+            The skill's :class:`~agentskills_core.SkillOutline`.
+
+        Raises:
+            SkillNotFoundError: If no skill with the given name is registered.
+        """
+        return await self.get_skill(skill_id).get_outline()
+
+    async def get_skill_section(self, skill_id: str, key: str) -> str:
+        """Return one section of a registered skill's body.
+
+        Args:
+            skill_id: Skill name to look up.
+            key: A key from :meth:`get_skill_outline`.
+
+        Returns:
+            The section text.
+
+        Raises:
+            SkillNotFoundError: If no skill with the given name is registered.
+            SectionNotFoundError: If the skill has no section with that key.
+        """
+        return await self.get_skill(skill_id).get_section(key)
 
     async def get_skills_catalog(
         self,

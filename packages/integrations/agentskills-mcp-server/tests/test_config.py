@@ -277,7 +277,7 @@ class TestConfigDrivenServer:
         server = await _build_server_from_config(config)
         assert server.instructions == "Custom instructions"
 
-    async def test_server_has_6_tools(self, tmp_path):
+    async def test_server_has_8_tools(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test",
@@ -291,7 +291,7 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         tools = await server.list_tools()
-        assert len(tools) == 6
+        assert len(tools) == 8
 
     async def test_server_has_3_resources(self, tmp_path):
         _write_skill(tmp_path, "test-skill")

@@ -87,9 +87,9 @@ class TestCreateMCPServer:
     async def test_instructions_default_none(self, server):
         assert server.instructions is None
 
-    async def test_registers_6_tools(self, server):
+    async def test_registers_8_tools(self, server):
         tools = await server.list_tools()
-        assert len(tools) == 6
+        assert len(tools) == 8
 
     async def test_tool_names(self, server):
         tools = await server.list_tools()
@@ -97,6 +97,8 @@ class TestCreateMCPServer:
         expected = {
             "get_skill_metadata",
             "get_skill_body",
+            "get_skill_outline",
+            "get_skill_section",
             "list_skill_resources",
             "get_skill_reference",
             "get_skill_asset",
@@ -126,6 +128,30 @@ class TestMCPTools:
     async def test_get_skill_body(self, server):
         result = await server.call_tool("get_skill_body", {"skill_id": "incident-response"})
         assert "Incident Response" in _tool_text(result)
+
+    async def test_get_skill_outline(self, server):
+        result = await server.call_tool("get_skill_outline", {"skill_id": "incident-response"})
+        text = _tool_text(result)
+        assert "'incident-response':" in text
+        assert "- incident-response " in text
+
+    async def test_get_skill_section(self):
+        body = "# Title\n\nIntro.\n\n## Triage\n\nPage the on-call.\n"
+        reg = SkillRegistry()
+        await reg.register("incident-response", _mock_provider(body=body))
+        server = create_mcp_server(reg, name="Test Server")
+        result = await server.call_tool(
+            "get_skill_section", {"skill_id": "incident-response", "key": "triage"}
+        )
+        text = _tool_text(result)
+        assert "Page the on-call." in text
+        assert "Intro." not in text
+
+    async def test_get_skill_section_unknown_key_raises(self, server):
+        with pytest.raises(ToolError):
+            await server.call_tool(
+                "get_skill_section", {"skill_id": "incident-response", "key": "nope"}
+            )
 
     async def test_get_skill_reference(self, server):
         result = await server.call_tool(
@@ -236,6 +262,8 @@ class TestMCPResources:
         for name in (
             "get_skill_metadata",
             "get_skill_body",
+            "get_skill_outline",
+            "get_skill_section",
             "list_skill_resources",
             "get_skill_reference",
             "get_skill_script",
@@ -256,7 +284,7 @@ class TestMCPServerEdgeCases:
         registry = SkillRegistry()
         server = create_mcp_server(registry, name="Empty Server")
         tools = await server.list_tools()
-        assert len(tools) == 6
+        assert len(tools) == 8
         resources = await server.list_resources()
         assert len(resources) == 3
         # Catalog should show empty state

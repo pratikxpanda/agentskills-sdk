@@ -15,6 +15,8 @@ Tool name                       Description
 ==============================  =============================================
 ``get_skill_metadata``          Read frontmatter (name, description, ...).
 ``get_skill_body``              Load full skill instructions.
+``get_skill_outline``           List the body's sections and their cost.
+``get_skill_section``           Load one section of the body.
 ``list_skill_resources``        List bundled resource names by kind.
 ``get_skill_reference``         Read a single reference document.
 ``get_skill_script``            Read a single script.
@@ -86,6 +88,15 @@ def get_tools(
         skill = registry.get_skill(skill_id)
         return await skill.get_body()
 
+    async def get_skill_outline(skill_id: str) -> str:
+        """List the sections of a skill body without loading it."""
+        outline = await registry.get_skill_outline(skill_id)
+        return outline.render()
+
+    async def get_skill_section(skill_id: str, key: str) -> str:
+        """Get one section of a skill body by its outline key."""
+        return await registry.get_skill_section(skill_id, key)
+
     async def list_skill_resources(skill_id: str) -> str:
         """List the resources a skill bundles, grouped by kind."""
         skill = registry.get_skill(skill_id)
@@ -144,6 +155,26 @@ def get_tools(
             name="get_skill_body",
             description=(
                 "Get the full instructions and guidance (markdown body) for a specific skill."
+            ),
+        ),
+        StructuredTool.from_function(
+            coroutine=get_skill_outline,
+            name="get_skill_outline",
+            description=(
+                "List the sections of a skill's body with an addressable key and "
+                "an estimated token cost for each, plus the cost of the whole "
+                "body. Use this before get_skill_section when a skill is large "
+                "and only part of it is relevant. The outline says when fetching "
+                "the whole body is cheaper; believe it."
+            ),
+        ),
+        StructuredTool.from_function(
+            coroutine=get_skill_section,
+            name="get_skill_section",
+            description=(
+                "Get one section of a skill's body, addressed by a key from "
+                "get_skill_outline. Sections do not nest, so a parent section "
+                "does not include the subsections listed under it."
             ),
         ),
         StructuredTool.from_function(
@@ -223,7 +254,10 @@ above based on the user's request.
 2. **Read metadata** — Call `get_skill_metadata(skill_id)` to get \
 structured information (name, description, and optional fields).
 3. **Read the body** — Call `get_skill_body(skill_id)` to load the \
-full instructions. Follow these instructions carefully.
+full instructions. Follow these instructions carefully. For a large \
+skill, call `get_skill_outline(skill_id)` first and then \
+`get_skill_section(skill_id, key)` for the parts you need — the \
+outline tells you which of the two is cheaper.
 4. **Fetch resources on demand** — The skill body will reference \
 specific resources by name. Use the appropriate tool to retrieve them:
    - `get_skill_reference(skill_id, name)` — reference documents \

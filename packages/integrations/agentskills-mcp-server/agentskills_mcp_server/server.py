@@ -182,6 +182,26 @@ def create_mcp_server(
         return await skill.get_body()
 
     @mcp.tool()
+    async def get_skill_outline(skill_id: str) -> str:
+        """List the sections of a skill's body with an addressable key and an estimated token cost for each, plus the cost of the whole body.
+
+        Use this before get_skill_section when a skill is large and only
+        part of it is relevant.  The outline says when fetching the
+        whole body is cheaper; believe it.
+        """  # noqa: E501
+        outline = await registry.get_skill_outline(skill_id)
+        return outline.render()
+
+    @mcp.tool()
+    async def get_skill_section(skill_id: str, key: str) -> str:
+        """Get one section of a skill's body, addressed by a key from get_skill_outline.
+
+        Sections do not nest, so a parent section does not include the
+        subsections listed under it.
+        """
+        return await registry.get_skill_section(skill_id, key)
+
+    @mcp.tool()
     async def list_skill_resources(skill_id: str) -> str:
         """List the references, scripts, and assets a skill bundles.
 
@@ -275,7 +295,10 @@ based on the user's request.
 2. **Read metadata** — Call `get_skill_metadata(skill_id)` to get \
 structured information (name, description, and optional fields).
 3. **Read the body** — Call `get_skill_body(skill_id)` to load the \
-full instructions. Follow these instructions carefully.
+full instructions. Follow these instructions carefully. For a large \
+skill, call `get_skill_outline(skill_id)` first and then \
+`get_skill_section(skill_id, key)` for the parts you need — the \
+outline tells you which of the two is cheaper.
 4. **Fetch resources on demand** — The skill body will reference \
 specific resources by name. Use the appropriate tool to retrieve them:
    - `get_skill_reference(skill_id, name)` — reference documents \

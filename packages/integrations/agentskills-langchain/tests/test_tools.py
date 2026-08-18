@@ -52,9 +52,9 @@ async def registry() -> SkillRegistry:
 
 
 class TestGetTools:
-    async def test_returns_6_tools(self, registry):
+    async def test_returns_8_tools(self, registry):
         tools = get_tools(registry)
-        assert len(tools) == 6
+        assert len(tools) == 8
 
     async def test_tool_names(self, registry):
         tools = get_tools(registry)
@@ -62,6 +62,8 @@ class TestGetTools:
         expected = {
             "get_skill_metadata",
             "get_skill_body",
+            "get_skill_outline",
+            "get_skill_section",
             "list_skill_resources",
             "get_skill_reference",
             "get_skill_asset",
@@ -82,6 +84,31 @@ class TestGetTools:
         tool = next(t for t in tools if t.name == "get_skill_body")
         result = await tool.ainvoke({"skill_id": "incident-response"})
         assert "Incident Response" in result
+
+    async def test_get_skill_outline_tool(self, registry):
+        tools = get_tools(registry)
+        tool = next(t for t in tools if t.name == "get_skill_outline")
+        result = await tool.ainvoke({"skill_id": "incident-response"})
+        assert "'incident-response':" in result
+        assert "- incident-response " in result
+
+    async def test_get_skill_section_tool(self):
+        body = "# Title\n\nIntro.\n\n## Triage\n\nPage the on-call.\n"
+        reg = SkillRegistry()
+        await reg.register("incident-response", _mock_provider(body=body))
+        tools = get_tools(reg)
+        tool = next(t for t in tools if t.name == "get_skill_section")
+        result = await tool.ainvoke({"skill_id": "incident-response", "key": "triage"})
+        assert "Page the on-call." in result
+        assert "Intro." not in result
+
+    async def test_get_skill_section_unknown_key_raises(self, registry):
+        from agentskills_core import SectionNotFoundError
+
+        tools = get_tools(registry)
+        tool = next(t for t in tools if t.name == "get_skill_section")
+        with pytest.raises(SectionNotFoundError):
+            await tool.ainvoke({"skill_id": "incident-response", "key": "nope"})
 
     async def test_get_skill_reference_tool(self, registry):
         tools = get_tools(registry)
@@ -143,6 +170,8 @@ class TestToolsUsageInstructions:
         for name in (
             "get_skill_metadata",
             "get_skill_body",
+            "get_skill_outline",
+            "get_skill_section",
             "get_skill_reference",
             "get_skill_script",
             "get_skill_asset",
@@ -201,10 +230,10 @@ class TestToolsEdgeCases:
         assert "Incident Response" in b
 
     async def test_empty_registry(self):
-        """Tools with empty registry return 6 tools (but lookups fail)."""
+        """Tools with empty registry return 8 tools (but lookups fail)."""
         reg = SkillRegistry()
         tools = get_tools(reg)
-        assert len(tools) == 6
+        assert len(tools) == 8
 
     async def test_missing_resource_raises(self):
         """Requesting a non-existent resource raises an error."""
