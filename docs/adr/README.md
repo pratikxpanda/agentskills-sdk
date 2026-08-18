@@ -62,3 +62,4 @@ What we chose and the concrete rule.
 - [ADR 0006](0006-exception-taxonomy-not-found-vs-unavailable.md) — Exception taxonomy
 - [ADR 0007](0007-binary-resource-json-envelope.md) — Binary resource envelope
 - [ADR 0008](0008-logging-namespace-and-severity.md) — Logging conventions
+- [ADR 0009](0009-native-image-content.md) — Native image content, opt-in

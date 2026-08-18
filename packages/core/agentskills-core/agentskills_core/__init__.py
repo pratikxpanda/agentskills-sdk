@@ -55,6 +55,12 @@ from agentskills_core.logging import (
     get_logger,
     redact_url,
 )
+from agentskills_core.media import (
+    DEFAULT_MAX_INLINE_IMAGE_BYTES,
+    RENDERABLE_MEDIA_TYPES,
+    ResourceMedia,
+    classify_resource,
+)
 from agentskills_core.parsing import split_frontmatter
 from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
 from agentskills_core.registry import SkillRegistry
@@ -74,11 +80,13 @@ from agentskills_core.validation import SELECTION_FIELDS, validate_skill, valida
 __all__ = [
     "DEFAULT_FAST_PATH_MAX_TOKENS",
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
+    "DEFAULT_MAX_INLINE_IMAGE_BYTES",
     "FAST_PATH_DROPPED_TOOLS",
     "FAST_PATH_RESOURCE_INSTRUCTIONS",
     "LOGGER_NAMESPACE",
     "PREAMBLE_TITLE",
     "REDACTED",
+    "RENDERABLE_MEDIA_TYPES",
     "RESOURCE_KINDS",
     "SELECTION_FIELDS",
     "WHOLE_BODY_CHEAPER_TOKENS",
@@ -86,6 +94,7 @@ __all__ = [
     "DiscoveryNotSupportedError",
     "FastPath",
     "ResourceListingNotSupportedError",
+    "ResourceMedia",
     "ResourceNotFoundError",
     "Section",
     "SectionNotFoundError",
@@ -96,6 +105,7 @@ __all__ = [
     "SkillProvider",
     "SkillRegistry",
     "SkillUnavailableError",
+    "classify_resource",
     "encode_resource_content",
     "estimate_tokens",
     "get_logger",

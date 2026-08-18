@@ -44,21 +44,52 @@ Example::
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ImageContent
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    DEFAULT_MAX_INLINE_IMAGE_BYTES,
     FAST_PATH_RESOURCE_INSTRUCTIONS,
     FastPath,
     ResourceListingNotSupportedError,
     SkillProvider,
     SkillRegistry,
+    classify_resource,
     encode_resource_content,
 )
+
+
+def _deliver(
+    name: str,
+    data: bytes,
+    *,
+    vision: bool,
+    max_inline_binary_bytes: int,
+    max_inline_image_bytes: int,
+) -> str | ImageContent:
+    """Return *data* as something the model can actually use.
+
+    A renderable image becomes native :class:`~mcp.types.ImageContent`.
+    Everything else -- text, unrecognised binaries, images past the
+    ceiling -- falls through to the JSON envelope, which stays exactly
+    as it was.
+    """
+    if vision:
+        media = classify_resource(name, data, max_inline_image_bytes=max_inline_image_bytes)
+        if media.renderable:
+            return ImageContent(
+                type="image",
+                data=base64.b64encode(data).decode("ascii"),
+                mimeType=media.media_type,
+            )
+    return encode_resource_content(name, data, max_inline_binary_bytes=max_inline_binary_bytes)
+
 
 # ------------------------------------------------------------------
 # Provider resolution
@@ -128,6 +159,8 @@ def create_mcp_server(
     instructions: str | None = None,
     max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
     fast_path: FastPath | None = None,
+    vision: bool = False,
+    max_inline_image_bytes: int = DEFAULT_MAX_INLINE_IMAGE_BYTES,
 ) -> FastMCP:
     """Build an MCP server that exposes an Agent Skills registry.
 
@@ -159,6 +192,14 @@ def create_mcp_server(
             usage-instructions resource drops the selection workflow it
             no longer describes, and the four body-access tools are not
             registered at all.  Resource tools remain.
+        vision: When ``True``, bundled images small enough to inline are
+            returned as native ``ImageContent`` instead of a base64 JSON
+            envelope.  Off by default: handing an image to a text-only
+            model is an API error, not a degraded answer, so the caller
+            declares the capability rather than the library guessing it.
+        max_inline_image_bytes: Size ceiling for native images.  Only
+            consulted when ``vision`` is ``True``.  Larger images fall
+            back to the JSON envelope.
 
     Returns:
         A configured :class:`~mcp.server.fastmcp.FastMCP` server
@@ -233,31 +274,35 @@ def create_mcp_server(
         return await _list_resources_json(skill_id)
 
     @_tool
-    async def get_skill_reference(skill_id: str, name: str) -> str:
+    async def get_skill_reference(skill_id: str, name: str) -> str | ImageContent:
         """Get the full content of a specific reference document from a skill.
 
         Provide both skill_id and the reference name.  Binary content is
         returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return encode_resource_content(
+        return _deliver(
             name,
             await skill.get_reference(name),
+            vision=vision,
             max_inline_binary_bytes=max_inline_binary_bytes,
+            max_inline_image_bytes=max_inline_image_bytes,
         )
 
     @_tool
-    async def get_skill_asset(skill_id: str, name: str) -> str:
+    async def get_skill_asset(skill_id: str, name: str) -> str | ImageContent:
         """Get the content of a specific asset from a skill.
 
         Provide both skill_id and the asset name.  Binary content is
         returned as a JSON envelope with base64 data.
         """
         skill = registry.get_skill(skill_id)
-        return encode_resource_content(
+        return _deliver(
             name,
             await skill.get_asset(name),
+            vision=vision,
             max_inline_binary_bytes=max_inline_binary_bytes,
+            max_inline_image_bytes=max_inline_image_bytes,
         )
 
     @_tool

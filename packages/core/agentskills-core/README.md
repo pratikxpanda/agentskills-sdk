@@ -343,6 +343,26 @@ text = encode_resource_content("architecture.png", raw_bytes)
 
 Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carrying the media type and base64 content, so binaries are never silently corrupted. Binaries above `max_inline_binary_bytes` (default 64 KiB) are described but not inlined.
 
+### Classifying Resources for Native Delivery
+
+An envelope is the right answer for an opaque binary and the wrong one for a diagram — the model gets a wall of base64 where a picture was. `classify_resource()` decides which is which, once, so the three integrations cannot drift on what counts as an image:
+
+```python
+from agentskills_core import classify_resource
+
+media = classify_resource("architecture.png", raw_bytes)
+media.media_type  # "image/png"
+media.renderable  # True
+```
+
+Detection reads the leading bytes first and the name second: a name is a claim, bytes are evidence. A `.png` holding a ZIP is not renderable, and a real PNG called `.dat` is.
+
+`renderable` is `True` only for PNG, JPEG, GIF and WebP within `max_inline_image_bytes`. PDF is excluded because some models read it and others reject it, and guessing wrong is an API error rather than a worse answer. SVG is excluded because it is text the model can already reason about; rasterising it would trade that for something it can only look at.
+
+Images get their own ceiling, `DEFAULT_MAX_INLINE_IMAGE_BYTES` (5 MiB), rather than sharing the 64 KiB binary cap. The binary cap tracks tokens, because base64 in a text field is billed per byte; a native image is billed by tile count, so the same ceiling would have turned nearly every real screenshot into a stub saying it was too large. 5 MiB is the lowest per-image limit among the major vision APIs.
+
+Integrations use this behind an opt-in `vision=True` flag — see [ADR 0009](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0009-native-image-content.md). When `renderable` is `False` the caller falls back to `encode_resource_content()`, which is always safe.
+
 ### Logging
 
 Every package in the SDK logs under one `agentskills.*` namespace, and the library attaches only a `NullHandler` — output is entirely the host's decision:

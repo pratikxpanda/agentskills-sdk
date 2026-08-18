@@ -35,17 +35,47 @@ Example::
 
 from __future__ import annotations
 
+import base64
 import json
 
-from agent_framework import FunctionTool, tool
+from agent_framework import Content, FunctionTool, tool
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    DEFAULT_MAX_INLINE_IMAGE_BYTES,
     FastPath,
     ResourceListingNotSupportedError,
     SkillRegistry,
+    classify_resource,
     encode_resource_content,
 )
+
+
+def _deliver(
+    name: str,
+    data: bytes,
+    *,
+    vision: bool,
+    max_inline_binary_bytes: int,
+    max_inline_image_bytes: int,
+) -> str | Content:
+    """Return *data* as something the model can actually use.
+
+    A renderable image becomes a ``data`` :class:`~agent_framework.Content`
+    carrying a data URI.  Everything else -- text, unrecognised
+    binaries, images past the ceiling -- falls through to the JSON
+    envelope, which stays exactly as it was.
+    """
+    if vision:
+        media = classify_resource(name, data, max_inline_image_bytes=max_inline_image_bytes)
+        if media.renderable:
+            encoded = base64.b64encode(data).decode("ascii")
+            return Content(
+                type="data",
+                uri=f"data:{media.media_type};base64,{encoded}",
+                media_type=media.media_type,
+            )
+    return encode_resource_content(name, data, max_inline_binary_bytes=max_inline_binary_bytes)
 
 
 def get_tools(
@@ -53,6 +83,8 @@ def get_tools(
     *,
     max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
     fast_path: FastPath | None = None,
+    vision: bool = False,
+    max_inline_image_bytes: int = DEFAULT_MAX_INLINE_IMAGE_BYTES,
 ) -> list[FunctionTool]:
     """Build Agent Framework tools that expose an Agent Skills registry.
 
@@ -78,6 +110,14 @@ def get_tools(
             :func:`~agentskills_core.resolve_fast_path`.  When given,
             the four body-access tools are omitted, because the body is
             already in the prompt.  Resource tools remain.
+        vision: When ``True``, bundled images small enough to inline are
+            returned as native ``data`` content instead of a base64 JSON
+            envelope.  Off by default: handing an image to a text-only
+            model is an API error, not a degraded answer, so the caller
+            declares the capability rather than the library guessing it.
+        max_inline_image_bytes: Size ceiling for native images.  Only
+            consulted when ``vision`` is ``True``.  Larger images fall
+            back to the JSON envelope.
 
     Returns:
         A list of :class:`~agent_framework.FunctionTool`
@@ -159,13 +199,15 @@ def get_tools(
             "from a skill. Provide both skill_id and the reference name."
         ),
     )
-    async def get_skill_reference(skill_id: str, name: str) -> str:
+    async def get_skill_reference(skill_id: str, name: str) -> str | Content:
         """Get the content of a specific reference document."""
         skill = registry.get_skill(skill_id)
-        return encode_resource_content(
+        return _deliver(
             name,
             await skill.get_reference(name),
+            vision=vision,
             max_inline_binary_bytes=max_inline_binary_bytes,
+            max_inline_image_bytes=max_inline_image_bytes,
         )
 
     @tool(
@@ -175,13 +217,15 @@ def get_tools(
             "Provide both skill_id and the asset name."
         ),
     )
-    async def get_skill_asset(skill_id: str, name: str) -> str:
+    async def get_skill_asset(skill_id: str, name: str) -> str | Content:
         """Get the content of a specific asset."""
         skill = registry.get_skill(skill_id)
-        return encode_resource_content(
+        return _deliver(
             name,
             await skill.get_asset(name),
+            vision=vision,
             max_inline_binary_bytes=max_inline_binary_bytes,
+            max_inline_image_bytes=max_inline_image_bytes,
         )
 
     @tool(
