@@ -362,6 +362,7 @@ class SkillRegistry:
         exclude: Iterable[str] | None = None,
         max_chars: int | None = None,
         selection_hints: bool = True,
+        total: int | None = None,
     ) -> str:
         """Build a skill-catalog string for system-prompt injection.
 
@@ -421,6 +422,17 @@ class SkillRegistry:
                 ``False`` to trade that accuracy back for tokens.  The
                 result is then byte-identical to a catalog built from
                 skills that declare neither field.
+            total: The size of the set these skills were chosen from,
+                for a caller that has already narrowed the catalog
+                itself — a ranked subset, say.  The catalog then reports
+                the shortfall the same way it reports truncation, so a
+                skill that was ranked out is not indistinguishable from
+                one that was never registered.  Defaults to the number
+                of entries left after this call's own filters, which is
+                to say no shortfall is reported for them: a static
+                ``tags=`` filter is a deliberate, unchanging choice, and
+                repeating it in the prompt every turn is noise the
+                caller is charged for.
 
         Returns:
             A string ready for insertion into a system prompt.  When
@@ -454,7 +466,7 @@ class SkillRegistry:
                 (skill, meta) for skill, meta in entries if wanted & _tags_of(skill.get_id(), meta)
             ]
 
-        return self._fit(entries, max_chars, render)
+        return self._fit(entries, max_chars, render, total=total)
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -484,6 +496,8 @@ class SkillRegistry:
         entries: list[tuple[Skill, dict[str, Any]]],
         max_chars: int | None,
         render: Callable[[list[tuple[Skill, dict[str, Any]]], int], str],
+        *,
+        total: int | None = None,
     ) -> str:
         """Drop trailing entries until the rendered catalog fits.
 
@@ -491,8 +505,8 @@ class SkillRegistry:
         model would have to predict XML escaping and Markdown joining,
         and be corrected every time either renderer changes.
         """
-        total = len(entries)
-        shown = total
+        total = len(entries) if total is None else max(total, len(entries))
+        shown = len(entries)
         while True:
             text = render(entries[:shown], total)
             if max_chars is None or len(text) <= max_chars:

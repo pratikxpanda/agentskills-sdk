@@ -72,6 +72,37 @@ when absent, so a skill written before they existed renders byte-for-byte as it 
 Callers who want the cheaper catalog back can pass
 `get_skills_catalog(selection_hints=False)`.
 
+## Skill selection
+
+Progressive disclosure makes each *skill* cheap. It does nothing about the number of skills.
+The catalog is injected on every turn, so its cost is linear in how many are registered, and
+two things get worse as a registry grows, not one: the token bill, and the model's ability to
+pick correctly from a long list.
+
+`include`, `exclude`, `tags` and `max_chars` all narrow the catalog already, but each requires
+the caller to know the answer in advance — and `max_chars` drops entries from the end, which is
+arbitrary with respect to relevance. [`agentskills-retrieval`](packages/retrieval.md) narrows it
+by what was asked instead:
+
+```python
+from agentskills_retrieval import LexicalSelector, build_selected_catalog
+
+catalog = await build_selected_catalog(
+    registry, LexicalSelector(registry), "the checkout API is returning 503s"
+)
+```
+
+The integration point is the filter that already exists: a selector returns skill IDs, and those
+IDs feed `include=`, which is applied *before* any metadata is fetched. Narrowing fifty skills to
+five therefore also avoids forty-five provider round trips. Core stays ignorant of ranking; it
+accepts one optional `total=` so the rendered catalog can report the narrowing honestly rather
+than claiming to be complete.
+
+Selection is opt-in and always visible. From inside an agent, a skill that was ranked out is
+indistinguishable from one that was never registered — so every selection is logged with its
+scores, the near-misses are kept on `Selection.rejected`, and a selection that matches nothing
+falls back to the full catalog rather than leaving the agent with no skills at all.
+
 ## Providers
 
 A provider answers five content calls (`get_metadata`, `get_body`, `get_reference`,
