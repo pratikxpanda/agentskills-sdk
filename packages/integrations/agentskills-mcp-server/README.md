@@ -219,13 +219,33 @@ The server provides resources for system-prompt context:
 
 The MCP client reads these resources and injects them into the system prompt, giving the agent both *what* skills exist and *how* to interact with them.
 
+## Single-Skill Fast Path
+
+A server exposing one skill makes the client pay the whole discovery apparatus — a catalog listing one entry, eight tool definitions, usage instructions describing a selection workflow, and a model round trip while the agent calls `get_skill_body` — to reach content there was never a choice about.
+
+```python
+from agentskills_core import resolve_fast_path
+
+fast_path = await resolve_fast_path(registry)
+server = create_mcp_server(registry, name="my-skills", fast_path=fast_path)
+```
+
+`resolve_fast_path` returns `None` unless the effective skill set is exactly one and its body fits under a token ceiling, and `fast_path=None` is the normal path — so the call above is safe unconditionally. When it fires:
+
+- Both `skills://catalog/*` resources serve the skill's body directly, so an existing client that already injects the catalog needs no change.
+- `skills://tools-usage-instructions` drops the selection workflow, which would otherwise point the model at a catalog that is no longer there and at tools that are no longer registered.
+- The four body-access tools are **never registered**. MCP has no way to hide a registered tool later, so they are omitted at construction rather than declined at call time.
+- The four resource tools remain.
+
+The ceiling, the arithmetic behind its default, and why resource tools stay are documented in the [core README](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/core/agentskills-core#single-skill-fast-path). Because tools are fixed at construction, rebuild the server if the registry changes.
+
 ## API
 
 ### `AgentSkillsMcpContextProvider(session, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
 
 A `ContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
-### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536) -> FastMCP`
+### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536, fast_path=None) -> FastMCP`
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -233,6 +253,7 @@ A `ContextProvider` that reads the skills catalog and tools-usage-instructions f
 | `name` | `str` | Display name for the MCP server (required) |
 | `instructions` | `str \| None` | Optional server-level instructions sent to clients |
 | `max_inline_binary_bytes` | `int` | Size ceiling for inlining binary resources as base64 |
+| `fast_path` | `FastPath \| None` | From `resolve_fast_path`; inlines a lone skill's body and drops the body-access tools |
 
 Returns a configured `FastMCP` instance ready for `server.run()`.
 

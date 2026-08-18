@@ -41,6 +41,7 @@ from langchain_core.tools import StructuredTool
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    FastPath,
     ResourceListingNotSupportedError,
     SkillRegistry,
     encode_resource_content,
@@ -51,6 +52,7 @@ def get_tools(
     registry: SkillRegistry,
     *,
     max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
+    fast_path: FastPath | None = None,
 ) -> list[StructuredTool]:
     """Build LangChain tools that expose an Agent Skills registry.
 
@@ -72,6 +74,12 @@ def get_tools(
             resources as base64.  Larger resources are described but
             not returned.  See
             :func:`~agentskills_core.encode_resource_content`.
+        fast_path: A :class:`~agentskills_core.FastPath` from
+            :func:`~agentskills_core.resolve_fast_path`.  When given,
+            the four body-access tools are omitted, because the body is
+            already in the prompt.  Resource tools remain.  Use
+            ``fast_path.prompt`` in place of the catalog and
+            :func:`get_tools_usage_instructions`.
 
     Returns:
         A list of :class:`~langchain_core.tools.StructuredTool`
@@ -214,6 +222,8 @@ def get_tools(
         ),
     ]
 
+    if fast_path is not None:
+        tools = [tool for tool in tools if fast_path.keeps(tool.name)]
     return tools
 
 

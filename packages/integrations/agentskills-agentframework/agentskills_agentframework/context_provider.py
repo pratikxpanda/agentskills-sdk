@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from agent_framework import ContextProvider, FunctionTool
 
-from agentskills_core import SkillRegistry, get_logger
+from agentskills_core import FastPath, SkillRegistry, get_logger
 
 from .session import (
     METADATA_LOADED_SKILLS,
@@ -140,6 +140,13 @@ class AgentSkillsContextProvider(ContextProvider):
             full body the agent has already fetched this session,
             replacing it with a one-line reminder. Pass ``False`` to
             advertise the whole catalog on every turn.
+        fast_path: A :class:`~agentskills_core.FastPath` from
+            :func:`~agentskills_core.resolve_fast_path`. When given, the
+            skill's body is injected directly and the catalog, the usage
+            instructions and the four body-access tools are dropped —
+            there is nothing to choose between, so there is no reason to
+            spend a model turn choosing. Resource tools remain. Resolve
+            it again if the registry changes.
         source_id: Unique identifier for this provider instance.
 
     Example::
@@ -170,6 +177,7 @@ class AgentSkillsContextProvider(ContextProvider):
         skills_catalog_format: Literal["xml", "markdown"] = "xml",
         cache_prompt: bool = True,
         prune_loaded_skills: bool = True,
+        fast_path: FastPath | None = None,
         source_id: str | None = None,
     ) -> None:
         super().__init__(source_id or self.DEFAULT_SOURCE_ID)
@@ -177,7 +185,8 @@ class AgentSkillsContextProvider(ContextProvider):
         self._skills_catalog_format = skills_catalog_format
         self._cache_prompt = cache_prompt
         self._prune_loaded_skills = prune_loaded_skills
-        self._tools: list[FunctionTool] = get_tools(registry)
+        self._fast_path = fast_path
+        self._tools: list[FunctionTool] = get_tools(registry, fast_path=fast_path)
         self._tools_usage_instructions = get_tools_usage_instructions()
 
         if skills_instruction_prompt is not None:
@@ -252,6 +261,15 @@ class AgentSkillsContextProvider(ContextProvider):
         if not registered:
             return
         if already_injected(context, self.source_id):
+            return
+
+        if self._fast_path is not None:
+            # The body is in the prompt, so there is nothing to cache
+            # against and nothing left to prune.
+            context.extend_instructions(self.source_id, self._fast_path.prompt)
+            context.extend_tools(self.source_id, self._tools)
+            context.metadata[METADATA_LOADED_SKILLS] = [self._fast_path.skill_id]
+            mark_injected(context, self.source_id)
             return
 
         loaded = loaded_skills(state) if self._prune_loaded_skills else []
