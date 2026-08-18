@@ -1,6 +1,6 @@
 # Working in this repository
 
-Poetry monorepo. Nine packages, versioned and released together.
+Poetry monorepo. Ten packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
@@ -11,6 +11,7 @@ Poetry monorepo. Nine packages, versioned and released together.
 | `packages/integrations/agentskills-langchain` | LangChain tools |
 | `packages/integrations/agentskills-agentframework` | Microsoft Agent Framework context provider |
 | `packages/integrations/agentskills-mcp-server` | MCP server + Agent Framework MCP bridge |
+| `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers |
 | `packages/tools/agentskills-tools` | `agentskills` command: init, validate, lint, inspect, serve |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, pytest fixtures |
 
@@ -61,7 +62,7 @@ repository silently matches nothing.
 ```bash
 poetry install                                    # local install/check loop
 # this laptop cannot reach PyPI file hosting directly; run poetry lock on a networked machine
-python -m pytest packages -q --no-header          # baseline: 1202 passed, 7 skipped
+python -m pytest packages -q --no-header          # baseline: 1285 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 python scripts/check_declared_dependencies.py     # a package must declare what it imports

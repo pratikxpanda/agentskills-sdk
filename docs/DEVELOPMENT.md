@@ -328,6 +328,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |
 | `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
 | `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
+| `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers (`agentskills-retrieval` on PyPI) |
 | `packages/tools/agentskills-tools` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, and pytest fixtures |
 

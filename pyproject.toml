@@ -14,6 +14,7 @@ agentskills-http = { path = "packages/providers/agentskills-http", develop = tru
 agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
 agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
+agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
 agentskills-tools = { path = "packages/tools/agentskills-tools", develop = true }
 agentskills-testing = { path = "packages/testing/agentskills-testing", develop = true }
 pyjwt = ">=2.12.0"
@@ -47,6 +48,7 @@ source_pkgs = [
     "agentskills_langchain",
     "agentskills_agentframework",
     "agentskills_mcp_server",
+    "agentskills_retrieval",
     "agentskills_tools",
     "agentskills_testing",
 ]
@@ -81,4 +83,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_tools", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]

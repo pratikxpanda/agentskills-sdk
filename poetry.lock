@@ -154,6 +154,23 @@ type = "directory"
 url = "packages/integrations/agentskills-mcp-server"
 
 [[package]]
+name = "agentskills-retrieval"
+version = "0.4.0"
+description = "Query-time skill selection for the Agent Skills format (https://agentskills.io)"
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+agentskills-core = ">=0.4.0,<1.0"
+
+[package.source]
+type = "directory"
+url = "packages/retrieval/agentskills-retrieval"
+
+[[package]]
 name = "agentskills-testing"
 version = "0.3.0"
 description = "Conformance suite and test doubles for Agent Skills providers (https://agentskills.io)"
@@ -2746,4 +2763,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "e544b363d79b0a912222248279062ee830b588a24df0ffcf3cd335c091dd74eb"
+content-hash = "b806adf8c822796da0cb2d260286df9a0a95f539ad55de96546aae0941abc6c0"

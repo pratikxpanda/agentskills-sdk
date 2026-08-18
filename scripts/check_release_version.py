@@ -28,6 +28,7 @@ DEPENDENTS = [
     "packages/integrations/agentskills-langchain",
     "packages/integrations/agentskills-agentframework",
     "packages/integrations/agentskills-mcp-server",
+    "packages/retrieval/agentskills-retrieval",
     "packages/tools/agentskills-tools",
     "packages/testing/agentskills-testing",
 ]
