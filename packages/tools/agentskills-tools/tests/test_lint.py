@@ -8,6 +8,7 @@ from agentskills_core import ResourceNotFoundError, Skill, SkillProvider
 from agentskills_tools.discovery import SkillLocation
 from agentskills_tools.lint import (
     CATALOG_DESCRIPTION_CHARS,
+    SELECTION_METADATA_DESCRIPTION_CHARS,
     _unreferenced_resources,
     estimate_tokens,
     lint_location,
@@ -34,10 +35,19 @@ class _BareProvider(SkillProvider):
         raise ResourceNotFoundError(name)
 
 
-def _skill_md(*, description: str = "A skill.", version: str | None = "1.0.0", body: str) -> str:
+def _skill_md(
+    *,
+    description: str = "A skill.",
+    version: str | None = "1.0.0",
+    when_to_use: list[str] | None = None,
+    body: str,
+) -> str:
     lines = ["---", "name: alpha", f"description: {description}"]
     if version is not None:
         lines.append(f"version: {version}")
+    if when_to_use is not None:
+        lines.append("when_to_use:")
+        lines += [f"  - {case}" for case in when_to_use]
     lines += ["---", "", body]
     return "\n".join(lines)
 
@@ -71,7 +81,43 @@ class TestLintLocation:
 
         report = await lint_location(skills_root, SkillLocation("alpha", path))
 
-        assert [f.code for f in report.findings] == ["description-too-long-for-catalog"]
+        assert [f.code for f in report.findings] == [
+            "description-too-long-for-catalog",
+            "missing-selection-metadata",
+        ]
+
+    async def test_long_description_without_selection_metadata(self, write_skill, skills_root):
+        path = write_skill(
+            "alpha",
+            _skill_md(description="d" * (SELECTION_METADATA_DESCRIPTION_CHARS + 1), body="Body."),
+        )
+
+        report = await lint_location(skills_root, SkillLocation("alpha", path))
+
+        assert [f.code for f in report.findings] == ["missing-selection-metadata"]
+
+    async def test_selection_metadata_silences_the_warning(self, write_skill, skills_root):
+        path = write_skill(
+            "alpha",
+            _skill_md(
+                description="d" * (SELECTION_METADATA_DESCRIPTION_CHARS + 1),
+                when_to_use=["A production service is down"],
+                body="Body.",
+            ),
+        )
+
+        report = await lint_location(skills_root, SkillLocation("alpha", path))
+
+        assert report.findings == []
+
+    async def test_short_description_needs_no_selection_metadata(self, write_skill, skills_root):
+        path = write_skill(
+            "alpha", _skill_md(description="d" * SELECTION_METADATA_DESCRIPTION_CHARS, body="B.")
+        )
+
+        report = await lint_location(skills_root, SkillLocation("alpha", path))
+
+        assert report.findings == []
 
     async def test_body_over_the_token_budget(self, write_skill, skills_root):
         path = write_skill("alpha", _skill_md(body="word " * 100))

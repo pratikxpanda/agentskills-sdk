@@ -61,7 +61,7 @@ repository silently matches nothing.
 ```bash
 poetry install                                    # local install/check loop
 # this laptop cannot reach PyPI file hosting directly; run poetry lock on a networked machine
-python -m pytest packages -q --no-header          # baseline: 1142 passed, 7 skipped
+python -m pytest packages -q --no-header          # baseline: 1167 passed, 7 skipped
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 python scripts/check_declared_dependencies.py     # a package must declare what it imports

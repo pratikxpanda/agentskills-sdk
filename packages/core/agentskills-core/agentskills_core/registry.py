@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Iterable
+from functools import partial
 from typing import Any, Literal, overload
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
@@ -32,7 +33,7 @@ from agentskills_core.exceptions import SkillNotFoundError
 from agentskills_core.logging import get_logger
 from agentskills_core.provider import SkillProvider
 from agentskills_core.skill import Skill
-from agentskills_core.validation import validate_skill
+from agentskills_core.validation import SELECTION_FIELDS, validate_skill
 
 _logger = get_logger(__name__)
 
@@ -41,6 +42,34 @@ DEFAULT_CATALOG_CONCURRENCY = 8
 
 #: Key under the spec's free-form ``metadata`` mapping holding a skill's tags.
 TAGS_METADATA_KEY = "tags"
+
+#: Markdown bullet labels for the selection-metadata fields.
+_MARKDOWN_SELECTION_LABELS = {
+    "when_to_use": "When to use",
+    "when_not_to_use": "When not to use",
+}
+
+
+def _cases_of(skill_id: str, meta: dict[str, Any], key: str) -> list[str]:
+    """Return one selection-metadata list, or empty when unusable.
+
+    Registration validates these fields, so a bad value here means the
+    catalog is being built over metadata that never passed through
+    :meth:`SkillRegistry.register`.  Warn and drop rather than raise: a
+    malformed hint should cost a skill its hint, not its place in the
+    catalog.
+    """
+    raw = meta.get(key)
+    if raw is None:
+        return []
+    if not isinstance(raw, list) or not all(isinstance(case, str) for case in raw):
+        _logger.warning(
+            "Skill '%s': '%s' is not a list of strings; omitting it from the catalog",
+            skill_id,
+            key,
+        )
+        return []
+    return [case for case in raw if case.strip()]
 
 
 def _tags_of(skill_id: str, meta: dict[str, Any]) -> frozenset[str]:
@@ -301,6 +330,7 @@ class SkillRegistry:
         include: Iterable[str] | None = None,
         exclude: Iterable[str] | None = None,
         max_chars: int | None = None,
+        selection_hints: bool = True,
     ) -> str:
         """Build a skill-catalog string for system-prompt injection.
 
@@ -315,8 +345,8 @@ class SkillRegistry:
             A human-readable Markdown catalog listing every registered
             skill's name and description.
 
-        Only ``name`` and ``description`` are extracted from each
-        skill's metadata, keeping token usage low.
+        Only ``name``, ``description`` and the selection metadata are
+        extracted from each skill's metadata, keeping token usage low.
 
         The catalog is injected into every system prompt on every turn,
         so its size is a fixed cost per request.  The filters below
@@ -354,6 +384,12 @@ class SkillRegistry:
                 output stays valid and the same arguments always
                 produce the same catalog.  Roughly four characters per
                 token is the usual estimate.
+            selection_hints: Include each skill's ``when_to_use`` and
+                ``when_not_to_use`` entries.  They make selection more
+                accurate and they are charged on every turn, so pass
+                ``False`` to trade that accuracy back for tokens.  The
+                result is then byte-identical to a catalog built from
+                skills that declare neither field.
 
         Returns:
             A string ready for insertion into a system prompt.  When
@@ -376,6 +412,7 @@ class SkillRegistry:
         else:
             msg = f"Unsupported format {format!r}; expected 'xml' or 'markdown'."
             raise ValueError(msg)
+        render = partial(render, selection_hints=selection_hints)
 
         # No catalog cache exists yet. When one is added, its key must
         # cover the format and every filter argument below.
@@ -461,7 +498,12 @@ class SkillRegistry:
         return list(zip(skills, metadata, strict=True))
 
     @staticmethod
-    def _render_xml(entries: list[tuple[Skill, dict[str, Any]]], total: int) -> str:
+    def _render_xml(
+        entries: list[tuple[Skill, dict[str, Any]]],
+        total: int,
+        *,
+        selection_hints: bool = True,
+    ) -> str:
         """Return an ``<available_skills>`` XML block."""
         root = Element("available_skills")
         if len(entries) < total:
@@ -480,11 +522,25 @@ class SkillRegistry:
                 # Omitted when absent so unversioned skills cost no prompt tokens.
                 version_el = SubElement(skill_el, "version")
                 version_el.text = str(version)
+            if selection_hints:
+                for key in SELECTION_FIELDS:
+                    cases = _cases_of(skill.get_id(), meta, key)
+                    if not cases:
+                        continue
+                    field_el = SubElement(skill_el, key)
+                    for case in cases:
+                        case_el = SubElement(field_el, "case")
+                        case_el.text = case
         indent(root, space="  ")
         return tostring(root, encoding="unicode")
 
     @staticmethod
-    def _render_markdown(entries: list[tuple[Skill, dict[str, Any]]], total: int) -> str:
+    def _render_markdown(
+        entries: list[tuple[Skill, dict[str, Any]]],
+        total: int,
+        *,
+        selection_hints: bool = True,
+    ) -> str:
         """Return a Markdown-formatted skill catalog."""
         truncated = len(entries) < total
         if not entries:
@@ -507,6 +563,13 @@ class SkillRegistry:
             version = meta.get("version")
             if version:
                 lines.append(f"- **Version**: {version}")
+            if selection_hints:
+                for key, label in _MARKDOWN_SELECTION_LABELS.items():
+                    cases = _cases_of(skill.get_id(), meta, key)
+                    if not cases:
+                        continue
+                    lines.append(f"- **{label}**:")
+                    lines.extend(f"  - {case}" for case in cases)
             lines.append("")
 
         if truncated:

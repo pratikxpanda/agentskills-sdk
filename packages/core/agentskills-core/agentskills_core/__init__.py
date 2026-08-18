@@ -51,13 +51,14 @@ from agentskills_core.parsing import split_frontmatter
 from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
 from agentskills_core.registry import SkillRegistry
 from agentskills_core.skill import Skill
-from agentskills_core.validation import validate_skill, validate_version
+from agentskills_core.validation import SELECTION_FIELDS, validate_skill, validate_version
 
 __all__ = [
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
     "LOGGER_NAMESPACE",
     "REDACTED",
     "RESOURCE_KINDS",
+    "SELECTION_FIELDS",
     "AgentSkillsError",
     "DiscoveryNotSupportedError",
     "ResourceListingNotSupportedError",

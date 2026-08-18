@@ -69,5 +69,13 @@ class TestRenderSkillMd:
     def test_frontmatter_precedes_the_body(self):
         text = render_skill_md("alpha", "A skill.")
 
-        assert text.startswith("---\nname: alpha\ndescription: A skill.\nversion: 0.1.0\n---\n")
+        assert text.startswith("---\nname: alpha\ndescription: A skill.\nversion: 0.1.0\n")
         assert "# Alpha" in text
+
+    def test_selection_metadata_is_scaffolded_commented_out(self):
+        text = render_skill_md("alpha", "A skill.")
+
+        assert "# when_to_use:" in text
+        assert "# when_not_to_use:" in text
+        # Commented, so a freshly scaffolded skill costs no extra catalog tokens.
+        assert "\nwhen_to_use:" not in text

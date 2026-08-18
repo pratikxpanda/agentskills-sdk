@@ -53,11 +53,22 @@ _OPTIONAL_FIELDS: dict[str, type] = {
     "compatibility": dict,
     "metadata": dict,
     "allowed-tools": list,
+    "when_to_use": list,
+    "when_not_to_use": list,
 }
 
 _KNOWN_KEYS: frozenset[str] = frozenset(
     {"name", "description", "version"} | _OPTIONAL_FIELDS.keys()
 )
+
+#: Fields describing when a skill does and does not apply.
+SELECTION_FIELDS: tuple[str, ...] = ("when_to_use", "when_not_to_use")
+
+# Selection metadata rides in the catalog, which is charged on every turn
+# for every registered skill, so it is bounded on both axes. Five is also
+# a design signal: a skill needing a sixth condition is two skills.
+_SELECTION_ENTRY_MAX_LEN = 200
+_SELECTION_MAX_ENTRIES = 5
 
 
 async def validate_skill(skill: Skill) -> list[str]:
@@ -75,6 +86,10 @@ async def validate_skill(skill: Skill) -> list[str]:
     * ``description`` (required) -- 1-1024 characters.
     * ``version`` (optional) -- valid semver when present.  Not yet part
       of the upstream specification; see :func:`validate_version`.
+    * ``when_to_use`` / ``when_not_to_use`` (optional) -- lists of at
+      most five non-empty strings of at most 200 characters each.  They
+      are charged on every turn, so they are bounded; see
+      :data:`SELECTION_FIELDS`.
 
     Args:
         skill: The :class:`~agentskills_core.Skill` to validate.
@@ -136,6 +151,12 @@ async def validate_skill(skill: Skill) -> list[str]:
                     f"{expected_type.__name__}, got {type(value).__name__}"
                 )
 
+        # when_to_use / when_not_to_use — optional, bounded lists of strings
+        for key in SELECTION_FIELDS:
+            value = metadata.get(key)
+            if isinstance(value, list):
+                errors.extend(_selection_errors(skill_id, key, value))
+
         # version — optional, semver when present
         if "version" in metadata:
             version_error = validate_version(metadata["version"])
@@ -153,6 +174,38 @@ async def validate_skill(skill: Skill) -> list[str]:
 
     except Exception as exc:
         errors.append(f"Skill '{skill_id}': failed to read metadata — {exc}")
+
+    return errors
+
+
+def _selection_errors(skill_id: str, key: str, entries: list[object]) -> list[str]:
+    """Check one selection-metadata list against its element rules.
+
+    An empty list is valid and meaningful: it says the author considered
+    the question and found no conditions, which is not the same as never
+    having asked.  The type of *entries* is checked by the caller.
+    """
+    errors: list[str] = []
+    if len(entries) > _SELECTION_MAX_ENTRIES:
+        errors.append(
+            f"Skill '{skill_id}': field '{key}' has {len(entries)} entries, "
+            f"over the limit of {_SELECTION_MAX_ENTRIES}; it is charged on every "
+            f"turn, and a skill needing more conditions is probably two skills"
+        )
+
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, str):
+            errors.append(
+                f"Skill '{skill_id}': field '{key}' entry {index} must be str, "
+                f"got {type(entry).__name__}"
+            )
+        elif not entry.strip():
+            errors.append(f"Skill '{skill_id}': field '{key}' entry {index} is empty")
+        elif len(entry) > _SELECTION_ENTRY_MAX_LEN:
+            errors.append(
+                f"Skill '{skill_id}': field '{key}' entry {index} is "
+                f"{len(entry)} characters, over the limit of {_SELECTION_ENTRY_MAX_LEN}"
+            )
 
     return errors
 

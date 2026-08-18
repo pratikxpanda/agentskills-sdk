@@ -189,6 +189,113 @@ class TestCatalogVersion:
         assert "**Version**" not in md
 
 
+class TestSelectionMetadata:
+    """``when_to_use`` / ``when_not_to_use`` surface in both formats."""
+
+    @staticmethod
+    def _hinted(**fields: object) -> AsyncMock:
+        provider = _mock_provider()
+        provider.get_metadata.return_value = {
+            "name": "incident-response",
+            "description": "Handle production incidents.",
+            **fields,
+        }
+        return provider
+
+    async def test_xml_includes_both_fields(self):
+        registry = await _make_registry(
+            (
+                "incident-response",
+                self._hinted(
+                    when_to_use=["A production service is down"],
+                    when_not_to_use=["Debugging a failing test locally"],
+                ),
+            ),
+        )
+        xml = await registry.get_skills_catalog(format="xml")
+        skill = fromstring(xml).find("skill")
+        assert [el.text for el in skill.find("when_to_use")] == ["A production service is down"]
+        assert [el.text for el in skill.find("when_not_to_use")] == [
+            "Debugging a failing test locally"
+        ]
+
+    async def test_xml_renders_one_case_element_per_entry(self):
+        registry = await _make_registry(
+            ("incident-response", self._hinted(when_to_use=["First", "Second"])),
+        )
+        xml = await registry.get_skills_catalog(format="xml")
+        cases = fromstring(xml).find("skill").find("when_to_use")
+        assert [el.tag for el in cases] == ["case", "case"]
+
+    async def test_markdown_includes_both_fields(self):
+        registry = await _make_registry(
+            (
+                "incident-response",
+                self._hinted(
+                    when_to_use=["A production service is down"],
+                    when_not_to_use=["Debugging a failing test locally"],
+                ),
+            ),
+        )
+        md = await registry.get_skills_catalog(format="markdown")
+        assert "- **When to use**:\n  - A production service is down" in md
+        assert "- **When not to use**:\n  - Debugging a failing test locally" in md
+
+    async def test_omitted_when_absent(self):
+        registry = await _make_registry(("incident-response", _mock_provider()))
+        xml = await registry.get_skills_catalog(format="xml")
+        md = await registry.get_skills_catalog(format="markdown")
+        assert "when_to_use" not in xml
+        assert "When to use" not in md
+
+    async def test_omitted_when_empty(self):
+        registry = await _make_registry(
+            ("incident-response", self._hinted(when_to_use=[], when_not_to_use=[])),
+        )
+        xml = await registry.get_skills_catalog(format="xml")
+        assert "when_to_use" not in xml
+
+    async def test_blank_entries_are_dropped(self):
+        registry = SkillRegistry()
+        provider = self._hinted(when_to_use=["Real case"])
+        await registry.register("incident-response", provider)
+        # Mutate after registration: validation rejects a blank entry.
+        provider.get_metadata.return_value["when_to_use"] = ["Real case", "   "]
+
+        xml = await registry.get_skills_catalog(format="xml")
+        cases = fromstring(xml).find("skill").find("when_to_use")
+        assert [el.text for el in cases] == ["Real case"]
+
+    async def test_selection_hints_false_matches_a_skill_without_them(self):
+        with_hints = await _make_registry(
+            (
+                "incident-response",
+                self._hinted(
+                    when_to_use=["A production service is down"],
+                    when_not_to_use=["Debugging a failing test locally"],
+                ),
+            ),
+        )
+        without = await _make_registry(("incident-response", _mock_provider()))
+        for fmt in ("xml", "markdown"):
+            suppressed = await with_hints.get_skills_catalog(format=fmt, selection_hints=False)
+            baseline = await without.get_skills_catalog(format=fmt)
+            assert suppressed == baseline
+
+    async def test_malformed_value_is_dropped_with_a_warning(self, caplog):
+        registry = SkillRegistry()
+        provider = self._hinted(when_to_use=["fine"])
+        await registry.register("incident-response", provider)
+        # Mutate after registration: validation would have rejected this.
+        provider.get_metadata.return_value["when_to_use"] = "not a list"
+
+        with caplog.at_level(logging.WARNING):
+            xml = await registry.get_skills_catalog(format="xml")
+
+        assert "when_to_use" not in xml
+        assert "not a list of strings" in caplog.text
+
+
 def _tagged(name: str, tags: object) -> AsyncMock:
     provider = _mock_provider(name=name)
     provider.get_metadata.return_value = {

@@ -2,6 +2,13 @@
 name: incident-response
 description: Standard operating procedures for production incident management including severity classification, escalation paths, communication protocols, and postmortem processes.
 version: "1.0.0"
+when_to_use:
+  - A production service is degraded, down, or paging
+  - An incident needs a severity, a commander, or a status update
+  - A resolved incident needs a postmortem
+when_not_to_use:
+  - Debugging a failing test or a local development environment
+  - Planning capacity or reviewing architecture ahead of a launch
 ---
 
 # Incident Response

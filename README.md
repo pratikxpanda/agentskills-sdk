@@ -126,7 +126,8 @@ async def main():
     # Registers every skill folder under my-skills/, no IDs to hard-code.
     await registry.register_all(LocalFileSystemSkillProvider(Path("my-skills")))
 
-    # What the agent sees on every turn: names and descriptions, nothing more.
+    # What the agent sees on every turn: names, descriptions, and where each
+    # skill does and does not apply. Nothing more.
     print(await registry.get_skills_catalog(format="xml"))
 
     # What it fetches only after deciding the skill is relevant.
@@ -154,6 +155,23 @@ catalog = await registry.get_skills_catalog(
 `max_chars` drops whole entries from the end until the result fits, and says so in the output —
 the XML root gains `truncated`, `shown` and `total` attributes. A catalog that shrinks without
 saying so makes agent behaviour non-reproducible.
+
+A description says what a skill is for, and nothing about where it stops. Two optional
+frontmatter fields say the rest:
+
+```yaml
+---
+name: incident-response
+description: Triage and mitigate production incidents.
+when_to_use:
+  - A production service is degraded or down
+when_not_to_use:
+  - Debugging a failing test locally
+---
+```
+
+Both are capped at five entries of 200 characters, because they ride in the catalog and are
+charged on every turn. Pass `selection_hints=False` to leave them out.
 
 ## Documentation
 
