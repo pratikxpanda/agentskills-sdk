@@ -14,14 +14,26 @@ happens to be installed is worse than no gate.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TextIO
 
-from agentskills_core import RESOURCE_KINDS, Skill, get_logger
+from agentskills_core import (
+    PREAMBLE_TITLE,
+    RESOURCE_KINDS,
+    Section,
+    Skill,
+    estimate_tokens,
+    get_logger,
+    split_sections,
+)
 from agentskills_tools.discovery import CliError
-from agentskills_tools.lint import estimate_tokens
+
+__all__ = [
+    "PREAMBLE_TITLE",
+    "Section",
+    "split_sections",
+]
 
 _logger = get_logger(__name__)
 
@@ -32,11 +44,6 @@ TIKTOKEN_ENCODING = "cl100k_base"
 
 #: What ``--tokenizer`` accepts.
 TOKENIZERS = ("auto", "tiktoken", "heuristic")
-
-_HEADING = re.compile(r"^(#{1,6})[ \t]+(\S.*?)[ \t]*#*[ \t]*$")
-_FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
-
-PREAMBLE_TITLE = "(before the first heading)"
 
 
 @dataclass(frozen=True)
@@ -104,63 +111,6 @@ def resolve_counter(preference: str = "auto") -> TokenCounter:
             "--tokenizer heuristic to accept an estimate"
         )
     return HEURISTIC
-
-
-@dataclass(frozen=True)
-class Section:
-    """One heading of a body, with the text charged to it."""
-
-    title: str
-    level: int
-    text: str
-
-
-def split_sections(body: str) -> list[Section]:
-    """Split *body* at its headings, without overlapping.
-
-    A heading owns its own line and everything up to the next heading of
-    any level, so a nested section is not also counted inside its
-    parent.  The parts therefore sum to the whole, which is the only
-    property that makes a cost breakdown checkable.
-
-    Text before the first heading becomes a level-0 section, and ``#``
-    inside a fenced code block is a shell comment rather than a heading.
-    """
-    sections: list[Section] = []
-    lines: list[str] = []
-    title = PREAMBLE_TITLE
-    level = 0
-    fence: str | None = None
-
-    def flush() -> None:
-        text = "\n".join(lines)
-        if text.strip() or level:
-            sections.append(Section(title, level, text))
-
-    for line in body.splitlines():
-        opener = _FENCE.match(line)
-        if fence is not None:
-            if opener is not None and opener.group(1)[0] == fence[0]:
-                fence = None
-            lines.append(line)
-            continue
-        if opener is not None:
-            fence = opener.group(1)
-            lines.append(line)
-            continue
-
-        heading = _HEADING.match(line)
-        if heading is None:
-            lines.append(line)
-            continue
-
-        flush()
-        level = len(heading.group(1))
-        title = heading.group(2)
-        lines = [line]
-
-    flush()
-    return sections
 
 
 @dataclass(frozen=True)

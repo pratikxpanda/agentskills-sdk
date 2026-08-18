@@ -5,10 +5,44 @@
 Agent Skills are delivered in layers:
 
 1. Catalog entry (name/description) in the system prompt
-2. Full skill body only when selected
-3. Individual references, scripts, and assets only when needed
+2. Body outline — section keys and their token cost — when a skill is large
+3. One section, or the full skill body, only when selected
+4. Individual references, scripts, and assets only when needed
 
 This keeps the always-on prompt surface small while preserving depth.
+
+## Section-level disclosure
+
+Layer 2 exists because a long skill body is all-or-nothing: an agent that needs the rollback
+procedure pays for the onboarding notes too. `get_skill_outline(skill_id)` returns the body's
+headings as addressable keys with a token estimate for each, and
+`get_skill_section(skill_id, key)` fetches one.
+
+```text
+'incident-response': ~439 tokens in 8 sections.
+
+- incident-response (~14) — Incident Response
+  - when-to-declare-an-incident (~50) — When to Declare an Incident
+  - roles (~70) — Roles
+  ...
+```
+
+Three properties of that design are load-bearing:
+
+- **Keys are flat slugs, with an ordinal on collision.** Two `## Setup` headings become
+  `setup` and `setup-2`. A hierarchical path would imply a tree the splitter does not build.
+- **Sections do not nest.** A section covers its own text up to the next heading of *any*
+  level, so fetching a parent does not include what is indented under it. The indentation in
+  the outline shows depth; it does not show containment. This is what makes the parts sum to
+  the whole, which `agentskills inspect --cost` depends on.
+- **The outline says when not to use it.** A section fetch costs a tool call, a model turn,
+  and the outline that preceded it. Below `WHOLE_BODY_CHEAPER_TOKENS` (1000) the rendered
+  outline tells the agent to call `get_skill_body` instead, and past about three sections it
+  says the same. Shipping the split without that guidance would make the common case worse in
+  order to improve the rare one.
+
+The rendering lives in `SkillOutline.render()` in core rather than in each integration, so the
+three integrations cannot drift into quoting different costs for the same skill.
 
 ## Selection metadata
 

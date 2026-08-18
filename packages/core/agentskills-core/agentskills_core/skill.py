@@ -17,7 +17,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from agentskills_core.exceptions import SectionNotFoundError
 from agentskills_core.provider import SkillProvider
+from agentskills_core.sections import SkillOutline, outline_of, split_sections
 
 
 class Skill:
@@ -77,6 +79,45 @@ class Skill:
             Markdown text.
         """
         return await self._provider.get_body(self._skill_id)
+
+    async def get_outline(self) -> SkillOutline:
+        """Return the body's sections without returning the body.
+
+        Computed on top of :meth:`get_body`, which providers already
+        cache, so this costs no extra round-trip on a warm provider and
+        needs nothing from the :class:`~agentskills_core.SkillProvider`
+        interface.
+
+        Returns:
+            A :class:`~agentskills_core.SkillOutline` carrying one
+            :class:`~agentskills_core.SectionRef` per heading, the
+            whole body's estimated size, and whether fetching that
+            whole body is the cheaper move.
+        """
+        return outline_of(self._skill_id, await self.get_body())
+
+    async def get_section(self, key: str) -> str:
+        """Return one section of the body, addressed by key.
+
+        Args:
+            key: A key from :meth:`get_outline`.
+
+        Returns:
+            The heading line and everything up to the next heading of
+            any level.  Sections do not overlap, so a parent does not
+            include its subsections.
+
+        Raises:
+            SectionNotFoundError: If no section carries that key.
+        """
+        sections = split_sections(await self.get_body())
+        for section in sections:
+            if section.key == key:
+                return section.text
+        known = ", ".join(section.key for section in sections) or "none"
+        raise SectionNotFoundError(
+            f"Skill '{self._skill_id}' has no section '{key}'; available keys: {known}"
+        )
 
     async def get_script(self, name: str) -> bytes:
         """Return the raw content of a bundled script.

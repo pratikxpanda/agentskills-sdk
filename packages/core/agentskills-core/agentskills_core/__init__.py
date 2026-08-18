@@ -38,6 +38,7 @@ from agentskills_core.exceptions import (
     DiscoveryNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
+    SectionNotFoundError,
     SkillNotFoundError,
     SkillUnavailableError,
 )
@@ -50,28 +51,47 @@ from agentskills_core.logging import (
 from agentskills_core.parsing import split_frontmatter
 from agentskills_core.provider import RESOURCE_KINDS, SkillProvider
 from agentskills_core.registry import SkillRegistry
+from agentskills_core.sections import (
+    PREAMBLE_TITLE,
+    WHOLE_BODY_CHEAPER_TOKENS,
+    Section,
+    SectionRef,
+    SkillOutline,
+    estimate_tokens,
+    outline_of,
+    split_sections,
+)
 from agentskills_core.skill import Skill
 from agentskills_core.validation import SELECTION_FIELDS, validate_skill, validate_version
 
 __all__ = [
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
     "LOGGER_NAMESPACE",
+    "PREAMBLE_TITLE",
     "REDACTED",
     "RESOURCE_KINDS",
     "SELECTION_FIELDS",
+    "WHOLE_BODY_CHEAPER_TOKENS",
     "AgentSkillsError",
     "DiscoveryNotSupportedError",
     "ResourceListingNotSupportedError",
     "ResourceNotFoundError",
+    "Section",
+    "SectionNotFoundError",
+    "SectionRef",
     "Skill",
     "SkillNotFoundError",
+    "SkillOutline",
     "SkillProvider",
     "SkillRegistry",
     "SkillUnavailableError",
     "encode_resource_content",
+    "estimate_tokens",
     "get_logger",
+    "outline_of",
     "redact_url",
     "split_frontmatter",
+    "split_sections",
     "validate_skill",
     "validate_version",
 ]

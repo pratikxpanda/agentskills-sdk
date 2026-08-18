@@ -28,8 +28,13 @@ Requires Python 3.12 or newer.
 | `get_logger` | Returns a logger in the shared `agentskills.*` namespace |
 | `redact_url` | Strips credentials from a URL before it is logged or raised |
 | `split_frontmatter` | Parses YAML frontmatter from `SKILL.md` content |
+| `split_sections` | Splits a skill body into flat, addressable `Section` values |
+| `outline_of` | Builds a `SkillOutline` of a body's sections and their cost |
+| `SkillOutline` | A body's section keys, token costs, and fetch guidance |
+| `estimate_tokens` | Cheap heuristic token count (4 characters per token) |
 | `AgentSkillsError` | Base exception for all library errors |
 | `SkillNotFoundError` | Raised when a skill does not exist |
+| `SectionNotFoundError` | Raised when a body has no section with the given key |
 | `ResourceNotFoundError` | Raised when a resource within a skill does not exist |
 | `ResourceListingNotSupportedError` | Raised when a provider cannot enumerate a skill's resources |
 | `DiscoveryNotSupportedError` | Raised when a provider cannot enumerate the skills it holds |
@@ -76,6 +81,28 @@ meta = await skill.get_metadata()       # YAML frontmatter as dict
 body = await skill.get_body()           # Markdown instructions
 script = await skill.get_script("run.sh")
 ```
+
+### Reading Part of a Body
+
+A long body is otherwise all-or-nothing. Ask for its outline first, then fetch only the
+section you need:
+
+```python
+outline = await registry.get_skill_outline("incident-response")
+print(outline.render())     # agent-facing text: keys, token costs, and advice
+
+if not outline.whole_body_is_cheaper:
+    text = await registry.get_skill_section("incident-response", "roles")
+```
+
+Keys are slugified headings, with `-2`, `-3` appended on collision. Addressing is **flat**:
+a section covers its own text up to the next heading of any level, so fetching a parent does
+not include its subsections. An unknown key raises `SectionNotFoundError`, whose message
+lists the keys that do exist.
+
+`outline.whole_body_is_cheaper` is true below `WHOLE_BODY_CHEAPER_TOKENS` (1000), where the
+tool call and outline tokens cost more than they save; `render()` says so in words, so agents
+reading only the rendered text still get the guidance.
 
 ### Building a Catalog
 

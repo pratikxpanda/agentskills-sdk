@@ -13,7 +13,8 @@ The two most common exceptions are:
 
 Both inherit from :class:`LookupError` so that they are idiomatic
 Python lookup failures and can also be caught with
-``except LookupError``.
+``except LookupError``.  :class:`SectionNotFoundError` joins them for
+the same reason: addressing part of a body is a lookup like any other.
 
 :class:`SkillUnavailableError` is the deliberate counterpart to those
 two: it means "this may well exist, but the backend could not answer
@@ -65,6 +66,26 @@ class ResourceNotFoundError(AgentSkillsError, LookupError):
             data = await skill.get_reference("missing.md")
         except ResourceNotFoundError:
             print("Reference not found")
+    """
+
+
+class SectionNotFoundError(AgentSkillsError, LookupError):
+    """A requested section does not exist within a skill's body.
+
+    Raised by :meth:`Skill.get_section
+    <agentskills_core.Skill.get_section>` and
+    :meth:`SkillRegistry.get_skill_section
+    <agentskills_core.SkillRegistry.get_skill_section>` when the given
+    key does not match any heading.  Section keys are derived from the
+    body, so they change when the body does; the message lists the keys
+    that are currently valid.
+
+    Example::
+
+        try:
+            text = await skill.get_section("rollbck")
+        except SectionNotFoundError as exc:
+            print(exc)   # names the keys that do exist
     """
 
 

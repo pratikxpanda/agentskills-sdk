@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+import agentskills_core
 from agentskills_core import Skill
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.cost import (
@@ -45,80 +46,24 @@ def _cost(**overrides) -> SkillCost:
     return SkillCost(**{**defaults, **overrides})
 
 
-class TestSplitSections:
-    def test_text_with_no_headings_is_one_preamble(self):
-        [section] = split_sections("just prose\nover two lines")
+class TestSplitSectionsIsReExported:
+    """The splitter lives in core so ``inspect --cost`` and the outline agree.
 
-        assert section.title == PREAMBLE_TITLE
-        assert section.level == 0
+    Its behaviour is covered by ``agentskills-core``'s ``test_sections``;
+    what matters here is that the tools package forwards to it rather
+    than growing a second implementation that can drift.
+    """
 
-    def test_empty_body_produces_nothing(self):
-        assert split_sections("") == []
+    def test_the_splitter_is_cores(self):
+        assert split_sections is agentskills_core.split_sections
 
-    def test_whitespace_before_a_heading_is_not_a_section(self):
-        [section] = split_sections("\n\n# Title\n\nbody")
+    def test_the_preamble_title_is_cores(self):
+        assert PREAMBLE_TITLE == agentskills_core.PREAMBLE_TITLE
 
-        assert section.title == "Title"
+    def test_sections_still_split(self):
+        sections = split_sections("intro\n\n# One\n\na")
 
-    def test_headings_become_sections_in_order(self):
-        sections = split_sections("# One\n\na\n\n## Two\n\nb\n\n## Three\n\nc")
-
-        assert [(s.title, s.level) for s in sections] == [("One", 1), ("Two", 2), ("Three", 2)]
-
-    def test_a_nested_section_is_not_also_counted_in_its_parent(self):
-        body = "## Parent\n\nparent text\n\n### Child\n\nchild text"
-        parent, child = split_sections(body)
-
-        assert "child text" not in parent.text
-        assert "child text" in child.text
-
-    def test_the_parts_sum_to_the_whole(self):
-        body = "intro\n\n# One\n\na\n\n## Two\n\nb\n"
-        sections = split_sections(body)
-
-        # Rejoining is exact except for the trailing newline splitlines drops.
-        assert "\n".join(section.text for section in sections) == body.rstrip("\n")
-
-    def test_a_hash_inside_a_fence_is_a_comment_not_a_heading(self):
-        body = "# Real\n\n```bash\n# not a heading\necho hi\n```\n\ntail"
-        [section] = split_sections(body)
-
-        assert section.title == "Real"
-        assert "not a heading" in section.text
-
-    def test_tilde_fences_are_honoured_too(self):
-        body = "# Real\n\n~~~\n# not a heading\n~~~\n"
-        [section] = split_sections(body)
-
-        assert section.title == "Real"
-
-    def test_a_fence_of_a_different_character_does_not_close_one(self):
-        body = "# Real\n\n```\n~~~\n# still inside\n```\n\n# After"
-        real, after = split_sections(body)
-
-        assert "still inside" in real.text
-        assert after.title == "After"
-
-    def test_closing_hashes_are_stripped_from_the_title(self):
-        [section] = split_sections("## Title ##\n\nbody")
-
-        assert section.title == "Title"
-
-    def test_a_hash_without_a_space_is_not_a_heading(self):
-        [section] = split_sections("#hashtag\n\nbody")
-
-        assert section.title == PREAMBLE_TITLE
-
-    def test_seven_hashes_are_not_a_heading(self):
-        [section] = split_sections("####### too deep\n\nbody")
-
-        assert section.title == PREAMBLE_TITLE
-
-    def test_an_empty_section_still_counts(self):
-        # A heading with nothing under it still charges for its own line.
-        sections = split_sections("# One\n# Two\n")
-
-        assert [s.title for s in sections] == ["One", "Two"]
+        assert [s.title for s in sections] == [PREAMBLE_TITLE, "One"]
 
 
 class TestResolveCounter:

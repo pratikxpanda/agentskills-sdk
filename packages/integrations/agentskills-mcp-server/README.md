@@ -195,10 +195,14 @@ The server exposes tools that let the LLM agent access skill content:
 | --- | --- | --- |
 | `get_skill_metadata` | `skill_id` | Read frontmatter (name, description, etc.) |
 | `get_skill_body` | `skill_id` | Load full skill instructions |
+| `get_skill_outline` | `skill_id` | List the body's sections, keys and token costs |
+| `get_skill_section` | `skill_id`, `key` | Load one section of the body |
 | `list_skill_resources` | `skill_id` | List bundled references, scripts and assets |
 | `get_skill_reference` | `skill_id`, `name` | Read a reference document |
 | `get_skill_script` | `skill_id`, `name` | Read a script |
 | `get_skill_asset` | `skill_id`, `name` | Read an asset |
+
+`get_skill_outline` exists so a large skill is not all-or-nothing. Its rendered text carries the whole-body cost alongside the per-section costs and says outright when `get_skill_body` is the cheaper call — a section fetch is not free, it costs a tool call and a model turn on top of the outline. Section keys are flat slugs and sections do not nest, so fetching a parent does not include what is indented under it in the outline.
 
 `list_skill_resources` returns a JSON object keyed by resource kind. Not every backend can enumerate resources — a plain static HTTP host cannot. Rather than surfacing an exception, the tool returns `{"supported": false, "note": "..."}` in that case: "this cannot be listed" is something the model can act on by falling back to the names in the skill body, not an error worth retrying.
 

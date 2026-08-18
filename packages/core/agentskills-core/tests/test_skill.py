@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from agentskills_core import Skill, SkillProvider
+from agentskills_core import SectionNotFoundError, Skill, SkillProvider
 
 
 def _make_mock_provider() -> AsyncMock:
@@ -40,6 +40,53 @@ class TestSkill:
         body = await skill.get_body()
         provider.get_body.assert_called_once_with("incident-response")
         assert "Incident Response" in body
+
+    async def test_get_outline_summarises_the_body(self):
+        provider = _make_mock_provider()
+        provider.get_body.return_value = "# Title\n\nintro\n\n## Triage\n\npage the on-call"
+        skill = Skill("incident-response", provider)
+
+        outline = await skill.get_outline()
+
+        assert outline.skill_id == "incident-response"
+        assert [ref.key for ref in outline.sections] == ["title", "triage"]
+
+    async def test_get_section_returns_only_that_section(self):
+        provider = _make_mock_provider()
+        provider.get_body.return_value = "# Title\n\nintro\n\n## Triage\n\npage the on-call"
+        skill = Skill("incident-response", provider)
+
+        text = await skill.get_section("triage")
+
+        assert "page the on-call" in text
+        assert "intro" not in text
+
+    async def test_a_body_with_no_headings_is_one_section(self):
+        provider = _make_mock_provider()
+        provider.get_body.return_value = "just prose"
+        skill = Skill("incident-response", provider)
+
+        assert await skill.get_section("preamble") == "just prose"
+
+    async def test_an_unknown_key_lists_the_available_ones(self):
+        provider = _make_mock_provider()
+        provider.get_body.return_value = "# Title\n\nintro\n\n## Triage\n\npage"
+        skill = Skill("incident-response", provider)
+
+        with pytest.raises(SectionNotFoundError) as excinfo:
+            await skill.get_section("nope")
+
+        assert "title, triage" in str(excinfo.value)
+
+    async def test_an_empty_body_has_no_sections_to_name(self):
+        provider = _make_mock_provider()
+        provider.get_body.return_value = ""
+        skill = Skill("incident-response", provider)
+
+        with pytest.raises(SectionNotFoundError) as excinfo:
+            await skill.get_section("anything")
+
+        assert "none" in str(excinfo.value)
 
     async def test_get_script_delegates(self):
         provider = _make_mock_provider()
