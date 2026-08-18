@@ -57,6 +57,41 @@ response = await agent.run("What severity is a full DB outage?")
 | `skills_instruction_prompt` | Built-in template | Custom prompt template. Must contain `{skills_catalog}` and `{tools_usage_instructions}` placeholders. |
 | `skills_catalog_format` | `"xml"` | Skills catalog format — `"xml"` or `"markdown"`. |
 | `source_id` | `"agentskills"` | Unique identifier for this provider instance. |
+| `cache_prompt` | `True` | Reuse the assembled prompt across runs in a session. Invalidated automatically when the registry's skills or the loaded set change. |
+| `prune_loaded_skills` | `True` | Drop catalog entries for skills whose full body the agent has already loaded this session. |
+
+### Session-aware disclosure
+
+The provider keeps per-session bookkeeping in the `state` dict Agent Framework hands to
+`before_run()` / `after_run()`, which makes later turns cheaper than the first.
+
+**Caching** stores the assembled prompt so an unchanged turn costs no registry I/O. It does not
+save tokens — the same text is still sent. The cache key covers the catalog format, the
+registered skills and the loaded set, so registering a skill mid-session is picked up without a
+TTL to tune.
+
+**Pruning** is what makes turn N+1 smaller. When `after_run()` sees a `get_skill_body` call, the
+skill is recorded as loaded; its full instructions are now in the conversation, so repeating its
+catalog entry pays for the same thing twice. Later turns advertise the remaining skills and
+replace the pruned entries with a one-line reminder, and the catalog reports the narrowing
+(`shown="2" total="3"`) rather than presenting itself as complete.
+
+Deliberate limits:
+
+- Only `get_skill_body` counts as a load. `get_skill_outline` and `get_skill_section` read a
+  fragment, and a fragment is not the skill.
+- If every registered skill has been loaded, the full catalog is emitted. A catalog saying the
+  agent has no skills is worse than a repeated entry.
+- If the reminder would cost more than the entries it replaces — possible when skills carry very
+  terse metadata — pruning is declined for that turn.
+- Pruning assumes the loaded body is still in the conversation. If your host compacts history,
+  set `prune_loaded_skills=False`.
+
+The loaded set is published on `context.metadata["agentskills_loaded_skills"]` for other context
+providers, and held as a plain sorted list so session state stays JSON-serialisable.
+
+Repeated `before_run()` calls on the same context inject once; the guard is keyed by `source_id`,
+so two providers over two registries can still both contribute.
 
 ### Manual Tools
 
@@ -114,7 +149,7 @@ All tools are async-compatible (`FunctionTool` with `@tool` decorator).
 
 ## API
 
-### `AgentSkillsContextProvider(registry, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None)`
+### `AgentSkillsContextProvider(registry, *, skills_instruction_prompt=None, skills_catalog_format="xml", source_id=None, cache_prompt=True, prune_loaded_skills=True)`
 
 A `ContextProvider` that injects skill catalog + tools into the agent session automatically via `before_run()`. Skips injection when the registry has no skills.
 
@@ -133,7 +168,7 @@ Agent Framework ships its own `FileAgentSkillsProvider`. Both plug into the same
 | | `FileAgentSkillsProvider` (built-in) | `AgentSkillsContextProvider` (this package) |
 | --- | --- | --- |
 | **Backends** | Filesystem only | Any `SkillProvider` - filesystem, HTTP, custom |
-| **Tool surface** | 2 generic tools (`load_skill`, `read_skill_resource`) | 5 typed tools (metadata, body, reference, script, asset) |
+| **Tool surface** | 2 generic tools (`load_skill`, `read_skill_resource`) | 8 typed tools (metadata, body, outline, section, resources, reference, script, asset) |
 | **Resource semantics** | Flat - all resources accessed by path | Typed - the agent knows the category of what it is reading |
 | **Discovery / parsing** | Built into the framework | Delegated to `agentskills-core` |
 | **Composability** | Single provider | Mix multiple providers in one registry |
