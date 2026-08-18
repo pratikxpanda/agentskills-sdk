@@ -52,6 +52,8 @@ from mcp.server.fastmcp import FastMCP
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    FAST_PATH_RESOURCE_INSTRUCTIONS,
+    FastPath,
     ResourceListingNotSupportedError,
     SkillProvider,
     SkillRegistry,
@@ -125,6 +127,7 @@ def create_mcp_server(
     name: str,
     instructions: str | None = None,
     max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
+    fast_path: FastPath | None = None,
 ) -> FastMCP:
     """Build an MCP server that exposes an Agent Skills registry.
 
@@ -150,12 +153,29 @@ def create_mcp_server(
             resources as base64.  Larger resources are described but
             not returned.  See
             :func:`~agentskills_core.encode_resource_content`.
+        fast_path: A :class:`~agentskills_core.FastPath` from
+            :func:`~agentskills_core.resolve_fast_path`.  When given,
+            both catalog resources serve the skill's body directly, the
+            usage-instructions resource drops the selection workflow it
+            no longer describes, and the four body-access tools are not
+            registered at all.  Resource tools remain.
 
     Returns:
         A configured :class:`~mcp.server.fastmcp.FastMCP` server
         instance, ready for ``server.run()``.
     """
     mcp = FastMCP(name, instructions=instructions)
+
+    def _tool(func):
+        """Register *func* unless the fast path has made it redundant.
+
+        MCP has no way to hide a registered tool later, so the four
+        body-access tools are simply never registered rather than
+        registered and then declined at call time.
+        """
+        if fast_path is not None and not fast_path.keeps(func.__name__):
+            return func
+        return mcp.tool()(func)
 
     async def _list_resources_json(skill_id: str) -> str:
         """Serialize a skill's resource listing, or why it is unavailable."""
@@ -169,19 +189,19 @@ def create_mcp_server(
     # Tools
     # ------------------------------------------------------------------
 
-    @mcp.tool()
+    @_tool
     async def get_skill_metadata(skill_id: str) -> str:
         """Get structured metadata (name, description, and optional fields like license, compatibility, metadata) for a specific skill."""  # noqa: E501
         skill = registry.get_skill(skill_id)
         return json.dumps(await skill.get_metadata())
 
-    @mcp.tool()
+    @_tool
     async def get_skill_body(skill_id: str) -> str:
         """Get the full instructions and guidance (markdown body) for a specific skill."""
         skill = registry.get_skill(skill_id)
         return await skill.get_body()
 
-    @mcp.tool()
+    @_tool
     async def get_skill_outline(skill_id: str) -> str:
         """List the sections of a skill's body with an addressable key and an estimated token cost for each, plus the cost of the whole body.
 
@@ -192,7 +212,7 @@ def create_mcp_server(
         outline = await registry.get_skill_outline(skill_id)
         return outline.render()
 
-    @mcp.tool()
+    @_tool
     async def get_skill_section(skill_id: str, key: str) -> str:
         """Get one section of a skill's body, addressed by a key from get_skill_outline.
 
@@ -201,7 +221,7 @@ def create_mcp_server(
         """
         return await registry.get_skill_section(skill_id, key)
 
-    @mcp.tool()
+    @_tool
     async def list_skill_resources(skill_id: str) -> str:
         """List the references, scripts, and assets a skill bundles.
 
@@ -212,7 +232,7 @@ def create_mcp_server(
         """
         return await _list_resources_json(skill_id)
 
-    @mcp.tool()
+    @_tool
     async def get_skill_reference(skill_id: str, name: str) -> str:
         """Get the full content of a specific reference document from a skill.
 
@@ -226,7 +246,7 @@ def create_mcp_server(
             max_inline_binary_bytes=max_inline_binary_bytes,
         )
 
-    @mcp.tool()
+    @_tool
     async def get_skill_asset(skill_id: str, name: str) -> str:
         """Get the content of a specific asset from a skill.
 
@@ -240,7 +260,7 @@ def create_mcp_server(
             max_inline_binary_bytes=max_inline_binary_bytes,
         )
 
-    @mcp.tool()
+    @_tool
     async def get_skill_script(skill_id: str, name: str) -> str:
         """Get the content of a specific script from a skill.
 
@@ -261,11 +281,15 @@ def create_mcp_server(
     @mcp.resource("skills://catalog/xml")
     async def skills_catalog_xml() -> str:
         """XML catalog of all registered skills for system-prompt injection."""
+        if fast_path is not None:
+            return fast_path.prompt
         return await registry.get_skills_catalog(format="xml")
 
     @mcp.resource("skills://catalog/markdown")
     async def skills_catalog_markdown() -> str:
         """Markdown catalog of all registered skills for system-prompt injection."""
+        if fast_path is not None:
+            return fast_path.prompt
         return await registry.get_skills_catalog(format="markdown")
 
     @mcp.resource("skills://{skill_id}/resources")
@@ -276,6 +300,8 @@ def create_mcp_server(
     @mcp.resource("skills://tools-usage-instructions")
     def skills_tools_usage_instructions() -> str:
         """Workflow instructions explaining how to use the Agent Skills tools."""
+        if fast_path is not None:
+            return FAST_PATH_RESOURCE_INSTRUCTIONS
         return _TOOLS_USAGE_INSTRUCTIONS
 
     return mcp

@@ -32,6 +32,8 @@ Requires Python 3.12 or newer.
 | `outline_of` | Builds a `SkillOutline` of a body's sections and their cost |
 | `SkillOutline` | A body's section keys, token costs, and fetch guidance |
 | `estimate_tokens` | Cheap heuristic token count (4 characters per token) |
+| `resolve_fast_path` | Decides whether a one-skill registry should skip discovery entirely |
+| `FastPath` | The resolved decision: which skill, its body, and the prompt to inject |
 | `AgentSkillsError` | Base exception for all library errors |
 | `SkillNotFoundError` | Raised when a skill does not exist |
 | `SectionNotFoundError` | Raised when a body has no section with the given key |
@@ -189,6 +191,45 @@ metadata:
 A catalog that shrinks without saying so makes agent behaviour non-reproducible. Roughly four characters per token is the usual estimate; the ceiling is in characters so that core needs no tokenizer.
 
 There is no catalog cache today. If one is added, its key must cover the format and every filter argument above.
+
+### Single-Skill Fast Path
+
+A catalog exists to let a model choose. With one skill there is nothing to choose, so the whole discovery apparatus — a catalog listing one entry, eight tool definitions, a block of usage instructions, and a model round trip while the agent calls `get_skill_body` and waits — is spent reaching content there was never a choice about.
+
+```python
+from agentskills_core import resolve_fast_path
+
+fast_path = await resolve_fast_path(registry)
+if fast_path is not None:
+    print(fast_path.prompt)      # the body, inlined, instead of a catalog
+    print(fast_path.skill_id)    # which skill was chosen
+    print(fast_path.tokens)      # what it costs, by the counter the outline uses
+```
+
+Pass the result to any integration's `fast_path=` argument. It returns `None` — meaning "use the normal catalog path" — unless the effective skill set is exactly one and its body fits under the ceiling.
+
+Resolution lives here rather than in each integration because the decision is identical everywhere, and because the ceiling is the part that has to be tuned: one knob is tunable, three that must be kept in step are not.
+
+**Narrowing counts.** `include=` applies an effective set, so a registry of fifty narrowed to one by a selector takes the same path as a registry that only ever held one:
+
+```python
+selection = await selector.select(registry, query)          # agentskills-retrieval
+fast_path = await resolve_fast_path(registry, include=selection.skill_ids)
+```
+
+**The ceiling is not a guess.** The normal path pays the catalog and usage instructions every turn (~500 tokens together) and the body once. The fast path pays a ~200-token wrapper and the body every turn. Over `T` turns the fast path wins while `body × (T − 1) < 300 × T`:
+
+| Conversation length | Fast path wins while body is |
+| --- | --- |
+| 1 turn | any size |
+| 2 turns | < 612 tokens |
+| 3 turns | < 459 tokens |
+| 10 turns | < 340 tokens |
+| 100 turns | < 309 tokens |
+
+An integration knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300 — the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
+
+**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` covers only the four that would re-fetch inlined content (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`). References, scripts and assets are still genuinely progressive — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
 
 ### Skill Versions (optional, non-spec)
 

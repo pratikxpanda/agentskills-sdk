@@ -59,6 +59,7 @@ response = await agent.run("What severity is a full DB outage?")
 | `source_id` | `"agentskills"` | Unique identifier for this provider instance. |
 | `cache_prompt` | `True` | Reuse the assembled prompt across runs in a session. Invalidated automatically when the registry's skills or the loaded set change. |
 | `prune_loaded_skills` | `True` | Drop catalog entries for skills whose full body the agent has already loaded this session. |
+| `fast_path` | `None` | A `FastPath` from `agentskills_core.resolve_fast_path`. Inlines the body of a lone skill and drops the catalog, the usage instructions and the four body-access tools. |
 
 ### Session-aware disclosure
 
@@ -92,6 +93,31 @@ providers, and held as a plain sorted list so session state stays JSON-serialisa
 
 Repeated `before_run()` calls on the same context inject once; the guard is keyed by `source_id`,
 so two providers over two registries can still both contribute.
+
+### Single-skill fast path
+
+An agent with one skill pays the whole discovery apparatus — a catalog listing one entry, eight
+tool definitions, usage instructions describing a selection workflow, and a model round trip while
+it calls `get_skill_body` — to reach content there was never a choice about.
+
+```python
+from agentskills_core import resolve_fast_path
+
+fast_path = await resolve_fast_path(registry)
+provider = AgentSkillsContextProvider(registry, fast_path=fast_path)
+```
+
+`resolve_fast_path` returns `None` unless the effective skill set is exactly one and its body fits
+under a token ceiling, and `fast_path=None` is the normal path — so the call above is safe
+unconditionally. When it does fire, the body is injected directly, the catalog and usage
+instructions are gone, and only the four resource tools are attached. Pass
+`include=selection.skill_ids` to resolve against a set narrowed by
+[agentskills-retrieval](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/retrieval/agentskills-retrieval)
+rather than the whole registry.
+
+The ceiling, the arithmetic behind its default, and why resource tools stay are documented in the
+[core README](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/core/agentskills-core#single-skill-fast-path).
+Resolve it again if the registry changes.
 
 ### Manual Tools
 

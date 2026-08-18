@@ -42,6 +42,13 @@ from agentskills_core.exceptions import (
     SkillNotFoundError,
     SkillUnavailableError,
 )
+from agentskills_core.fastpath import (
+    DEFAULT_FAST_PATH_MAX_TOKENS,
+    FAST_PATH_DROPPED_TOOLS,
+    FAST_PATH_RESOURCE_INSTRUCTIONS,
+    FastPath,
+    resolve_fast_path,
+)
 from agentskills_core.logging import (
     LOGGER_NAMESPACE,
     REDACTED,
@@ -65,7 +72,10 @@ from agentskills_core.skill import Skill
 from agentskills_core.validation import SELECTION_FIELDS, validate_skill, validate_version
 
 __all__ = [
+    "DEFAULT_FAST_PATH_MAX_TOKENS",
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
+    "FAST_PATH_DROPPED_TOOLS",
+    "FAST_PATH_RESOURCE_INSTRUCTIONS",
     "LOGGER_NAMESPACE",
     "PREAMBLE_TITLE",
     "REDACTED",
@@ -74,6 +84,7 @@ __all__ = [
     "WHOLE_BODY_CHEAPER_TOKENS",
     "AgentSkillsError",
     "DiscoveryNotSupportedError",
+    "FastPath",
     "ResourceListingNotSupportedError",
     "ResourceNotFoundError",
     "Section",
@@ -90,6 +101,7 @@ __all__ = [
     "get_logger",
     "outline_of",
     "redact_url",
+    "resolve_fast_path",
     "split_frontmatter",
     "split_sections",
     "validate_skill",

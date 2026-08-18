@@ -41,6 +41,7 @@ from agent_framework import FunctionTool, tool
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
+    FastPath,
     ResourceListingNotSupportedError,
     SkillRegistry,
     encode_resource_content,
@@ -51,6 +52,7 @@ def get_tools(
     registry: SkillRegistry,
     *,
     max_inline_binary_bytes: int = DEFAULT_MAX_INLINE_BINARY_BYTES,
+    fast_path: FastPath | None = None,
 ) -> list[FunctionTool]:
     """Build Agent Framework tools that expose an Agent Skills registry.
 
@@ -72,6 +74,10 @@ def get_tools(
             resources as base64.  Larger resources are described but
             not returned.  See
             :func:`~agentskills_core.encode_resource_content`.
+        fast_path: A :class:`~agentskills_core.FastPath` from
+            :func:`~agentskills_core.resolve_fast_path`.  When given,
+            the four body-access tools are omitted, because the body is
+            already in the prompt.  Resource tools remain.
 
     Returns:
         A list of :class:`~agent_framework.FunctionTool`
@@ -194,16 +200,26 @@ def get_tools(
             max_inline_binary_bytes=max_inline_binary_bytes,
         )
 
-    return [
-        get_skill_metadata,
-        get_skill_body,
-        get_skill_outline,
-        get_skill_section,
-        list_skill_resources,
-        get_skill_reference,
-        get_skill_asset,
-        get_skill_script,
-    ]
+    return _apply_fast_path(
+        [
+            get_skill_metadata,
+            get_skill_body,
+            get_skill_outline,
+            get_skill_section,
+            list_skill_resources,
+            get_skill_reference,
+            get_skill_asset,
+            get_skill_script,
+        ],
+        fast_path,
+    )
+
+
+def _apply_fast_path(tools: list[FunctionTool], fast_path: FastPath | None) -> list[FunctionTool]:
+    """Drop the tools that would only re-fetch an inlined body."""
+    if fast_path is None:
+        return tools
+    return [tool for tool in tools if fast_path.keeps(tool.name)]
 
 
 def get_tools_usage_instructions() -> str:

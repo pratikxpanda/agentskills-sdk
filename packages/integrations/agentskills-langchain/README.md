@@ -58,11 +58,33 @@ All tools are async-compatible (`StructuredTool` with `coroutine`).
 
 `list_skill_resources` returns a JSON object keyed by resource kind. Not every backend can enumerate resources — a plain static HTTP host cannot. Rather than surfacing an exception, the tool returns `{"supported": false, "note": "..."}` in that case: "this cannot be listed" is something the model can act on by falling back to the names in the skill body, not an error worth retrying.
 
+## Single-Skill Fast Path
+
+An agent with one skill pays the whole discovery apparatus — a catalog listing one entry, eight tool definitions, usage instructions describing a selection workflow, and a model round trip while it calls `get_skill_body` — to reach content there was never a choice about.
+
+```python
+from agentskills_core import resolve_fast_path
+
+fast_path = await resolve_fast_path(registry)
+
+if fast_path is not None:
+    system_prompt = fast_path.prompt          # the body, inlined
+    tools = get_tools(registry, fast_path=fast_path)   # resource tools only
+else:
+    catalog = await registry.get_skills_catalog()
+    system_prompt = f"{catalog}\n\n{get_tools_usage_instructions()}"
+    tools = get_tools(registry)
+```
+
+`resolve_fast_path` returns `None` unless the effective skill set is exactly one and its body fits under a token ceiling, and `get_tools(registry, fast_path=None)` is the normal eight-tool list — so nothing changes unless it fires. Pass `include=selection.skill_ids` to resolve against a set narrowed by [agentskills-retrieval](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/retrieval/agentskills-retrieval) rather than the whole registry.
+
+The ceiling, the arithmetic behind its default, and why the resource tools stay are documented in the [core README](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/core/agentskills-core#single-skill-fast-path).
+
 ## API
 
-### `get_tools(registry: SkillRegistry, *, max_inline_binary_bytes: int = 65536) -> list[StructuredTool]`
+### `get_tools(registry: SkillRegistry, *, max_inline_binary_bytes: int = 65536, fast_path: FastPath | None = None) -> list[StructuredTool]`
 
-Returns a list of LangChain structured tools bound to the given registry.
+Returns a list of LangChain structured tools bound to the given registry. With a `fast_path`, the four body-access tools are omitted because the body is already in the prompt.
 
 ### `get_tools_usage_instructions() -> str`
 
