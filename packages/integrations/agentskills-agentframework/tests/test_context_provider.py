@@ -58,6 +58,10 @@ def _mock_context() -> MagicMock:
     ctx = MagicMock()
     ctx.instructions = []
     ctx.tools = []
+    # A real dict, not a MagicMock attribute: the provider reads its own
+    # idempotency marker back out of metadata, and a MagicMock is truthy.
+    ctx.metadata = {}
+    ctx.response = None
 
     def _extend_instructions(source_id: str, instructions):
         if isinstance(instructions, str):
