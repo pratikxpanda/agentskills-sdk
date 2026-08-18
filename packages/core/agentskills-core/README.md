@@ -92,9 +92,41 @@ Metadata for every registered skill is fetched concurrently, which matters when 
 registry = SkillRegistry(catalog_concurrency=4)   # default: 8
 ```
 
+### Selection Metadata
+
+`description` says what a skill is for. `when_to_use` and `when_not_to_use` say where it applies and where it stops:
+
+```yaml
+---
+name: incident-response
+description: Triage and mitigate production incidents.
+when_to_use:
+  - A production service is degraded or down
+when_not_to_use:
+  - Debugging a failing test locally
+---
+```
+
+Both are optional lists of at most five non-empty strings of at most 200 characters each. They render next to the description in both formats and are omitted entirely when absent, so a skill that declares neither renders exactly as it did before this existed:
+
+```xml
+<skill>
+  <name>incident-response</name>
+  <description>Triage and mitigate production incidents.</description>
+  <when_to_use>
+    <case>A production service is degraded or down</case>
+  </when_to_use>
+  <when_not_to_use>
+    <case>Debugging a failing test locally</case>
+  </when_not_to_use>
+</skill>
+```
+
+The limits exist because these fields are charged on every turn for every registered skill, the same as the description. Pass `selection_hints=False` to trade the accuracy back for tokens.
+
 ### Narrowing and Capping the Catalog
 
-The catalog goes into every system prompt on every turn, so its size is a fixed cost per request. Four keyword arguments control it:
+The catalog goes into every system prompt on every turn, so its size is a fixed cost per request. Five keyword arguments control it:
 
 ```python
 catalog = await registry.get_skills_catalog(
@@ -102,6 +134,7 @@ catalog = await registry.get_skills_catalog(
     include=["runbook-a"],          # allow-list of skill IDs
     exclude=["deprecated-runbook"], # deny-list, applied last
     max_chars=8000,                 # hard ceiling on the returned string
+    selection_hints=False,          # drop when_to_use / when_not_to_use
 )
 ```
 

@@ -72,6 +72,7 @@ agentskills lint ./skills --strict --max-body-tokens 4000
 | --- | --- |
 | `missing-version` | No `version`, so consumers cannot pin the skill or detect drift. |
 | `description-too-long-for-catalog` | Catalog entries sit in context every turn. |
+| `missing-selection-metadata` | A long description with no `when_to_use` or `when_not_to_use` is usually smuggling conditions into prose. |
 | `body-over-token-budget` | Body is large enough that detail belongs in `references/`. |
 | `unreferenced-resource` | A file the body never mentions is a file no agent will load. |
 

@@ -30,6 +30,13 @@ _FRONTMATTER = """---
 name: {name}
 description: {description}
 version: 0.1.0
+# Selection metadata: where this skill applies, and where it stops. Both are
+# optional, capped at five entries of 200 characters, and charged on every
+# turn — so keep them short, and say what the description cannot.
+# when_to_use:
+#   - The situation that should make an agent reach for this skill
+# when_not_to_use:
+#   - The nearby situation an agent might mistake for that one
 ---
 
 """

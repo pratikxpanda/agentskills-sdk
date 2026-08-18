@@ -209,6 +209,64 @@ class TestOptionalFieldValidation:
         assert "custom-field" in caplog.text
 
 
+class TestSelectionMetadataValidation:
+    """``when_to_use`` / ``when_not_to_use`` are optional bounded lists."""
+
+    @staticmethod
+    async def _errors(**fields: object) -> list[str]:
+        return await validate_skill(
+            _skill(metadata={"name": "my-skill", "description": "Desc.", **fields}),
+        )
+
+    async def test_valid_lists(self):
+        assert (
+            await self._errors(
+                when_to_use=["A production service is down"],
+                when_not_to_use=["Debugging a failing test locally"],
+            )
+            == []
+        )
+
+    async def test_absent_is_valid(self):
+        assert await self._errors() == []
+
+    async def test_empty_list_is_valid(self):
+        assert await self._errors(when_to_use=[], when_not_to_use=[]) == []
+
+    @pytest.mark.parametrize("key", ["when_to_use", "when_not_to_use"])
+    async def test_wrong_type(self, key):
+        errors = await self._errors(**{key: "a string"})
+        assert any(f"'{key}' must be list" in e for e in errors)
+
+    @pytest.mark.parametrize("key", ["when_to_use", "when_not_to_use"])
+    async def test_non_string_entry(self, key):
+        errors = await self._errors(**{key: ["fine", 7]})
+        assert any(f"'{key}' entry 1 must be str, got int" in e for e in errors)
+
+    async def test_blank_entry(self):
+        errors = await self._errors(when_to_use=["   "])
+        assert any("entry 0 is empty" in e for e in errors)
+
+    async def test_entry_over_length_limit(self):
+        errors = await self._errors(when_to_use=["x" * 201])
+        assert any("201 characters, over the limit of 200" in e for e in errors)
+
+    async def test_entry_at_length_limit(self):
+        assert await self._errors(when_to_use=["x" * 200]) == []
+
+    async def test_too_many_entries(self):
+        errors = await self._errors(when_to_use=[f"case {n}" for n in range(6)])
+        assert any("6 entries, over the limit of 5" in e for e in errors)
+
+    async def test_five_entries_allowed(self):
+        assert await self._errors(when_to_use=[f"case {n}" for n in range(5)]) == []
+
+    async def test_not_reported_as_unknown_keys(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            await self._errors(when_to_use=["A case"])
+        assert "unknown metadata keys" not in caplog.text
+
+
 class TestBoundaryValidation:
     """Tests for boundary-length names and descriptions."""
 

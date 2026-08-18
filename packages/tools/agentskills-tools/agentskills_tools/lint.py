@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentskills_core import RESOURCE_KINDS, Skill, get_logger
+from agentskills_core import RESOURCE_KINDS, SELECTION_FIELDS, Skill, get_logger
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.discovery import SkillLocation
 from agentskills_tools.findings import WARNING, Finding, SkillReport
@@ -19,6 +19,11 @@ from agentskills_tools.validate import check_frontmatter, read_skill_md, unreada
 # Every catalog entry is injected into the system prompt on every turn,
 # so a description is charged for far more often than a body is.
 CATALOG_DESCRIPTION_CHARS = 500
+
+# Past this, a description has usually stopped being a summary and started
+# smuggling conditions — "use for X, but not Y, unless Z" — which is what
+# when_to_use and when_not_to_use are for.
+SELECTION_METADATA_DESCRIPTION_CHARS = 200
 
 DEFAULT_BODY_TOKEN_BUDGET = 5000
 
@@ -86,6 +91,21 @@ async def lint_location(
                 f"description is {len(description)} characters; "
                 f"catalog entries stay in context every turn, so keep it under "
                 f"{CATALOG_DESCRIPTION_CHARS}",
+            )
+        )
+
+    if (
+        isinstance(description, str)
+        and len(description) > SELECTION_METADATA_DESCRIPTION_CHARS
+        and not any(key in metadata for key in SELECTION_FIELDS)
+    ):
+        findings.append(
+            Finding(
+                WARNING,
+                "missing-selection-metadata",
+                f"description is {len(description)} characters and the skill declares "
+                f"neither 'when_to_use' nor 'when_not_to_use'; state the boundary in "
+                f"those fields instead of folding it into the description",
             )
         )
 
