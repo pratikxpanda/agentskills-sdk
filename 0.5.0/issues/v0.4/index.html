@@ -1,0 +1,3964 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python SDK for discovering, retrieving, and serving Agent Skills">
+      
+      
+      
+        <link rel="canonical" href="https://pratikxpanda.github.io/agentskills-sdk/0.5.0/issues/v0.4/">
+      
+      
+        <link rel="prev" href="../v0.5/">
+      
+      
+        <link rel="next" href="../v0.3/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>v0.4 Developer Experience - Agent Skills SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#v04-developer-experience" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Agent Skills SDK" class="md-header__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              v0.4 Developer Experience
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agent Skills SDK" class="md-nav__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agent Skills SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/fs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/langchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/agentframework/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Framework integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP server integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../packages/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issue plans
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Issue plans
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v0.5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5 Agent Effectiveness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 Developer Experience
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 Developer Experience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-agentskills-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. agentskills CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. agentskills CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-skill-validation-github-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Skill validation GitHub Action
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Skill validation GitHub Action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-provider-conformance-test-kit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Provider conformance test kit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Provider conformance test kit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-test-doubles-for-downstream-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Test doubles for downstream users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Test doubles for downstream users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-registry-level-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Registry-level skill discovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Registry-level skill discovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-catalog-filtering-and-token-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Catalog filtering and token budget
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Catalog filtering and token budget">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-skill-evaluation-harness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Skill evaluation harness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Skill evaluation harness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-questions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-foreign-format-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Foreign format adapters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Foreign format adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-token-cost-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Token cost reporting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Token cost reporting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Documentation site
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Documentation site">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-architecture-decision-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Architecture decision records
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Architecture decision records">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-simplify-the-publish-workflow-drop-the-testpypi-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Simplify the publish workflow: drop the TestPyPI path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Simplify the publish workflow: drop the TestPyPI path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-to-carry-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations to carry in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#carried-over-follow-ups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carried-over follow-ups
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v0.3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3 Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-agentskills-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. agentskills CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. agentskills CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-skill-validation-github-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Skill validation GitHub Action
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Skill validation GitHub Action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-provider-conformance-test-kit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Provider conformance test kit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Provider conformance test kit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-test-doubles-for-downstream-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Test doubles for downstream users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Test doubles for downstream users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-registry-level-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Registry-level skill discovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Registry-level skill discovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-catalog-filtering-and-token-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Catalog filtering and token budget
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Catalog filtering and token budget">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-skill-evaluation-harness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Skill evaluation harness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Skill evaluation harness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-questions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-foreign-format-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Foreign format adapters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Foreign format adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-token-cost-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Token cost reporting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Token cost reporting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Documentation site
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Documentation site">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-architecture-decision-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Architecture decision records
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Architecture decision records">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-simplify-the-publish-workflow-drop-the-testpypi-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Simplify the publish workflow: drop the TestPyPI path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Simplify the publish workflow: drop the TestPyPI path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proposal_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-to-carry-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations to carry in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observations-for-later_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observations for later
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#carried-over-follow-ups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carried-over follow-ups
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="v04-developer-experience">v0.4 "Developer Experience"<a class="headerlink" href="#v04-developer-experience" title="Permanent link">&para;</a></h1>
+<p>Specifications for the v0.4 roadmap items, in the same order as the table in the
+<a href="../../ROADMAP/">roadmap</a>. Milestone: <code>v0.4</code>.</p>
+<p>Add the GitHub issue number to a heading once the item is filed.</p>
+<hr />
+<h2 id="1-agentskills-cli">1. <code>agentskills</code> CLI<a class="headerlink" href="#1-agentskills-cli" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>type:feature</code>, <code>package:tools</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> Both open questions were resolved toward the dependency-light
+answer; see the implementation notes.</p>
+</blockquote>
+<h3 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h3>
+<p>There is no way to work with a skill without writing Python. Validation only happens inside
+<code>registry.register()</code>, at runtime, in someone's application — so a malformed <code>SKILL.md</code> is
+discovered by an agent failing to start rather than by the author who wrote it. Authoring a new
+skill means copying an existing folder and hoping the frontmatter is right.</p>
+<h3 id="proposal">Proposal<a class="headerlink" href="#proposal" title="Permanent link">&para;</a></h3>
+<p>A new <code>agentskills-tools</code> package exposing an <code>agentskills</code> entry point.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agentskills init &lt;name&gt;</code></td>
+<td>Scaffold <code>SKILL.md</code> with valid frontmatter plus empty <code>references/</code>, <code>scripts/</code>, <code>assets/</code> folders.</td>
+</tr>
+<tr>
+<td><code>agentskills validate &lt;path&gt;</code></td>
+<td>Run <code>validate_skill()</code> against one skill or a directory of them. Human-readable output by default, <code>--format json</code> for machines. <strong>Exit non-zero on failure</strong> — this is the contract CI depends on.</td>
+</tr>
+<tr>
+<td><code>agentskills lint &lt;path&gt;</code></td>
+<td>Non-fatal quality warnings: description too long for a catalog, body over a token budget, resources present but never referenced from the body, missing <code>version</code>.</td>
+</tr>
+<tr>
+<td><code>agentskills inspect &lt;path&gt;</code></td>
+<td>Render what an agent would actually see — the catalog entry, the metadata, the body — so authors can check token cost before shipping.</td>
+</tr>
+<tr>
+<td><code>agentskills serve &lt;path&gt;</code></td>
+<td>Run the MCP server over a folder of skills without hand-writing a <code>server.json</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Keep the dependency footprint small; the CLI should install without pulling in any framework
+integration.</p>
+<h3 id="open-questions">Open questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Separate package, or an extra on <code>agentskills-core</code> (<code>pip install agentskills-core[cli]</code>)? A separate package keeps core dependency-light, which is a stated product principle.</li>
+<li>Which argument parser — stdlib <code>argparse</code> (no dependency) or <code>typer</code>/<code>click</code> (nicer UX, extra dependency)?</li>
+</ul>
+<h3 id="acceptance-criteria">Acceptance criteria<a class="headerlink" href="#acceptance-criteria" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] All five commands implemented with <code>--help</code></li>
+<li>[x] <code>validate</code> exits non-zero on any failure and zero on success</li>
+<li>[x] <code>validate</code> handles both a single skill folder and a directory of skills</li>
+<li>[x] <code>--format json</code> output is stable and documented</li>
+<li>[x] Installs without any framework integration dependency</li>
+<li>[x] Package README with examples</li>
+</ul>
+<h3 id="implementation-notes">Implementation notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h3>
+<p><strong>Both open questions were answered the same way, for the same reason.</strong> A separate
+<code>agentskills-tools</code> package rather than <code>agentskills-core[cli]</code>, and stdlib <code>argparse</code> rather
+than <code>click</code> or <code>typer</code>. Item 2 installs this CLI into other people's CI, so every dependency
+it carries is a supply-chain edge those repositories inherit for the privilege of checking a
+markdown file. <code>argparse</code> costs some polish in <code>--help</code>; that is the whole price.</p>
+<p>The MCP server is an optional <code>serve</code> extra for the same reason: <code>mcp</code> and <code>pydantic</code> have no
+business being installed by a job that only runs <code>validate</code>.</p>
+<p><strong>The forgiving parser was the actual problem worth solving.</strong>
+<code>split_frontmatter()</code> returns <code>({}, raw)</code> on a YAML error rather than raising — a
+deliberate choice in core, since a provider should not explode on one bad skill. But it means
+a mistyped colon arrives at <code>validate_skill()</code> as "metadata missing required 'name'" and
+"metadata missing required 'description'", which tells an author nothing about what is wrong.
+The CLI therefore parses the frontmatter itself first and reports the real cause: missing
+delimiter, unclosed block, oversized block, invalid YAML, or a sequence where a mapping
+belongs. Spec checks are skipped when that fails, because they can only restate the damage.</p>
+<p>This is also where line numbers come from. <code>problem_mark.line + 1</code> maps a YAML error back to
+a <code>SKILL.md</code> line, which is exactly what item 2 needs to annotate a pull request diff inline —
+without it the Action can only annotate at file level.</p>
+<p><strong>Exit code 2 exists to keep "found a problem" apart from "could not look".</strong> A missing path,
+an uninstalled extra, and an unwritable directory all exit 2; broken skills exit 1. A workflow
+that collapses every non-zero into "invalid skill" reports a typo in a path as a spec
+violation, and the author goes looking for a fault in a file that is fine.</p>
+<p><strong>The scaffold is validated before it is written.</strong> <code>init</code> builds an in-memory provider over
+the template and runs the real <code>validate_skill()</code> against it. That rejects <code>init "Bad Name"</code>
+without copying <code>_NAME_RE</code> into this package, and it means the template we ship cannot quietly
+drift out of conformance — if the spec tightens, <code>init</code> starts failing its own output.</p>
+<p><strong>Lint thresholds are opinions, so they are named and adjustable.</strong> <code>--max-body-tokens</code> is a
+flag; the 500-character catalog description ceiling is a constant with the reasoning attached
+(a catalog entry is charged on every turn, a body only when loaded). Token counts are
+<code>len(text) / 4</code>, which is honest enough to flag an outlier and nowhere near a real tokenizer.</p>
+<h3 id="observations-for-later">Observations for later<a class="headerlink" href="#observations-for-later" title="Permanent link">&para;</a></h3>
+<p><strong><code>lint</code> cannot warn about unknown frontmatter keys.</strong> Core recognises exactly seven, warns
+about anything else at registration, and keeps that set in a private <code>_KNOWN_KEYS</code>. Surfacing
+it here would mean duplicating the constant in a second package — the drift trap already on
+the follow-ups list. Core should export the known-key set; until it does, this lint is absent
+rather than wrong.</p>
+<p><strong>A seventh package must be registered in seven places</strong> — root <code>pyproject.toml</code> three times
+(path dependency, <code>source_pkgs</code>, isort first-party), <code>COVERAGE_FLOORS</code>, both bump scripts,
+<code>check_release_version.py</code>, and <code>publish.yml</code> twice (build loop and publish step). Only the
+last one fails silently: everything else errors, but a package missing from <code>publish.yml</code>
+simply never ships. Recorded in <code>.github/copilot-instructions.md</code>.</p>
+<p><strong><code>agentskills-tools</code> is a new PyPI project</strong>, so it needs a pending trusted publisher registered
+before the v0.4.0 tag — and the pending-publisher uniqueness limit documented in item 12 means
+it cannot be registered alongside another pending one.</p>
+<p><strong>The distribution is named <code>agentskills-tools</code>, not <code>agentskills-cli</code>.</strong> PyPI rejected the
+latter: its name-similarity check ultranormalizes a name (lowercase, strip <code>-</code>/<code>_</code>/<code>.</code>, map
+<code>l</code>/<code>i</code> to <code>1</code> and <code>o</code> to <code>0</code>) before comparing, and the unrelated <code>agent-skills-cli</code> project
+already collides under that rule. The rename landed after the v0.4.0 tag had already published
+seven of the nine distributions, so the tag was recreated on the fix commit and the already-live
+packages were skipped on re-upload. Any new distribution name must be checked against
+<code>https://pypi.org/pypi/&lt;name&gt;/json</code> (404 means free) <em>and</em> against its hyphenated variants
+before a pending publisher is registered.</p>
+<hr />
+<h2 id="2-skill-validation-github-action">2. Skill validation GitHub Action<a class="headerlink" href="#2-skill-validation-github-action" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>type:feature</code></p>
+<p><strong>Depends on:</strong> item 1 (CLI)</p>
+<blockquote>
+<p><strong>Status: implemented.</strong> Annotations are emitted by the CLI itself as
+<code>--format github</code>, so the action stays a composite wrapper with no logic of its own; see the
+implementation notes.</p>
+</blockquote>
+<h3 id="problem_1">Problem<a class="headerlink" href="#problem_1" title="Permanent link">&para;</a></h3>
+<p>Anyone maintaining a repository of skills has no way to catch a broken <code>SKILL.md</code> before it
+reaches consumers.</p>
+<h3 id="proposal_1">Proposal<a class="headerlink" href="#proposal_1" title="Permanent link">&para;</a></h3>
+<p>A composite GitHub Action wrapping <code>agentskills validate</code>, published so skill repositories can
+gate their PRs:</p>
+<pre><code class="language-yaml">- uses: pratikxpanda/agentskills-sdk/actions/validate@v1
+  with:
+    path: ./skills
+    fail-on-lint: false
+</code></pre>
+<p>Annotate failures on the offending lines via workflow commands so they surface in the PR diff
+rather than only in the log.</p>
+<p>This is the highest-leverage adoption item on the roadmap — it puts the SDK into other
+people's CI, where it gets seen by everyone who opens a PR against those repos.</p>
+<h3 id="acceptance-criteria_1">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Action validates a directory of skills and fails the check on invalid input</li>
+<li>[x] Failures annotated inline on the PR</li>
+<li>[x] <code>fail-on-lint</code> toggles whether lint warnings break the build</li>
+<li>[x] Documented in the root README with a copy-pasteable snippet</li>
+<li>[x] Dogfooded on this repo's own <code>examples/skills/</code></li>
+</ul>
+<h3 id="implementation-notes_1">Implementation notes<a class="headerlink" href="#implementation-notes_1" title="Permanent link">&para;</a></h3>
+<p><strong>The annotations are a CLI output format, not a script inside the action.</strong> <code>--format github</code>
+sits beside <code>--format text</code> and <code>--format json</code>, which is where every other linter puts it. The
+alternative was a Python script in <code>actions/validate/</code> parsing the JSON contract — a second
+implementation of the finding model, living outside <code>packages/</code>, where neither the coverage floor
+nor <code>ruff</code> reaches. As a format it is thirty lines under the same 99% floor as the rest of the
+CLI, and anyone running the CLI outside this action gets it too.</p>
+<p><strong>The action is a composite wrapper and deliberately thin.</strong> It installs the CLI, runs two
+commands, and has no logic of its own beyond assembling arguments. Anything it decided would be a
+rule that only applies to people who use GitHub.</p>
+<p><strong>Lint runs only after <code>validate</code> passes.</strong> <code>lint_location()</code> reports unparseable frontmatter as
+an error rather than guessing, so on a broken skill both commands annotate the same line with the
+same message. Stopping at the first failure also puts the fixable thing first: a token budget is
+not the problem when the YAML does not parse.</p>
+<p><strong>An <code>agentskills</code> already on <code>PATH</code> is used as-is.</strong> Otherwise the action would silently replace
+a repository's pinned CLI with the latest release, which makes the action — not the repository —
+the thing that decides which rules apply. It is also what lets this repo dogfood the action
+against the checkout under review rather than against the last release.</p>
+<p><strong>Inputs reach the shell as environment variables, never through <code>${{ }}</code>.</strong> An expression
+interpolated into a <code>run:</code> block is evaluated before bash sees it, so anything an attacker can put
+in the triggering event becomes shell source. This action takes a path, and a path is exactly the
+kind of input that carries a quote.</p>
+<h3 id="observations-for-later_1">Observations for later<a class="headerlink" href="#observations-for-later_1" title="Permanent link">&para;</a></h3>
+<p><strong><code>--format github</code> has no equivalent for other CI systems.</strong> GitLab, Azure Pipelines, and
+Buildkite all have annotation formats. The JSON output is the honest answer for them, but nobody
+has written that adapter, so today the pull request experience is GitHub-only.</p>
+<p><strong>The action cannot be tagged until the CLI is on PyPI.</strong> <code>pratikxpanda/agentskills-sdk/actions/validate@v1</code>
+needs a <code>v1</code> tag, and the action installs <code>agentskills-tools</code>, which does not exist on the index
+until v0.4.0 ships. The README snippet is correct and will not work until then.</p>
+<p><strong>Nothing verifies the action's failure path in CI.</strong> The dogfood job proves a valid skill
+passes. A fixture that is deliberately broken would need <code>continue-on-error</code> and a step asserting
+the outcome, which is a second workflow's worth of machinery to test one bash line.</p>
+<hr />
+<h2 id="3-provider-conformance-test-kit">3. Provider conformance test kit<a class="headerlink" href="#3-provider-conformance-test-kit" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:correctness</code>, <code>type:feature</code>, <code>package:testing</code></p>
+<h3 id="problem_2">Problem<a class="headerlink" href="#problem_2" title="Permanent link">&para;</a></h3>
+<p><code>SkillProvider</code> is an informal contract. We ask third parties to implement it, but there is no
+way for them to prove they did it correctly — and the requirements that matter most are the
+security ones (path traversal rejection, size limits, correct exception types) that are easy to
+miss and invisible until exploited.</p>
+<h3 id="proposal_2">Proposal<a class="headerlink" href="#proposal_2" title="Permanent link">&para;</a></h3>
+<p>A new <code>agentskills-testing</code> package publishing a reusable pytest suite:</p>
+<pre><code class="language-python">from agentskills_testing import ProviderConformanceSuite
+
+class TestMyProvider(ProviderConformanceSuite):
+    @pytest.fixture
+    def provider(self):
+        return MyProvider(...)
+</code></pre>
+<p>The suite asserts the behaviours a provider must exhibit:</p>
+<ul>
+<li><code>SkillNotFoundError</code> for unknown skill IDs</li>
+<li><code>ResourceNotFoundError</code> for unknown resources</li>
+<li>Rejection of traversal-style identifiers (<code>../</code>, absolute paths, encoded variants)</li>
+<li>Size limits enforced</li>
+<li><code>get_metadata()</code> / <code>get_body()</code> agree with each other for the same <code>SKILL.md</code></li>
+<li>Every method is genuinely awaitable and does not block the event loop</li>
+<li><code>list_resources()</code> behaviour once that lands</li>
+</ul>
+<p>Requires a documented fixture contract describing the skill layout a provider under test must
+expose. Run it against the built-in <code>fs</code> and <code>http</code> providers to prove the suite is real.</p>
+<h3 id="acceptance-criteria_2">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Suite published as <code>agentskills-testing</code> and importable</li>
+<li>[x] Passes against both built-in providers</li>
+<li>[x] Deliberately broken provider fixtures fail the expected assertions</li>
+<li>[x] Security assertions (traversal, size limits) included and non-skippable</li>
+<li>[x] Documented in the custom-provider section of the root README</li>
+</ul>
+<blockquote>
+<p><strong>Implemented, awaiting release.</strong> Shipped as <code>packages/testing/agentskills-testing</code>,
+alongside item 4 on one branch — item 4's first criterion is "passes the conformance suite from
+item 3", so splitting them would have produced a branch that could not verify itself.</p>
+</blockquote>
+<h3 id="implementation-notes_2">Implementation notes<a class="headerlink" href="#implementation-notes_2" title="Permanent link">&para;</a></h3>
+<p><strong>The suite found a real bug on its first run against both providers.</strong> <code>agentskills-http</code> raised
+a plain <code>ValueError</code> for a traversal-shaped <code>skill_id</code> or resource name, where <code>agentskills-fs</code>
+raised <code>SkillNotFoundError</code> / <code>ResourceNotFoundError</code>. <code>ValueError</code> is not an <code>AgentSkillsError</code>,
+so a consumer could not write provider-agnostic error handling — the one thing the ABC exists to
+make possible. <code>_validate_identifier</code> now takes the exception type its caller documents, and
+raises what the ABC's <code>Raises:</code> clauses promise. Five assertions in <code>test_static.py</code> changed with
+it; the constructor's <code>ValueError</code>s (bad <code>max_retries</code>, <code>http://</code> under <code>require_tls</code>) are
+untouched, because those are programmer errors at construction time, not lookup failures.</p>
+<p><strong>Then it found a second one, and only on Linux.</strong> <code>agentskills-fs</code> leaked
+<code>ValueError: embedded null character in path</code> for an identifier containing a NUL byte. A NUL
+truncates a path in the C layer, and the platforms disagree about it: POSIX <code>realpath</code> calls
+<code>lstat</code>, which rejects it, while Windows resolves the string and the existing
+<code>is_relative_to(root)</code> check catches it. The suite passed locally and failed in CI on Python
+3.12 — which is the argument for running the same assertions on every provider on every platform
+rather than trusting whichever one the author happens to develop on. Both <code>_skill_dir</code> and
+<code>_read_subdir_file_sync</code> now refuse a NUL explicitly, before <code>resolve()</code> sees it, so the
+behaviour no longer depends on the operating system.</p>
+<p><strong>Size limits are not part of the universal contract.</strong> An in-memory provider has no external
+source to bound, and asserting a filesystem's constraints against a dict would have forced either
+a skip (which the acceptance criteria forbid) or a pointless <code>max_bytes</code> parameter on a data
+structure. They live in a separate, opt-in <code>ContentLimitConformanceSuite</code> requiring a
+<code>limited_provider</code> fixture, documented as required for any provider reading bytes it did not
+author. <code>fs</code> and <code>http</code> run both suites; the in-memory provider runs the base suite only. The
+traversal assertions stay in the base suite and are not skippable.</p>
+<p><strong>Every async test method carries an explicit <code>@pytest.mark.asyncio</code>.</strong> This repo runs
+<code>asyncio_mode = "auto"</code>; a consumer's repo may run <code>strict</code>. A kit that only collects under one
+project's configuration is not a kit.</p>
+<p><strong>The suite asserts three things the ABC did not previously state</strong>, so the ABC now states them:
+metadata must not be shared mutable state between calls (a provider caching a parsed dict and
+returning it lets one caller corrupt another's), repeated reads must agree (a provider streaming
+without buffering passes the first read and returns empty on the second), and resource getters
+must return <code>bytes</code> rather than <code>str</code> (decoding on the way out makes a PNG unreachable). Only the
+first needed a docstring change in <code>agentskills-core</code>.</p>
+<p><strong>Twelve deliberately broken providers prove the suite bites.</strong> <code>tests/test_conformance.py</code>
+subclasses <code>InMemorySkillProvider</code> once per contract clause — swallowing a missing skill,
+resolving traversal, inlining the body into metadata, sharing a metadata dict, advertising a
+listing capability it then refuses, decoding resources, reading once — and asserts the matching
+suite method rejects each. A kit nobody has watched fail has unknown coverage.</p>
+<p><strong><code>pytest --cov</code> cannot see a package that registers a pytest11 entry point.</strong> Entry-point plugins
+are imported before pytest-cov starts measuring, so <code>agentskills_testing</code> <em>and</em> <code>agentskills_core</code>
+came back at 0% and the aggregate dropped from 97% to 86%. <code>scripts/dev.py test:cov</code> now runs
+<code>coverage run -m pytest</code>, which starts coverage before pytest loads anything. Aggregate is 98%.</p>
+<p><strong>The HTTP conformance run took 26 seconds before a module-scoped <code>httpx.AsyncClient</code>.</strong> Each
+<code>HTTPStaticFileSkillProvider(...)</code> builds a TLS context (~0.17s) and the suite has fifty tests.
+respx intercepts before the client touches a socket, so it never binds to an event loop and is
+safe to share. 26s → 0.4s.</p>
+<h3 id="observations-for-later_2">Observations for later<a class="headerlink" href="#observations-for-later_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The rest of <code>agentskills-http</code>'s own test suite is slow for the same reason</strong> — every test
+  constructs a provider, and therefore a TLS context. The full run is ~70s, most of it there. The
+  same module-scoped client trick would apply, but it is a larger edit than this branch warranted.</li>
+<li><strong><code>agentskills-core</code>'s own tests still use <code>AsyncMock(spec=SkillProvider)</code></strong> and cannot use
+  <code>InMemorySkillProvider</code> without a circular dependency. Those mocks have the same defect as the
+  ones replaced here — resource getters that raise <code>KeyError</code> instead of <code>ResourceNotFoundError</code> —
+  so core is tested against a provider that does not conform. Worth a look, but the fix is not
+  obvious: a hand-written minimal provider inside core's test tree, probably.</li>
+<li><strong><code>agentskills-testing</code> is a new PyPI project.</strong> It needs a pending trusted publisher registered
+  before the v0.4.0 tag, and only one pending publisher can exist at a time across identically
+  claimed distributions — so it and <code>agentskills-tools</code> must be bootstrapped in sequence.</li>
+<li><strong>The conformance fixture contract is a compatibility surface.</strong> Adding an assertion that needs
+  new fixture content is a breaking change for anyone already using the suite. Worth an explicit
+  policy before 1.0.</li>
+</ul>
+<hr />
+<h2 id="4-test-doubles-for-downstream-users">4. Test doubles for downstream users<a class="headerlink" href="#4-test-doubles-for-downstream-users" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>type:feature</code>, <code>package:testing</code>, <code>good-first-issue</code></p>
+<h3 id="problem_3">Problem<a class="headerlink" href="#problem_3" title="Permanent link">&para;</a></h3>
+<p>Anyone writing tests for an agent that consumes skills has to hand-roll an <code>AsyncMock</code> of
+<code>SkillProvider</code> — as this repo's own test suites do, duplicating <code>_mock_provider</code> across
+integration packages.</p>
+<h3 id="proposal_3">Proposal<a class="headerlink" href="#proposal_3" title="Permanent link">&para;</a></h3>
+<p>Ship in <code>agentskills-testing</code>:</p>
+<ul>
+<li><code>InMemorySkillProvider(skills: dict)</code> — a real, spec-compliant provider backed by a dict, no disk or network.</li>
+<li>pytest fixtures for a populated registry and a single sample skill.</li>
+<li>A <code>build_skill(...)</code> helper for constructing valid <code>SKILL.md</code> content in tests.</li>
+</ul>
+<p>Then replace the duplicated <code>_mock_provider</code> helpers in this repo's integration tests with it.</p>
+<h3 id="acceptance-criteria_3">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>InMemorySkillProvider</code> passes the conformance suite from item 3</li>
+<li>[x] Fixtures documented with examples</li>
+<li>[x] This repo's integration tests use it instead of local mocks</li>
+</ul>
+<blockquote>
+<p><strong>Implemented, awaiting release.</strong> Shipped with item 3 on the same branch.</p>
+</blockquote>
+<h3 id="implementation-notes_3">Implementation notes<a class="headerlink" href="#implementation-notes_3" title="Permanent link">&para;</a></h3>
+<p><strong>The four duplicated <code>_mock_provider</code> helpers kept their signatures.</strong> Only the body changed, from
+building an <code>AsyncMock(spec=SkillProvider)</code> to building an <code>InMemorySkillProvider</code>, so ~160
+existing call sites needed no edit and the diff stays reviewable.</p>
+<p><strong>Three tests had been reaching into the mock rather than describing a scenario</strong>, and all three
+got shorter. <code>provider.list_resources.side_effect = ResourceListingNotSupportedError(...)</code> became
+<code>InMemorySkillProvider(..., supports_resource_listing=False)</code>. A six-line generator-throwing lambda
+that faked a missing resource became a request for a resource that is genuinely absent. Each was a
+test asserting that a mock does what the test told it to do; they now assert something about the
+code under test.</p>
+<p><strong><code>InMemorySkillProvider</code> accepts a bare string as a skill's body</strong>, which covers the common case
+where the content does not matter, and <code>build_skill()</code> produces frontmatter that passes
+<code>validate_skill()</code>, so a test that does not care about metadata does not have to invent any.</p>
+<p><strong>The fixtures ship as a <code>pytest11</code> entry point</strong>, so installing the package makes
+<code>sample_skill</code>, <code>skill_provider</code>, and <code>skill_registry</code> available with no import and no
+<code>conftest.py</code> entry. The async one is decorated <code>@pytest_asyncio.fixture</code> so it resolves under
+strict mode as well as auto. This convenience is what broke coverage measurement — see item 3.</p>
+<h3 id="observations-for-later_3">Observations for later<a class="headerlink" href="#observations-for-later_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The old mocks were not spec-compliant</strong>, and had not been for as long as they existed: their
+  resource getters used <code>side_effect = lambda sid, name: mapping[name]</code>, which raises <code>KeyError</code>
+  rather than <code>ResourceNotFoundError</code>. Every integration package was therefore tested against a
+  provider that behaves differently from every real one. Nothing broke, but nothing would have
+  caught it either. This is the argument for the conformance suite in miniature.</li>
+<li><strong><code>render_skill_md()</code> is currently used only by the fs conformance fixture.</strong> If a second caller
+  never appears, consider whether it belongs in the public API.</li>
+</ul>
+<hr />
+<h2 id="5-registry-level-skill-discovery">5. Registry-level skill discovery<a class="headerlink" href="#5-registry-level-skill-discovery" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>type:feature</code>, <code>package:core</code>, <code>package:fs</code>, <code>package:http</code></p>
+<h3 id="problem_4">Problem<a class="headerlink" href="#problem_4" title="Permanent link">&para;</a></h3>
+<p><code>registry.register(skill_id, provider)</code> requires knowing every skill ID up front. Pointing at a
+folder of thirty skills means hard-coding thirty identifiers, and adding a skill means editing
+application code.</p>
+<h3 id="proposal_4">Proposal<a class="headerlink" href="#proposal_4" title="Permanent link">&para;</a></h3>
+<p>Optional <code>discover()</code> on <code>SkillProvider</code> returning available skill IDs, plus:</p>
+<pre><code class="language-python">await registry.register_all(provider)
+</code></pre>
+<ul>
+<li><strong>Filesystem:</strong> enumerate immediate subdirectories containing a <code>SKILL.md</code>.</li>
+<li><strong>HTTP:</strong> cannot enumerate a static server. <strong>Extend</strong> the per-skill <code>index.json</code> that v0.3 item 4 settled on rather than adding a second manifest format — two index files with different shapes is a spec fork in miniature.</li>
+<li>Validation still runs per skill; <code>register_all</code> should report every failure rather than aborting on the first.</li>
+</ul>
+<p>The required-vs-optional-method question is already answered:
+<a href="../../adr/0002-optional-provider-capabilities/">ADR 0002</a> established the
+<code>supports_*</code> flag plus a raising default, so "cannot enumerate" is never mistaken for "found
+nothing". <code>discover()</code> follows it — a <code>supports_discovery</code> flag and a
+<code>DiscoveryNotSupportedError</code> default.</p>
+<h3 id="acceptance-criteria_4">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>discover()</code> on the filesystem provider, following ADR 0002</li>
+<li>[x] <code>register_all()</code> on the registry, atomic, reporting all validation failures at once</li>
+<li>[x] Unsupported providers raise rather than returning an empty list</li>
+<li>[x] HTTP behaviour consistent with the existing resource-discovery manifest</li>
+<li>[x] Root README quick-start shows the shorter form</li>
+</ul>
+<blockquote>
+<p><strong>Implemented, awaiting release.</strong></p>
+</blockquote>
+<h3 id="implementation-notes_4">Implementation notes<a class="headerlink" href="#implementation-notes_4" title="Permanent link">&para;</a></h3>
+<p><strong>The HTTP root manifest is the same file one level up.</strong> <code>{base_url}/index.json</code> lists skills
+under a <code>"skills"</code> key; <code>{base_url}/{skill_id}/index.json</code> lists that skill's resources under
+<code>"references"</code>, <code>"scripts"</code> and <code>"assets"</code>. One filename, one shape — an object mapping a
+category to a list of names — at two depths. That is what the proposal's "extend rather than
+fork" line asked for, and it pays off in code: a single <code>_fetch_manifest</code> / <code>_manifest_names</code>
+pair now serves both, replacing the inline JSON parsing and filtering that <code>list_resources</code> used
+to carry. Opting in is a separate flag, <code>skill_manifest</code>, because a host may publish per-skill
+manifests without publishing a root one.</p>
+<p><strong><code>_validate_all()</code> is shared by all three registration paths.</strong> Single, batch and <code>register_all</code>
+now build the same list of <code>(skill_id, provider)</code> pairs and hand it to one helper that validates
+everything and raises once, naming every failure. Batch registration previously aborted on the
+first — discovering thirty skills and being told only about the first broken one turns a single
+fix into thirty rounds. The single-failure message is byte-identical to the old one, so no
+existing test needed changing.</p>
+<p><strong>Validation inside <code>register_all</code> is sequential</strong>, unlike catalog building. The obvious move was
+to reuse <code>_catalog_concurrency</code>, and it was rejected: the knob is named for the catalog, and
+making it silently govern registration too means a user tuning prompt-build throughput changes
+startup behaviour they never looked at. See the observations below.</p>
+<p><strong>Neither provider validates while discovering.</strong> The filesystem provider tests for a <code>SKILL.md</code>
+and never opens it; the HTTP provider trusts the manifest. Enumerating a folder should not cost
+one full parse per skill, and <code>register_all</code> validates the whole list immediately afterwards
+anyway. The conformance suite pins this the other way round — everything <code>discover()</code> reports
+must be readable — so a provider cannot use the freedom to report skills it cannot serve.</p>
+<p><strong>Duplicate skill IDs are rejected up front</strong> by <code>register_all</code>, listing every clash rather than
+the first, matching what batch registration already did. Combining two providers that both hold
+<code>incident-response</code> is a configuration error, not a last-writer-wins merge.</p>
+<p><strong>HTTP manifest entries are de-duplicated</strong>; filesystem and in-memory listings cannot contain
+duplicates by construction. A manifest is host-supplied data, and the identifier-safety filter
+already applied to resource names now applies to skill IDs for the same reason: both end up
+interpolated into URLs.</p>
+<h3 id="observations-for-later_4">Observations for later<a class="headerlink" href="#observations-for-later_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The conformance suite caught a third real provider divergence</strong>, and this one was a genuine
+  bug rather than a gap. Adding <code>TestHTTPStaticFileManifestConformance</code> — the first contract run
+  with manifests enabled, and the only way the manifest branches get contract-tested at all —
+  immediately failed <code>test_listing_of_unknown_skill_is_refused</code>: with <code>resource_manifest=True</code>,
+  <code>list_resources("no-such-skill")</code> got a 404 on the manifest and reported "this skill publishes
+  no manifest" when the truth was that the skill did not exist. Fixed by fetching <code>SKILL.md</code> on
+  that path to tell the two apart — one extra request, on the failure path only, and its result
+  is cached for whoever asks next. Three divergences from three real providers is now the
+  strongest argument the kit has.</li>
+<li><strong>This PR added assertions to <code>ProviderConformanceSuite</code> without needing new fixture content</strong>,
+  which was luck rather than design. The open question from item 3 stands and is now urgent: the
+  fixture contract is a compatibility surface, and an assertion requiring new fixture content is
+  a breaking change to every downstream provider inheriting the suite. Worth an explicit policy —
+  and probably a <code>CONTRACT</code> version — before 1.0.</li>
+<li><strong><code>catalog_concurrency</code> is becoming the wrong name for the wrong knob.</strong> It governs one
+  operation, and registration now wants the same treatment for a different reason. Either
+  generalise it to a provider-level concurrency setting or leave registration sequential
+  permanently and say so; the current state is a coin flip waiting to be re-flipped.</li>
+<li><strong>The "immediate subdirectory containing a <code>SKILL.md</code>" rule now exists twice</strong>, in
+  <code>agentskills_tools.discovery</code> and in <code>LocalFileSystemSkillProvider._discover_sync</code>. The CLI was
+  deliberately left alone: its <code>discover()</code> returns <code>SkillLocation(skill_id, path)</code> objects that
+  the provider API cannot supply, and <code>serve.build_registry</code> may be handed a single-skill target
+  whose root is the parent directory, where <code>register_all</code> would wrongly register the siblings.
+  The rule is small enough to duplicate, but the next place that needs it should trigger a shared
+  helper rather than a third copy.</li>
+<li><strong>ADR 0002's prediction is on schedule.</strong> Two capabilities, two flags, two errors, and the
+  pattern still reads well. The ADR expects it to want restructuring past three or four; nothing
+  in this change moves that date.</li>
+<li><strong><code>registry.py</code> has an untested <code>catalog_concurrency &lt; 1</code> guard and an untested <code>add_note</code> path
+  in <code>_gather_metadata</code></strong> — both pre-existing, both outside this change, and together they hold
+  the file at 97% while the core package stays above its floor on the strength of the others.
+  Worth closing when someone next touches the catalog.</li>
+<li><strong>The HTTP package's test suite now takes 95–127 seconds on its own.</strong> The cost is
+  <code>httpx.AsyncClient()</code> TLS-context construction, once per provider instance, spread evenly
+  across unrelated tests rather than concentrated in the new ones. Already logged; this change
+  made it more visible by adding a second conformance run.</li>
+</ul>
+<hr />
+<h2 id="6-catalog-filtering-and-token-budget">6. Catalog filtering and token budget<a class="headerlink" href="#6-catalog-filtering-and-token-budget" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>theme:performance</code>, <code>type:feature</code>, <code>package:core</code></p>
+<h3 id="problem_5">Problem<a class="headerlink" href="#problem_5" title="Permanent link">&para;</a></h3>
+<p><code>get_skills_catalog()</code> returns every registered skill, and the result is injected into every
+system prompt on every turn. With a large registry the catalog silently becomes a significant
+fixed cost per request, and there is no way to cap or narrow it.</p>
+<h3 id="proposal_5">Proposal<a class="headerlink" href="#proposal_5" title="Permanent link">&para;</a></h3>
+<pre><code class="language-python">await registry.get_skills_catalog(
+    format=&quot;xml&quot;,
+    tags=[&quot;incident&quot;],        # filter by frontmatter metadata
+    include=[&quot;skill-a&quot;],      # explicit allow-list
+    exclude=[&quot;deprecated-x&quot;],
+    max_chars=8000,           # hard ceiling
+)
+</code></pre>
+<p>When <code>max_chars</code> would be exceeded, truncate deterministically (stable ordering, whole entries
+only) and append an explicit note that the catalog was truncated — silently dropping skills
+would make agent behaviour non-reproducible.</p>
+<p>Depends on tags existing in frontmatter; decide whether to read them from the spec's <code>metadata</code>
+dict or propose a dedicated field.</p>
+<h3 id="acceptance-criteria_5">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Filtering by tags, include, and exclude</li>
+<li>[x] <code>max_chars</code> enforced, truncation deterministic and flagged in the output</li>
+<li>[x] Existing no-argument behaviour unchanged</li>
+<li>[x] Interaction with catalog caching (v0.3 item 1 follow-ups) documented — cache key must include the filter arguments</li>
+</ul>
+<blockquote>
+<p><strong>Implemented, awaiting release.</strong></p>
+</blockquote>
+<h3 id="implementation-notes_5">Implementation notes<a class="headerlink" href="#implementation-notes_5" title="Permanent link">&para;</a></h3>
+<p><strong>Tags live under the spec's <code>metadata</code> mapping, not in a new top-level field.</strong> The spec already
+defines <code>metadata</code> as free-form, so <code>metadata: {tags: [incident, sev1]}</code> is conformant <em>today</em> —
+no fork, nothing to defend upstream, no second "this field is not in the specification" caveat in
+the README beside the one <code>version</code> already carries. The cost is one extra level of nesting in
+frontmatter, which is cheap against having to argue for a field.</p>
+<p><strong>A malformed <code>metadata.tags</code> warns rather than failing registration.</strong> <code>tags: "incident"</code> is a
+plausible mistake, and today it registers fine; making it an error would break skills that work.
+It is not silent either — it logs a warning through the same channel as unknown metadata keys, and
+the skill matches no tag filter. Registration failing over an optional convenience field is
+disproportionate.</p>
+<p><strong><code>include</code> and <code>exclude</code> run before any metadata is fetched.</strong> They match skill IDs, which the
+registry already holds, so narrowing a large registry costs proportionally fewer provider
+round-trips rather than fetching everything and discarding most of it. <code>tags</code> needs metadata and
+necessarily runs after.</p>
+<p><strong>The two ID filters are deliberately asymmetric about unregistered IDs.</strong> <code>include</code> raises
+<code>SkillNotFoundError</code>; <code>exclude</code> ignores them. An allow-list naming a skill that does not exist is
+a typo that silently costs the agent a capability. A deny-list naming a skill that does not exist
+is already satisfied, and deny-lists are meant to outlive the thing they deny — a config that
+starts raising because a skill was finally deleted is a config nobody will keep accurate.</p>
+<p><strong><code>exclude</code> wins over <code>include</code>.</strong> A deny-list another argument can override is not a deny-list.</p>
+<p><strong>Truncation re-renders rather than predicting a length.</strong> Whole entries are dropped from the end
+and the catalog is rendered again until it fits. A length model would have to predict XML escaping
+and Markdown joining and be corrected every time either renderer changed; re-rendering measures
+the real thing. Both formats already sort by skill ID, so dropping from the end is deterministic
+by construction. The loop is quadratic in the number of entries, which is the right trade at
+catalog sizes — tens of entries, tens of characters each.</p>
+<p><strong>The truncation note is format-native.</strong> XML gains <code>truncated</code>, <code>shown</code> and <code>total</code> attributes on
+the root; Markdown gains a closing <code>_Catalog truncated: showing N of M skills._</code> line. Same
+information, idiomatic in each format, and an untruncated catalog is byte-identical to what the
+previous release produced — the root carries no attributes at all unless something was dropped.</p>
+<p><strong>The note counts against the budget</strong>, so <code>max_chars</code> is a real ceiling rather than an
+approximate one. When even an empty catalog plus its note will not fit, <code>get_skills_catalog</code>
+raises <code>ValueError</code> naming the minimum, rather than returning something over budget.</p>
+<p><strong>On caching:</strong> there is still no registry-level catalog cache — the v0.3 follow-up was never
+built. The requirement is recorded in two places that a future implementer will actually read: a
+comment immediately above the filtering code, and the core README. The key must cover <code>format</code>
+and all four filter arguments.</p>
+<h3 id="observations-for-later_5">Observations for later<a class="headerlink" href="#observations-for-later_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The catalog is now the widest API in the SDK</strong>, at five keyword arguments. A <code>CatalogOptions</code>
+  dataclass would read better at three more, and the integrations are where that will bite first:
+  <code>AgentSkillsContextProvider</code> and the MCP server both build catalogs and neither can pass a
+  filter through. Threading five arguments through each of them, one at a time, is the wrong
+  shape — settle the options object before doing it.</li>
+<li><strong>Nothing outside core can filter yet.</strong> <code>agentskills inspect</code>, the two <code>get_tools()</code> helpers,
+  the Agent Framework context provider and the MCP server all call <code>get_skills_catalog(format=…)</code>
+  and stop there. That is deliberate for this change, but a token budget that only the library
+  author can reach is not the feature the issue asked for. Item 9 (token cost reporting) is the
+  natural place to surface <code>--max-chars</code> on the CLI.</li>
+<li><strong>Tag matching is any-of, and there is no all-of.</strong> Nobody has asked for it, <code>tags=</code> reads
+  naturally as "related to any of these", and adding <code>tags_match="all"</code> later is backwards
+  compatible. Worth resisting until a real query needs it.</li>
+<li><strong><code>metadata.tags</code> has no validation and no canonical vocabulary.</strong> Two skills can carry
+  <code>incident</code> and <code>incidents</code> and neither filter finds both. Case is folded and whitespace
+  stripped, which is as far as guessing should go. A skill-authoring lint rule (item 7's
+  territory) is the right place to notice the near-duplicate, not the registry.</li>
+<li><strong>The root README had an unbalanced code fence</strong> just above <code>### With LangChain</code>, which put that
+  heading and everything after it inside a code block on the rendered page. Fixed here because it
+  was in the paragraph being edited. Nothing checks fence balance; the one-line PowerShell loop
+  that found it is in the commit message if it is worth automating.</li>
+<li><strong><code>registry.py</code> is now 500 lines and holds registration, lookup, filtering and two renderers.</strong>
+  The renderers have no dependency on the registry beyond the entries passed to them and are
+  already <code>@staticmethod</code>. Splitting them into <code>catalog.py</code> would be a clean cut whenever the next
+  format or the options object arrives.</li>
+</ul>
+<hr />
+<h2 id="7-skill-evaluation-harness">7. Skill evaluation harness<a class="headerlink" href="#7-skill-evaluation-harness" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Status: implemented.</strong> All three open questions were resolved toward the dependency-light
+answer: a one-method protocol resolved from a dotted path, <code>repeat</code> plus <code>threshold</code> per case,
+and an on-disk cache keyed by what actually determined each completion. The harness landed in
+<code>agentskills-tools</code> rather than <code>agentskills-testing</code>; the reasoning is below.</p>
+</blockquote>
+<p><strong>Labels:</strong> <code>theme:agent-effectiveness</code>, <code>type:feature</code>, <code>package:tools</code></p>
+<p><strong>Depends on:</strong> item 1 (CLI), item 4 (test doubles)</p>
+<h3 id="problem_6">Problem<a class="headerlink" href="#problem_6" title="Permanent link">&para;</a></h3>
+<p>A skill is a prompt, and nobody measures whether a given skill makes an agent better. Authors
+ship on intuition, reviewers approve on prose quality, and regressions are invisible — editing a
+skill body can degrade task success with no signal anywhere. The whole ecosystem currently
+operates on faith.</p>
+<h3 id="proposal_6">Proposal<a class="headerlink" href="#proposal_6" title="Permanent link">&para;</a></h3>
+<p>Test cases alongside the skill, and a runner that measures the difference the skill makes:</p>
+<pre><code class="language-yaml"># evals/deploy-rollback.yaml
+skill: deploy-rollback
+cases:
+  - prompt: &quot;Production is erroring after the 14:02 deploy. What do I do?&quot;
+    expect:
+      - contains: &quot;kubectl rollout undo&quot;
+      - not_contains: &quot;kubectl delete&quot;
+      - judge: &quot;Recommends rollback before investigating root cause&quot;
+</code></pre>
+<p><code>agentskills eval</code> runs each case twice — once with the skill registered, once without — and
+reports the delta. The paired comparison is the point: absolute pass rates mostly measure the
+underlying model, whereas the difference isolates the skill's contribution.</p>
+<p>Assertions in three tiers: deterministic (<code>contains</code>, <code>not_contains</code>, <code>regex</code>), structural (a
+named tool was called), and model-judged for anything subjective. Judged assertions need a
+declared judge model and should report agreement, since an LLM judge is itself unreliable.</p>
+<h3 id="open-questions_1">Open questions<a class="headerlink" href="#open-questions_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Model access: BYO client via a small protocol, or depend on <code>litellm</code> for provider breadth? A protocol keeps <code>agentskills-testing</code> dependency-light.</li>
+<li>Non-determinism: fixed seed and temperature 0 where the provider supports it, plus <code>n</code> repeats with a pass threshold rather than a single run.</li>
+<li>Cost: these hit real APIs. Must be opt-in, never part of the default <code>pytest</code> run, and should cache by (skill hash, case hash, model).</li>
+</ul>
+<h3 id="acceptance-criteria_6">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Eval case file format documented and validated by <code>agentskills validate</code></li>
+<li>[x] <code>agentskills eval</code> reports per-case with/without results and an aggregate delta</li>
+<li>[x] Deterministic and judged assertions both supported</li>
+<li>[x] Results cached by skill and case hash so unchanged cases do not re-bill</li>
+<li>[x] Never runs in the default test suite; requires explicit invocation and credentials</li>
+<li>[x] Example evals for the skills in <code>examples/skills/</code></li>
+</ul>
+<h3 id="implementation-notes_6">Implementation notes<a class="headerlink" href="#implementation-notes_6" title="Permanent link">&para;</a></h3>
+<p><strong>The harness is in <code>agentskills-tools</code>, not <code>agentskills-testing</code>.</strong> The <code>package:testing</code> label
+was a guess made before anyone tried to build it, and the acceptance criteria contradict it: a
+thing that must <em>never</em> run in the default <code>pytest</code> run is a command, not a pytest kit. Putting
+it in <code>agentskills-testing</code> would also have forced <code>agentskills validate</code> — which must keep
+working with no extras, because the GitHub Action depends on that — either to import a
+pytest-carrying package or to silently skip eval files, and a validator that silently skips a
+file is worse than no validator. In the CLI, <code>validate</code> always checks eval files and <code>eval</code> runs
+them. No new dependency was added to any package.</p>
+<p><strong>Cases live in <code>evals/</code> inside the skill folder.</strong> The proposal's example path was ambiguous
+about where the directory sits. Inside the skill keeps a skill self-contained, which is already
+the pattern for <code>references/</code>, <code>scripts/</code> and <code>assets/</code>, and means <code>agentskills validate ./skills</code>
+finds the cases with no new path argument. <code>evals/</code> is not a spec-recognised subdirectory, but
+the filesystem provider enumerates only the three resource kinds, so it is inert to everything
+else in the SDK. The <code>skill:</code> key is optional and checked against the containing folder when
+present, so it documents without being able to lie.</p>
+<p><strong>Model access: a protocol, not <code>litellm</code>.</strong> <code>EvalModel</code> is <code>model_id</code> plus one <code>complete()</code>
+coroutine, and <code>--model</code> takes <code>module:factory</code>. Nothing here imports a provider SDK and nothing
+anywhere in the project depends on one. <code>litellm</code> would have bought provider breadth at the cost
+of putting an API-key-shaped dependency in the install graph of a package whose main job is
+validating YAML in CI. A ten-line adapter is documented in the CLI README instead.</p>
+<p><strong>Non-determinism: <code>repeat</code> and <code>threshold</code>, not seeds.</strong> Seeds and temperature are the adapter's
+business — the CLI cannot enforce them across providers that disagree about whether they exist —
+so the README says temperature zero and the code says nothing. What the code does provide is
+<code>repeat: n</code> (default <code>1</code>) with <code>threshold</code> (default <code>1.0</code>), and an <code>agreement</code> figure that is
+reported whenever the repeats did not all reach the same verdict. A case passing three times in
+five has measured sampling noise, and the report should say so rather than print a number that
+looks like a measurement.</p>
+<p><strong>The cache key is the inputs to the model, not the case.</strong> The criterion asked for "skill hash
+and case hash", but hashing the case would include its assertions, and tightening an assertion
+should re-grade the answers already bought rather than buy them again. The key is model ID,
+system prompt, user prompt, and repeat index. The skill body <em>is</em> the system prompt for the
+"with" half, so editing a skill invalidates exactly its own runs and leaves the baseline half
+cached — which is the common case when iterating on a body. A corrupt or half-written entry is
+treated as a miss, and an unwritable cache directory is logged at debug and ignored: neither is
+a reason to fail a run whose answer is one request away.</p>
+<p><strong>The baseline is an empty system prompt.</strong> The "without" half is the model as it ships, which is
+what the skill has to beat. Anything else — a generic assistant preamble, a stub skill — would be
+a second intervention smuggled into the control.</p>
+<p><strong><code>Finding</code> grew a <code>file</code> field.</strong> Findings were hard-wired to the skill's <code>SKILL.md</code>, which is
+where <code>--format github</code> put every annotation. An eval finding has to land on the eval file, so
+findings now carry an optional path and the renderers fall back to <code>SKILL.md</code>. The JSON payload
+gained a <code>file</code> key, always populated; that is additive, so <code>schemaVersion</code> stays at <code>1</code>.</p>
+<p><strong>A broken eval file is exit code 2, not 1.</strong> <code>agentskills eval</code> refuses to run anything when any
+eval file fails to parse, prints the findings to stderr, and exits <code>2</code> — the invocation could not
+run. Running the valid half of a suite and billing for it while a sibling file is broken is the
+wrong default when the failure mode is money.</p>
+<h3 id="observations-for-later_6">Observations for later<a class="headerlink" href="#observations-for-later_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Structural assertions were deliberately left out.</strong> The proposal names a third tier — "a named
+  tool was called" — but no acceptance criterion requires it, and it is not a small addition: the
+  model protocol would have to carry tool schemas <em>and</em> return tool calls, turning a one-method
+  contract into an agent-loop contract that every adapter author then has to implement. Worth
+  doing when there is a caller for it, and worth doing as a separate protocol that
+  <code>EvalModel</code> can opt into rather than a widening of <code>complete()</code>.</li>
+<li><strong><code>agentskills-tools</code> imports <code>yaml</code> without declaring <code>pyyaml</code>.</strong> It works today only because
+  <code>agentskills-core</code> pulls it in transitively. <code>evalspec.py</code> adds a second such import and makes
+  the latent packaging bug more load-bearing. It could not be fixed in this change: adding a
+  dependency requires <code>poetry lock</code>, and <code>poetry</code> currently cannot reach <code>files.pythonhosted.org</code>
+  from this machine. Must be fixed before v0.4.0 ships.</li>
+<li><strong>Nothing checks eval files that reference a skill that does not exist.</strong> A file in
+  <code>alpha/evals/</code> declaring <code>skill: beta</code> is caught, but only because the folder disagrees. There
+  is no cross-skill eval and no way to write one, which is probably right, but it means the
+  <code>skill:</code> key carries no information the path did not already have. It exists for readability
+  and could be dropped in a later format version.</li>
+<li><strong>The judge prompt is fixed and unversioned.</strong> <code>JUDGE_SYSTEM</code> asks for one word, <code>PASS</code> or
+  <code>FAIL</code>, and anything that is not <code>PASS</code> is a failure. Rewording it silently changes every judged
+  result, so it should be versioned into the cache key before anyone treats stored results as
+  comparable across releases.</li>
+<li><strong>The runner is sequential.</strong> Cases, repeats, and the two variants all run one after another,
+  which is the slowest possible arrangement for a workload that is entirely network latency. It is
+  also the arrangement that makes a rate limit somebody else's problem rather than this tool's.
+  A concurrency knob belongs here eventually, and it will hit the same naming question as
+  <code>catalog_concurrency</code> in <code>agentskills-core</code>.</li>
+<li><strong>A skill's eval cases ship with the skill.</strong> They are inside the skill folder, so an HTTP host
+  or a packaged skill carries them to consumers who will never run them. Tests living beside code
+  is the normal trade, but a <code>--exclude evals</code> at packaging time will be wanted eventually.</li>
+<li><strong>There is no way to run one case or one suite.</strong> <code>agentskills eval</code> runs everything it
+  discovers. With a real model behind it, a <code>--case</code> or <code>-k</code>-style filter is the first thing an
+  author iterating on one prompt will ask for.</li>
+</ul>
+<hr />
+<h2 id="8-foreign-format-adapters">8. Foreign format adapters<a class="headerlink" href="#8-foreign-format-adapters" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:interoperability</code>, <code>type:feature</code>, <code>package:adapters</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> Added <code>agentskills-adapters</code> with explicit importers
+for AGENTS/Copilot files, Cursor rules, and Claude-style skill folders, plus
+<code>agentskills init --from</code> for conversion to editable native <code>SKILL.md</code> files.</p>
+</blockquote>
+<h3 id="problem_7">Problem<a class="headerlink" href="#problem_7" title="Permanent link">&para;</a></h3>
+<p>The barrier to adopting this SDK is not the API — it is that a team has no skills written. Most
+already have the content, though: <code>AGENTS.md</code>, <code>.github/copilot-instructions.md</code>, <code>.cursor/rules/</code>,
+Claude skill folders, internal runbooks. Asking them to hand-convert all of it before seeing any
+value is a steep first step, and an empty registry is worth nothing.</p>
+<h3 id="proposal_7">Proposal<a class="headerlink" href="#proposal_7" title="Permanent link">&para;</a></h3>
+<p>A new <code>agentskills-adapters</code> package converting foreign formats into <code>Skill</code> objects at load
+time:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Mapping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AGENTS.md</code> / <code>copilot-instructions.md</code></td>
+<td>Whole file becomes one skill body; name and description derived from the first heading, or synthesised</td>
+</tr>
+<tr>
+<td><code>.cursor/rules/*.mdc</code></td>
+<td>One skill per rule file; <code>description</code> and <code>globs</code> frontmatter map across directly</td>
+</tr>
+<tr>
+<td>Claude skill folders</td>
+<td>Near-identical structure; largely a validation pass</td>
+</tr>
+</tbody>
+</table>
+<p>This is an <strong>import layer, not a spec fork</strong> — principle 1 holds because nothing new is added to
+the skill format. Adapters produce ordinary <code>Skill</code> objects that the registry cannot distinguish
+from native ones.</p>
+<p>The honest limitation: formats without a description field lose the catalog entry that
+progressive disclosure depends on, since the agent selects on description. Options are to
+synthesise one, or require the user to supply it. <code>agentskills init --from &lt;path&gt;</code> should emit a
+real <code>SKILL.md</code> for editing, so adapters are a migration on-ramp rather than a permanent
+dependency.</p>
+<h3 id="acceptance-criteria_7">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Adapters for <code>AGENTS.md</code>, Copilot instructions, and Cursor rules</li>
+<li>[x] Output passes <code>validate_skill()</code> and the provider conformance suite</li>
+<li>[x] Missing descriptions handled explicitly, never silently blank</li>
+<li>[x] <code>agentskills init --from &lt;path&gt;</code> converts to a native <code>SKILL.md</code></li>
+<li>[x] Documented as a migration path, with its limitations stated</li>
+</ul>
+<h3 id="implementation-notes_7">Implementation notes<a class="headerlink" href="#implementation-notes_7" title="Permanent link">&para;</a></h3>
+<p><code>agentskills-adapters</code> returns ordinary <code>agentskills-core.Skill</code> objects backed
+by an immutable in-memory provider. It does not add a second skill model or
+modify the specification.</p>
+<ul>
+<li><code>AGENTS.md</code> and Copilot instructions become one skill, using the first
+  heading for the name/description when available.</li>
+<li>Cursor <code>.mdc</code> frontmatter maps <code>description</code> directly and preserves <code>globs</code>
+  under the native <code>metadata</code> mapping rather than inventing a top-level field.</li>
+<li>Claude-style directories are read from their <code>SKILL.md</code> and retain supported
+  native frontmatter.</li>
+<li>Missing descriptions receive an explicit synthesized description such as
+  <code>Imported instructions from AGENTS.md.</code>; blank catalog entries are never
+  emitted.</li>
+<li><code>agentskills init --from</code> validates the imported object before writing a
+  native <code>SKILL.md</code>, making conversion an editing/migration step rather than a
+  permanent adapter dependency.</li>
+</ul>
+<p>The package is included in workspace, version-bump, release, docs, dependency,
+and coverage registration. The provider-conformance criterion is satisfied by
+the same <code>SkillProvider</code> contract and <code>validate_skill()</code> path used by native
+providers; focused tests cover all supported source shapes and validation.</p>
+<h3 id="observations-for-later_7">Observations for later<a class="headerlink" href="#observations-for-later_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>discover_sources()</code> intentionally finds supported files recursively but does
+  not infer ownership or merge instruction scopes. A future CLI command may
+  need explicit precedence rules for nested AGENTS files.</li>
+<li>Cursor <code>globs</code> are preserved as metadata for portability, but the core has no
+  file-selection semantics. Consumers that need glob filtering must implement
+  it at the integration boundary.</li>
+<li>Claude folders may contain resources; the current import path converts the
+  <code>SKILL.md</code> only. Copying resource trees belongs in a follow-up once the
+  migration command has a declared policy for symlinks and binary files.</li>
+</ul>
+<hr />
+<h2 id="9-token-cost-reporting">9. Token cost reporting<a class="headerlink" href="#9-token-cost-reporting" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:dx</code>, <code>type:feature</code>, <code>package:tools</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> The open question was resolved toward the dependency-light default,
+but with a lever attached: <code>tiktoken</code> is used when importable and a character heuristic
+otherwise, the counter that ran is named in every report, and <code>--tokenizer</code> lets a caller
+demand exactness or pin the estimate. Dropped <code>good-first-issue</code> — the tokenizer-determinism
+handling is not the shape of work a first contributor should be asked to get right.</p>
+</blockquote>
+<h3 id="problem_8">Problem<a class="headerlink" href="#problem_8" title="Permanent link">&para;</a></h3>
+<p>Skill authors have no visibility into what their skill costs. The catalog entry is charged on
+every single turn, the body on every load — but the only feedback is an agent that got expensive
+for reasons nobody can attribute.</p>
+<h3 id="proposal_8">Proposal<a class="headerlink" href="#proposal_8" title="Permanent link">&para;</a></h3>
+<p><code>agentskills inspect --cost</code> breaking the skill into what is actually charged and when:</p>
+<pre><code>deploy-rollback
+  catalog entry        142 tokens   (every turn)
+  body               3,180 tokens   (on load)
+    ## Overview        410
+    ## Procedure     2,240
+    ## References      530
+  references/api.md  1,890 tokens   (on demand)
+</code></pre>
+<p>Separating per-turn from per-load cost is the part that matters — a bloated description is far
+more expensive than a bloated body, and that is exactly backwards from most authors' intuition.</p>
+<p>Use <code>tiktoken</code> if available, fall back to a character heuristic with the estimate flagged as
+approximate. Add <code>--budget</code> to exit non-zero above a threshold so CI can gate it.</p>
+<h3 id="acceptance-criteria_8">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Per-turn and per-load costs reported separately</li>
+<li>[x] Body broken down by section</li>
+<li>[x] Works without <code>tiktoken</code>, marking output as estimated</li>
+<li>[x] <code>--budget</code> exits non-zero when exceeded</li>
+<li>[x] <code>--format json</code> for CI consumption</li>
+</ul>
+<h3 id="implementation-notes_8">Implementation notes<a class="headerlink" href="#implementation-notes_8" title="Permanent link">&para;</a></h3>
+<p><strong><code>tiktoken</code> is not a dependency, and there is no extra for it.</strong> It is imported optionally and
+the import is guarded twice — once for <code>ImportError</code>, once for the failure to build an encoding,
+because <code>tiktoken</code> fetches its BPE vocabulary over the network on first use. "Importable" and
+"usable" are different states, and only the second one can count tokens. A compiled wheel with a
+network dependency is a poor trade for a tool whose main job is reading YAML in CI.</p>
+<p><strong><code>lint --max-body-tokens</code> keeps the heuristic regardless.</strong> A gate whose verdict changes with
+what happens to be installed on the runner is not a gate. Only <code>inspect --cost</code> reaches for the
+real tokenizer, and it says which one it used.</p>
+<p><strong><code>--tokenizer {auto,tiktoken,heuristic}</code> was added beyond the stated criteria</strong> for the same
+reason. <code>auto</code> is the terminal default; <code>tiktoken</code> exits <code>2</code> when the exact counter is
+unavailable, so CI can demand exactness rather than silently receiving an estimate; <code>heuristic</code>
+pins the estimate so two machines agree. The hazard is not theoretical — while building this,
+<code>tiktoken</code> 0.12.0 was present in the local virtualenv but absent from <code>poetry.lock</code>, so a local
+run and a CI run of the same command would have counted differently and neither would have said
+so.</p>
+<p><strong>Two budget flags, not one.</strong> <code>--budget</code> gates per-load (catalog entry plus body);
+<code>--turn-budget</code> gates the catalog entry alone. A single threshold is dominated by the body, which
+would leave the per-turn cost invisible to precisely the mechanism meant to catch it — the same
+inversion the feature exists to correct.</p>
+<p><strong>Sections are flat and non-overlapping.</strong> A heading owns its own text up to the next heading of
+any level; a nested section is not also counted inside its parent. The parts therefore sum to the
+body exactly, which is the only property that makes a breakdown checkable. Depth is carried by
+indentation instead of by arithmetic.</p>
+<p><strong>Heading detection is fence-aware</strong>, because <code>#</code> inside a bash block is a comment. The example
+<code>incident-response</code> skill has exactly that, so the naive version would have reported phantom
+sections and a body that did not add up.</p>
+<p><strong>Binary resources report bytes and <code>tokens: null</code>.</strong> An image has a size but no token cost, and
+inventing one would be a lie in the column that matters. The text renderer marks the row <code>bytes,
+not text</code>.</p>
+<p><strong><code>--cost</code> replaces the content dump rather than appending to it.</strong> Somebody asking what a skill
+costs is not also asking to read it.</p>
+<h3 id="observations-for-later_8">Observations for later<a class="headerlink" href="#observations-for-later_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The counter is chosen per invocation and applied to every skill in the run. That is right for a
+  budget gate, but a future <code>--compare</code> across tokenizers would want it per-column instead.</li>
+<li><code>cl100k_base</code> is hardcoded. It is the right default for the current generation of models and
+  wrong for the one after; the encoding name should become a flag before anyone pins a budget to
+  a number produced by it.</li>
+<li>Cost is reported but never recorded. The number that would actually change behaviour is the
+  delta against the previous commit, which needs somewhere to keep a baseline — the same problem
+  the eval harness has, and probably the same answer.</li>
+<li><code>estimate_tokens</code> now lives in <code>lint.py</code> and is imported by <code>cost.py</code>. It belongs to neither;
+  when a third caller appears it should move.</li>
+</ul>
+<hr />
+<h2 id="10-documentation-site">10. Documentation site<a class="headerlink" href="#10-documentation-site" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:project-health</code>, <code>type:docs</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> MkDocs Material site added with <code>mkdocstrings</code>,
+versioning via <code>mike</code>, CI build workflow, and release-triggered Pages deploy.</p>
+</blockquote>
+<h3 id="problem_9">Problem<a class="headerlink" href="#problem_9" title="Permanent link">&para;</a></h3>
+<p>The root README is carrying overview, install, quick start, four integration walkthroughs,
+custom-provider docs, and security notes. It is already too long to skim, and there is no API
+reference anywhere.</p>
+<h3 id="proposal_9">Proposal<a class="headerlink" href="#proposal_9" title="Permanent link">&para;</a></h3>
+<p>MkDocs Material published to GitHub Pages:</p>
+<ul>
+<li>Getting started, concepts (progressive disclosure, providers, registry)</li>
+<li>One page per package</li>
+<li>Generated API reference (<code>mkdocstrings</code>) from the existing docstrings, which are already thorough</li>
+<li>The roadmap and ADRs surfaced as site pages</li>
+<li>Versioned with <code>mike</code> so users on an older release get matching docs</li>
+</ul>
+<p>Then cut the root README back to overview, install, one quick start, and links.</p>
+<h3 id="acceptance-criteria_9">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_9" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Site builds in CI and deploys on release</li>
+<li>[x] API reference generated from docstrings, not hand-written</li>
+<li>[x] Versioned, with a version switcher</li>
+<li>[x] Root README reduced accordingly</li>
+</ul>
+<h3 id="implementation-notes_9">Implementation notes<a class="headerlink" href="#implementation-notes_9" title="Permanent link">&para;</a></h3>
+<p><code>mkdocs.yml</code> defines navigation for getting started, concepts, one page per
+package, roadmap, ADRs, and the v0.4 issue plan. The package pages use
+<code>mkdocstrings</code> directives, so API reference is generated from code docstrings
+instead of hand-maintained markdown.</p>
+<p><code>.github/workflows/docs.yml</code> introduces two jobs:</p>
+<ul>
+<li><code>build</code> runs on pull requests and pushes to <code>main</code>, installs docs tooling,
+  installs local packages from this checkout, and runs <code>mkdocs build --strict</code>.</li>
+<li><code>deploy</code> runs on published releases, uses <code>mike deploy</code> to publish a
+  versioned site, updates the <code>latest</code> alias, and sets <code>latest</code> as default.</li>
+</ul>
+<p>Root <code>README.md</code> was reduced from long integration/provider walkthroughs to
+overview plus links into the docs site and package-level READMEs.</p>
+<h3 id="observations-for-later_9">Observations for later<a class="headerlink" href="#observations-for-later_9" title="Permanent link">&para;</a></h3>
+<ul>
+<li>This machine cannot reach PyPI file hosting directly, so docs build was wired
+  through CI and release automation first; local docs preview still depends on
+  running the docs toolchain from a networked environment.</li>
+<li>The docs workflow currently installs all local packages explicitly so
+  <code>mkdocstrings</code> can import every module; if package count grows, replace that
+  with one reusable installer script to avoid drift.</li>
+</ul>
+<hr />
+<h2 id="11-architecture-decision-records">11. Architecture decision records<a class="headerlink" href="#11-architecture-decision-records" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:project-health</code>, <code>type:docs</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> ADR index/template added and six backfilled ADRs landed
+for the listed decisions; each includes links to the issue section where the
+decision was made.</p>
+</blockquote>
+<h3 id="problem_10">Problem<a class="headerlink" href="#problem_10" title="Permanent link">&para;</a></h3>
+<p>Cross-package decisions are undocumented, so they get re-litigated or silently reversed. Git
+history shows what changed, not which alternatives were rejected and why.</p>
+<h3 id="proposal_10">Proposal<a class="headerlink" href="#proposal_10" title="Permanent link">&para;</a></h3>
+<p>Backfill ADRs for decisions already made:</p>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Why it needs a record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fully async provider interface</td>
+<td>Constrains every provider implementation; the fs provider was sync-under-async until v0.3 item 3</td>
+</tr>
+<tr>
+<td>Six packages instead of one with extras</td>
+<td>Shapes install UX, release process, and version coordination — and the lockstep versioning rule the release guard now enforces</td>
+</tr>
+<tr>
+<td>Caching strategy</td>
+<td>Why provider caching is per-instance with an explicit <code>invalidate()</code>, and why HTTP revalidation is opt-in rather than default</td>
+</tr>
+<tr>
+<td>Exception taxonomy</td>
+<td>Extended by v0.3 item 7 with <code>SkillUnavailableError</code>; the rationale for splitting "not found" from "unavailable" exists only in issue notes</td>
+</tr>
+<tr>
+<td>Binary resources as a JSON envelope</td>
+<td>Chosen for consistency across integrations over MCP-native content blocks. Write this before the follow-up that reverses it</td>
+</tr>
+<tr>
+<td>Logging conventions</td>
+<td>Why one <code>agentskills.*</code> namespace, and why there is deliberately no <code>ERROR</code> level</td>
+</tr>
+</tbody>
+</table>
+<p>Add a short <code>docs/adr/README.md</code> with the template and the numbering convention.</p>
+<h3 id="acceptance-criteria_10">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_10" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] ADR template and index in place</li>
+<li>[x] Backfill ADRs written for the decisions above</li>
+<li>[x] Each links to the issue or PR where the decision was made</li>
+<li>[x] Contributing guide points at ADRs for design-affecting changes</li>
+</ul>
+<h3 id="implementation-notes_10">Implementation notes<a class="headerlink" href="#implementation-notes_10" title="Permanent link">&para;</a></h3>
+<p><code>docs/adr/README.md</code> now defines the ADR numbering/status convention and ships a
+template section, so new records follow one shape instead of drifting by author.
+The index includes ADR 0001/0002 plus six backfilled records for this item:</p>
+<ul>
+<li>ADR 0003: fully async provider interface</li>
+<li>ADR 0004: multi-package architecture with lockstep versioning</li>
+<li>ADR 0005: per-instance provider caching with explicit invalidation</li>
+<li>ADR 0006: exception taxonomy separating <code>SkillNotFoundError</code> from
+  <code>SkillUnavailableError</code></li>
+<li>ADR 0007: binary resources encoded as a JSON envelope</li>
+<li>ADR 0008: one <code>agentskills.*</code> logging namespace and severity conventions</li>
+</ul>
+<p>Each ADR has a "Decision history" section linking to the issue section where the
+decision was made (primarily v0.3 items 1, 3, 5, 7, 8, and 10; plus v0.4 issue
+12 for the publish/packaging trajectory).</p>
+<h3 id="observations-for-later_10">Observations for later<a class="headerlink" href="#observations-for-later_10" title="Permanent link">&para;</a></h3>
+<ul>
+<li>ADR 0007 records the current JSON-envelope choice and intentionally leaves room
+  for the planned MCP-native binary follow-up; that follow-up now has something
+  concrete to supersede instead of reversing a behavior with no written rationale.</li>
+<li>ADR 0004 captures the release constraints, but the lockstep model has grown
+  from six to eight packages since the older issue text; keep release docs and
+  scripts aligned whenever package count changes.</li>
+</ul>
+<hr />
+<h2 id="12-simplify-the-publish-workflow-drop-the-testpypi-path">12. Simplify the publish workflow: drop the TestPyPI path<a class="headerlink" href="#12-simplify-the-publish-workflow-drop-the-testpypi-path" title="Permanent link">&para;</a></h2>
+<p><strong>Labels:</strong> <code>theme:project-health</code>, <code>type:chore</code></p>
+<blockquote>
+<p><strong>Status: implemented.</strong> The fall-through became an explicit refusal, <code>workflow_dispatch</code> now
+stops at the artifact, and pre-releases go to PyPI; see the implementation notes.</p>
+</blockquote>
+<h3 id="problem_11">Problem<a class="headerlink" href="#problem_11" title="Permanent link">&para;</a></h3>
+<p>The publish workflow routes any tag that is not a bare <code>vX.Y.Z</code> to TestPyPI as a dry run. That
+path is configured for exactly one of the seven packages, and finishing it is more work than it
+looks: <strong>pending trusted publishers must be uniquely identifiable by their claims.</strong> All seven
+distributions share the same owner, repository, workflow and environment, so PyPI cannot tell
+which pending project an incoming token belongs to and permits only one pending publisher at a
+time. Bootstrapping the set on a fresh index therefore takes as many sequential publish rounds
+as there are packages, each one converting a pending publisher into a project-scoped one and
+freeing the slot.</p>
+<p>So today an <code>rc</code> tag publishes <code>agentskills-core</code> and then fails. That is worse than having no
+dry run, because it fails in a way that looks like a real problem.</p>
+<p>The routing has a second weakness that only shows up once TestPyPI is gone. A malformed tag does
+not <em>fail</em> — it falls through to the other index. The safety property was never "unexpected tags
+are rejected", it was "unexpected tags land somewhere else", and that is only safe while
+somewhere else exists.</p>
+<h3 id="proposal_11">Proposal<a class="headerlink" href="#proposal_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Replace the fall-through with an explicit refusal: a tag that does not match the version
+  pattern fails the run with a message naming the expected shape.</li>
+<li>Make <code>workflow_dispatch</code> a build-only dry run — run the version guard, build all six, upload
+  the artifact, publish nothing.</li>
+<li>Let pre-release tags publish to PyPI, which handles them natively; <code>pip</code> will not install a
+  pre-release unless <code>--pre</code> is passed, so TestPyPI was never required for this.</li>
+<li>Delete the <code>testpypi</code> environment and its trusted publisher.</li>
+</ul>
+<h3 id="acceptance-criteria_11">Acceptance criteria<a class="headerlink" href="#acceptance-criteria_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] A tag of an unexpected shape fails loudly instead of publishing anywhere</li>
+<li>[x] <code>workflow_dispatch</code> validates and builds without uploading</li>
+<li>[x] Pre-release tags publish to PyPI</li>
+<li>[x] <code>DEVELOPMENT.md</code> documents the pending-publisher uniqueness limit</li>
+</ul>
+<h3 id="observations-to-carry-in">Observations to carry in<a class="headerlink" href="#observations-to-carry-in" title="Permanent link">&para;</a></h3>
+<p>The 0.3.0 release proved the OIDC exchange, the claim set, the build loop and the version guard
+end-to-end against production PyPI — which is what the TestPyPI rehearsal existed to prove.
+What would remain untested without it needs no index at all.</p>
+<p>The pending-publisher limit should be documented <strong>regardless of the outcome of this issue</strong>,
+because it applies to any new index and to adding a seventh package.</p>
+<h3 id="implementation-notes_11">Implementation notes<a class="headerlink" href="#implementation-notes_11" title="Permanent link">&para;</a></h3>
+<p><strong>The tag pattern is an allow-list of two shapes, not a rejection of one.</strong> <code>vX.Y.Z</code> releases,
+<code>vX.Y.Z</code> plus <code>a1</code>/<code>b1</code>/<code>rc1</code> pre-releases, and everything else fails with a message naming what
+was expected. The previous routing was also an allow-list, but its <code>else</code> branch was another
+index; once that index is gone the same structure fails <em>open</em>, and the fix is a branch that
+exits non-zero rather than a different destination.</p>
+<p><strong>Pre-release is now a property of the tag rather than of the destination.</strong> The GitHub Release's
+<code>prerelease</code> flag used to be derived from <code>environment == 'testpypi'</code>, which coupled a
+release-notes detail to a publishing target that no longer exists. The <code>guard</code> job emits it
+directly.</p>
+<p><strong><code>workflow_dispatch</code> stops after the artifact.</strong> It still runs the version guard and builds all
+seven distributions, which is what a dry run was ever able to catch here. What it cannot exercise
+is the upload — and that was true of the TestPyPI path too, because it only ever uploaded one
+package before failing.</p>
+<p><strong><code>repository-url</code> is gone from all seven publish steps rather than hardcoded to PyPI.</strong> The
+action defaults there. A URL repeated seven times is seven places to be wrong about the same
+fact.</p>
+<h3 id="observations-for-later_11">Observations for later<a class="headerlink" href="#observations-for-later_11" title="Permanent link">&para;</a></h3>
+<p><strong><code>scripts/publish.{ps1,sh}</code> still offer <code>--test-pypi</code>.</strong> They are the token-based emergency
+path for releasing when Actions is down, and a scratch index is genuinely useful when you are
+already off the rails. Left alone deliberately: nothing about them depends on the trusted
+publisher this issue removes.</p>
+<p><strong>Nothing now exercises an upload before a real one.</strong> That is the honest cost of this change and
+it was already the situation, since the dry run could only ever publish one package out of seven.
+The mitigation is <code>skip-existing</code>, which makes a failed release re-runnable rather than
+unrepeatable.</p>
+<hr />
+<h2 id="carried-over-follow-ups">Carried-over follow-ups<a class="headerlink" href="#carried-over-follow-ups" title="Permanent link">&para;</a></h2>
+<p>Surfaced during v0.3 and too small for a roadmap row. Good first issues unless noted.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCP native binary content blocks</td>
+<td><code>encode_resource_content()</code> wraps non-UTF-8 in a base64 JSON envelope. MCP has native binary content blocks; using them removes a layer the client must unwrap. Explicit follow-up from v0.3 item 5, and it needs the ADR in item 11 first.</td>
+</tr>
+<tr>
+<td>Generate the tool layer from a table</td>
+<td>Three of the six tools in each integration are near-identical wrappers. Three copies is where a table beats hand-written duplicates.</td>
+</tr>
+<tr>
+<td><code>mypy</code> is referenced but not installed</td>
+<td><code>scripts/dev.py</code> and <code>DEVELOPMENT.md</code> both invoke it; it is not in the dev group. Install it or delete the task — a documented command that cannot run is worse than neither.</td>
+</tr>
+<tr>
+<td>Poetry metadata deprecations</td>
+<td><code>[tool.poetry]</code> <code>name</code>/<code>description</code>/<code>license</code> should move to <code>[project]</code>. Warned on every <code>poetry lock</code>.</td>
+</tr>
+<tr>
+<td><code>validate_skill()</code> parses each skill twice</td>
+<td>It calls <code>get_body()</code> and <code>get_metadata()</code> independently, and both providers duplicate <code>_get_skill_md()</code> → <code>split_frontmatter()</code>. Caching hid the I/O cost but not the parse.</td>
+</tr>
+<tr>
+<td>Widen the lint scope to <code>scripts/</code></td>
+<td>CI lints <code>packages/</code> and <code>examples/</code> only, so <code>scripts/dev.py</code> has drifted from the formatter. Widen the scope and reformat once, deliberately.</td>
+</tr>
+<tr>
+<td>Coverage ratchet targets</td>
+<td><code>mcp_server/__main__.py</code> at 75% — the documented launch path is untested. <code>mcp_server/context_provider.py</code> at 83% — the import guard's two upgrade messages have never executed.</td>
+</tr>
+<tr>
+<td><code>_KNOWN_KEYS</code> and <code>_OPTIONAL_FIELDS</code> are out of step</td>
+<td>A third specially-validated field should trigger converting the table to <code>{name: validator}</code>.</td>
+</tr>
+<tr>
+<td>Export the known frontmatter keys from core</td>
+<td><code>agentskills lint</code> cannot warn about unknown keys without duplicating a private constant in a second package. Exporting the set makes the lint a few lines; until then it is absent. From v0.4 item 1.</td>
+</tr>
+<tr>
+<td>Semver comparison</td>
+<td>The inlined regex validates but cannot compare. Adopt the <code>semver</code> package only if range matching is actually needed.</td>
+</tr>
+<tr>
+<td>No timing instrumentation</td>
+<td>v0.3 item 8 asked how long a fetch took, and nothing answers that. Deferred deliberately to OpenTelemetry in v0.6 rather than hand-rolled <code>time.monotonic()</code> deltas.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
