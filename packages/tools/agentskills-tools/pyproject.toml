@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-tools"
-version = "0.4.0"
+version = "0.5.0"
 description = "Command line tools for authoring and validating Agent Skills (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
@@ -20,7 +20,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.4.0,<1.0"
+agentskills-core = ">=0.5.0,<1.0"
 agentskills-adapters = ">=0.3.0,<1.0"
 agentskills-fs = ">=0.3.0,<1.0"
 pyyaml = ">=6.0,<7.0"
