@@ -21,7 +21,11 @@ nav:
       - Testing toolkit: packages/testing.md
   - Roadmap: ROADMAP.md
   - ADRs: adr/README.md
-  - v0.4 issue plan: issues/v0.4.md
+  - Issue plans:
+      - Overview: issues/README.md
+      - v0.5 Agent Effectiveness: issues/v0.5.md
+      - v0.4 Developer Experience: issues/v0.4.md
+      - v0.3 Foundations: issues/v0.3.md
   - Development: DEVELOPMENT.md
 
 plugins:
