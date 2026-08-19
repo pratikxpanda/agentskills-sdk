@@ -79,6 +79,13 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
 
+      # mike rewrites gh-pages. Without a local copy of the existing branch its
+      # push is a non-fast-forward and is rejected, which is why every deploy
+      # after the one that first created gh-pages failed. Not shallow: pushing a
+      # shallow branch back is rejected as a shallow update.
+      - name: Fetch existing gh-pages
+        run: git fetch origin gh-pages:gh-pages || true
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
