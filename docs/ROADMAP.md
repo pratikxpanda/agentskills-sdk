@@ -96,28 +96,31 @@ existing users.
 
 ---
 
-## Now — v0.5 "Agent Effectiveness"
+## Shipped — v0.5 "Agent Effectiveness"
 
-Everything before this makes skills safe and cheap to ship. This milestone is about making them
-**worth** shipping — the point where the SDK stops being a loader and starts changing how well the
-agent performs.
-
-The first two items change contracts the rest build on — the frontmatter schema and the shape of a
-body fetch — so the table is ordered by dependency rather than by value. Specifications:
+Released 2026-08-19. Everything before this makes skills safe and cheap to ship. This milestone is
+about making them **worth** shipping — the point where the SDK stops being a loader and starts
+changing how well the agent performs. Specifications and implementation notes:
 [docs/issues/v0.5.md](./issues/v0.5.md).
+
+One new distribution ships with this milestone — `agentskills-retrieval` — bringing the
+lockstep-versioned set to ten. Nothing is breaking for existing users.
+
+The first two items changed contracts the rest build on — the frontmatter schema and the shape of a
+body fetch — so the table is ordered by dependency rather than by value.
 
 | Item | Theme | Package(s) | Notes |
 |---|---|---|---|
-| Selection metadata | Correctness | `agentskills-core` | **Implemented, awaiting release.** Optional `when_to_use` / `when_not_to_use` frontmatter, each a list of at most five 200-character entries. False activation is as damaging as non-activation, and a description alone carries no negative signal. Rendered in both catalog formats and omitted when absent; `get_skills_catalog(selection_hints=False)` trades the accuracy back for tokens. Optional and backward-compatible per principle 1; still to be pushed upstream. |
-| Section-level disclosure | Agent effectiveness | `agentskills-core` + integrations | **Implemented, awaiting release.** `get_skill_body()` is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus `get_skill_section(skill_id, heading)`. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills. |
-| Semantic skill selection | Agent effectiveness | new `agentskills-retrieval` | **Implemented, awaiting release.** The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one. |
-| Stateful / session-aware disclosure | Agent effectiveness | `agentskills-agentframework` | **Implemented, awaiting release.** The provider re-injected the whole catalog on every turn regardless of what the agent had already read. `after_run` now records full-body loads in session `state`, and later turns prune those entries down to a one-line reminder — caching saves provider I/O, but pruning is what makes turn N+1 cheaper. Declines to prune when the reminder would cost more than the entries, and never prunes to an empty catalog. Topic-based pruning was left out: that is semantic selection again, and it belongs in `agentskills-retrieval`. |
-| Single-skill fast path | Performance | `agentskills-core` + integrations | **Implemented, awaiting release.** A catalog exists to let a model choose; with one skill there is nothing to choose, so `resolve_fast_path()` inlines the body and drops the catalog, the usage instructions and the four body-access tools, removing a whole model round trip. Triggers on the *effective* set, so a registry narrowed to one by retrieval qualifies too. The token ceiling defaults to the size below which the fast path wins at any conversation length rather than to a guess; measured saving is 38-49% for a small skill. Resource tools stay — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one. |
-| Vision-native assets | Agent effectiveness | `agentskills-core` + integrations | **Implemented, awaiting release.** A base64 envelope is the right answer for an opaque binary and the wrong one for a diagram — the model got a wall of characters where a picture was. One classifier in core decides which is which; the three integrations differ only in how they wrap the result. Detection reads magic bytes before the filename, because a name is a claim and bytes are evidence. Native delivery is opt-in via `vision=True`, since handing an image to a text-only model is an API error rather than a worse answer, and no integration can ask a model whether it can see. Images get their own 5 MiB ceiling: the 64 KiB cap tracks tokens, and a native image is billed by tile count instead. PDF and SVG are excluded, and everything non-renderable keeps the v0.3 envelope unchanged. |
+| Selection metadata | Correctness | `agentskills-core` | Optional `when_to_use` / `when_not_to_use` frontmatter, each a list of at most five 200-character entries. False activation is as damaging as non-activation, and a description alone carries no negative signal. Rendered in both catalog formats and omitted when absent; `get_skills_catalog(selection_hints=False)` trades the accuracy back for tokens. Optional and backward-compatible per principle 1; still to be pushed upstream. |
+| Section-level disclosure | Agent effectiveness | `agentskills-core` + integrations | `get_skill_body()` is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus `get_skill_section(skill_id, heading)`. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills. |
+| Semantic skill selection | Agent effectiveness | new `agentskills-retrieval` | The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one. |
+| Stateful / session-aware disclosure | Agent effectiveness | `agentskills-agentframework` | The provider re-injected the whole catalog on every turn regardless of what the agent had already read. `after_run` now records full-body loads in session `state`, and later turns prune those entries down to a one-line reminder — caching saves provider I/O, but pruning is what makes turn N+1 cheaper. Declines to prune when the reminder would cost more than the entries, and never prunes to an empty catalog. Topic-based pruning was left out: that is semantic selection again, and it belongs in `agentskills-retrieval`. |
+| Single-skill fast path | Performance | `agentskills-core` + integrations | A catalog exists to let a model choose; with one skill there is nothing to choose, so `resolve_fast_path()` inlines the body and drops the catalog, the usage instructions and the four body-access tools, removing a whole model round trip. Triggers on the *effective* set, so a registry narrowed to one by retrieval qualifies too. The token ceiling defaults to the size below which the fast path wins at any conversation length rather than to a guess; measured saving is 38-49% for a small skill. Resource tools stay — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one. |
+| Vision-native assets | Agent effectiveness | `agentskills-core` + integrations | A base64 envelope is the right answer for an opaque binary and the wrong one for a diagram — the model got a wall of characters where a picture was. One classifier in core decides which is which; the three integrations differ only in how they wrap the result. Detection reads magic bytes before the filename, because a name is a claim and bytes are evidence. Native delivery is opt-in via `vision=True`, since handing an image to a text-only model is an API error rather than a worse answer, and no integration can ask a model whether it can see. Images get their own 5 MiB ceiling: the 64 KiB cap tracks tokens, and a native image is billed by tile count instead. PDF and SVG are excluded, and everything non-renderable keeps the v0.3 envelope unchanged. |
 
 ---
 
-## Next — v0.6 "Trust & Operability"
+## Now — v0.6 "Trust & Operability"
 
 The enterprise story. This is the work that makes the SDK viable as the substrate for
 [Agent Skills Hub](https://github.com/pratikxpanda/agentskills-hub).
@@ -136,7 +139,7 @@ The enterprise story. This is the work that makes the SDK viable as the substrat
 
 ---
 
-## Later — v0.7 "Ecosystem"
+## Next — v0.7 "Ecosystem"
 
 Breadth, once the core contracts are stable enough that each new package is cheap to add.
 
@@ -145,7 +148,7 @@ Breadth, once the core contracts are stable enough that each new package is chea
 | Skills as MCP prompts | Interoperability | The MCP server exposes skills as tools only. Many clients surface *prompts* as slash commands, so the same registry becomes user-invocable in Claude Desktop, VS Code, and others for very little work. |
 | Git provider | Ecosystem | Most skills live in Git repos. Clone/fetch with ref or commit pinning, sparse checkout, local cache. Likely the single most requested provider. |
 | Object storage provider | Ecosystem | S3 / Azure Blob / GCS via a common abstraction, with native credential chains instead of hand-rolled headers. |
-| OCI artifact provider | Ecosystem | Skills as OCI artifacts in any container registry — inherits existing signing, replication, and RBAC infrastructure. Pairs naturally with the integrity work in v0.5. |
+| OCI artifact provider | Ecosystem | Skills as OCI artifacts in any container registry — inherits existing signing, replication, and RBAC infrastructure. Pairs naturally with the integrity work in v0.6. |
 | Database provider | Ecosystem | Reference implementation over SQL for teams storing skills in an existing system of record. |
 | OpenAI Agents SDK integration | Ecosystem | Notable gap in the current integration matrix. |
 | Additional framework adapters | Ecosystem | Pydantic AI, Semantic Kernel, LlamaIndex, CrewAI. Prioritize by inbound demand rather than building all of them speculatively. |
