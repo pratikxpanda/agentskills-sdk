@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-fs"
-version = "0.4.0"
+version = "0.5.0"
 description = "Filesystem-based skill provider for the Agent Skills format (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
@@ -19,7 +19,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = ">=0.4.0,<1.0"
+agentskills-core = ">=0.5.0,<1.0"
 pyyaml = ">=6.0,<7.0"
 
 [build-system]

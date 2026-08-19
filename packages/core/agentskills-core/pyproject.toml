@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "agentskills-core"
-version = "0.4.0"
+version = "0.5.0"
 description = "Storage-agnostic abstractions for discovering, validating, and accessing Agent Skills (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
