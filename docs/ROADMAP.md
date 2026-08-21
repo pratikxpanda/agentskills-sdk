@@ -122,8 +122,8 @@ body fetch — so the table is ordered by dependency rather than by value.
 
 ## Now — v0.6 "Trust & Operability"
 
-The enterprise story. This is the work that makes the SDK viable as the substrate for
-[Agent Skills Hub](https://github.com/pratikxpanda/agentskills-hub).
+The enterprise story. This is the work that makes the SDK viable as the substrate for a control
+plane that publishes skills centrally and governs who may use which version.
 
 | Item | Theme | Package(s) | Notes |
 |---|---|---|---|
@@ -173,7 +173,8 @@ Stating these prevents recurring proposals and scope creep.
 
 - **Executing skill scripts.** The SDK retrieves scripts; it does not run them. Sandboxed
   execution is the host application's responsibility. We will document the hazard, not own it.
-- **Authoring or hosting UI.** That is [Agent Skills Hub](https://github.com/pratikxpanda/agentskills-hub)'s job.
+- **Authoring or hosting UI.** That belongs to a control plane built on top of the SDK, not to the
+  SDK itself.
 - **Authentication and authorization.** Providers accept caller-supplied credentials. The SDK
   is not an identity or policy system.
 - **Being an agent framework.** We integrate with frameworks; we do not compete with them.
