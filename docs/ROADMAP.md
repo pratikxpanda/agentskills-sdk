@@ -133,7 +133,7 @@ plane that publishes skills centrally and governs who may use which version.
 | SSRF hardening | Trust | `agentskills-http` | Host allow/deny lists, private/link-local IP range blocking by default, DNS-rebinding-aware connection checks. `require_tls` alone is not an SSRF control. |
 | Secret redaction | Trust | `agentskills-core`, `agentskills-http` | Central redaction helper applied to exception messages and log records so `Authorization` headers and SAS tokens never surface in tracebacks. |
 | OpenTelemetry instrumentation | Operability | `agentskills-core` + providers | Spans for fetch/parse/validate, metrics for fetch latency, cache hit ratio, and payload size. Optional dependency, no-op when OTel is absent. |
-| Skill usage telemetry hooks | Operability | `agentskills-core` | Callback protocol emitting "skill X disclosed at level Y". Answers the question every platform team asks: *which skills are actually being used?* Feeds Hub analytics directly. |
+| Skill usage telemetry hooks | Operability | `agentskills-core` | Callback protocol emitting "skill X disclosed at level Y". Answers the question every platform team asks: *which skills are actually being used?* Feeds adoption analytics directly. |
 | Startup health check | Resilience | `agentskills-core` | `registry.health()` verifying every provider is reachable and every skill parses, at boot. A misconfigured provider should fail deployment, not fail silently mid-conversation. |
 | Serve-stale on provider failure | Resilience | providers | If a refresh fails but cached content exists, serve the stale copy and flag it rather than failing the agent turn. A registry outage should degrade the agent, not break it. Builds on v0.3 caching and error classification. |
 
@@ -163,7 +163,7 @@ Breadth, once the core contracts are stable enough that each new package is chea
 | API freeze | Public surface documented and frozen; anything not documented is explicitly private. |
 | Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated cross-package version guarantees. |
 | Release automation end-to-end | Changelog generation, signed artifacts with build provenance/attestations, automated publish on tag. |
-| Hub interoperability | The SDK contracts the Hub depends on (versioning, integrity, telemetry, MCP gateway composition) are stable and documented. |
+| Control plane interoperability | The SDK contracts a central publishing layer depends on (versioning, integrity, telemetry, MCP gateway composition) are stable and documented. |
 
 ---
 
