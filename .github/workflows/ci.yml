@@ -41,6 +41,11 @@ jobs:
       - name: Check declared dependencies
         run: poetry run python scripts/check_declared_dependencies.py
 
+      # pip-audit reports on everything in the virtualenv, pip included, so a
+      # vulnerability in the pip the venv was seeded with fails the job.
+      - name: Upgrade pip in the virtualenv
+        run: poetry run python -m pip install --upgrade pip
+
       - name: Audit dependencies
         run: poetry run pip-audit
 
