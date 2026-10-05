@@ -1,4 +1,7 @@
-# agentskills-core
+---
+title: agentskills-core
+description: Provider contracts, skill handles, registry, and validation for Agent Skills.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
@@ -40,6 +43,7 @@ Requires Python 3.12 or newer.
 | `ResourceNotFoundError` | Raised when a resource within a skill does not exist |
 | `ResourceListingNotSupportedError` | Raised when a provider cannot enumerate a skill's resources |
 | `DiscoveryNotSupportedError` | Raised when a provider cannot enumerate the skills it holds |
+| `FileAccessNotSupportedError` | Raised when a provider cannot enumerate and read original skill files |
 | `SkillUnavailableError` | Raised when a backend is unreachable or fails transiently |
 
 ## Usage
@@ -83,6 +87,26 @@ meta = await skill.get_metadata()       # YAML frontmatter as dict
 body = await skill.get_body()           # Markdown instructions
 script = await skill.get_script("run.sh")
 ```
+
+### Lossless File Access
+
+For byte-preserving delivery, check the optional capability added for v0.6:
+
+```python
+if skill.supports_file_access:
+  paths = await skill.list_files()
+  original = await skill.read_file("SKILL.md")
+```
+
+`list_files()` returns sorted, unique POSIX-relative paths including `SKILL.md`
+and all supporting files. `read_file()` returns original bytes, including YAML
+frontmatter and line endings. It does not reconstruct files from parsed metadata.
+
+Custom providers remain compatible without implementing this capability. The
+default flag is `False`, and both methods raise `FileAccessNotSupportedError`.
+Opt-in providers implement `list_files(skill_id)` and `read_file(skill_id, path)`
+and set `supports_file_access = True`. Callers still own snapshot consistency,
+digest verification, and approval before activation or execution.
 
 ### Reading Part of a Body
 

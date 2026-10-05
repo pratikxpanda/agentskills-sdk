@@ -112,6 +112,10 @@ class ResourceListingNotSupportedError(AgentSkillsError, NotImplementedError):
     """
 
 
+class FileAccessNotSupportedError(AgentSkillsError, NotImplementedError):
+    """The provider cannot enumerate and read a skill's original files losslessly."""
+
+
 class DiscoveryNotSupportedError(AgentSkillsError, NotImplementedError):
     """The provider cannot enumerate the skills it holds.
 

@@ -13,6 +13,7 @@ import respx
 from agentskills_core import (
     AgentSkillsError,
     DiscoveryNotSupportedError,
+    FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -56,6 +57,118 @@ def _mock_skill_routes(router: respx.MockRouter) -> None:
     router.get(f"{BASE}/test-skill/references/esc.md").respond(
         content=b"# Escalation Policy",
     )
+
+
+class TestLosslessFiles:
+    @pytest.fixture
+    def provider(self, lossless_client):
+        return HTTPStaticFileSkillProvider(BASE, client=lossless_client, file_manifest=True)
+
+    @respx.mock
+    async def test_complete_listing_does_not_fetch_files(self, provider):
+        respx.get(f"{BASE}/test-skill/index.json").respond(
+            json={"files": ["data/nested.bin", "SKILL.md", ".hidden"]}
+        )
+        assert await provider.list_files("test-skill") == [".hidden", "SKILL.md", "data/nested.bin"]
+        assert len(respx.calls) == 1
+
+    @respx.mock
+    async def test_reads_original_bytes_and_refreshes(self, provider):
+        original = b"\xef\xbb\xbf---\r\nname: test-skill\r\n---\r\nBody\r\n"
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(content=original)
+        assert await provider.read_file("test-skill", "SKILL.md") == original
+        route.respond(content=b"changed")
+        assert await provider.read_file("test-skill", "SKILL.md") == b"changed"
+        respx.get(f"{BASE}/test-skill/data/nested.bin").respond(content=b"\x00\xff")
+        assert await provider.read_file("test-skill", "data/nested.bin") == b"\x00\xff"
+
+    @pytest.mark.parametrize(
+        "files",
+        [
+            None,
+            [],
+            ["data.txt"],
+            ["SKILL.md", 1],
+            ["SKILL.md", "SKILL.md"],
+            ["SKILL.md", "../secret"],
+        ],
+    )
+    @respx.mock
+    async def test_invalid_manifests_fail_closed(self, provider, files):
+        respx.get(f"{BASE}/test-skill/index.json").respond(json={"files": files})
+        with pytest.raises(AgentSkillsError):
+            await provider.list_files("test-skill")
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "",
+            "../secret",
+            "./SKILL.md",
+            "/SKILL.md",
+            "data//x",
+            "data/../x",
+            "data\\x",
+            "C:/x",
+            "data/\x00",
+        ],
+    )
+    async def test_invalid_paths_fail_before_network(self, provider, path):
+        with pytest.raises(ResourceNotFoundError):
+            await provider.read_file("test-skill", path)
+
+    @pytest.mark.parametrize("status", [204, 206, 301, 302, 304, 307, 308])
+    @respx.mock
+    async def test_incomplete_responses_rejected(self, provider, status):
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(status_code=status)
+        with pytest.raises(AgentSkillsError):
+            await provider.read_file("test-skill", "SKILL.md")
+
+    async def test_opt_in_is_required(self, lossless_client):
+        provider = HTTPStaticFileSkillProvider(BASE, client=lossless_client, resource_manifest=True)
+        assert not provider.supports_file_access
+        with pytest.raises(FileAccessNotSupportedError):
+            await provider.list_files("test-skill")
+        with pytest.raises(FileAccessNotSupportedError):
+            await provider.read_file("test-skill", "SKILL.md")
+
+    @respx.mock
+    async def test_size_limit_is_enforced(self, lossless_client):
+        provider = HTTPStaticFileSkillProvider(
+            BASE, client=lossless_client, file_manifest=True, max_response_bytes=2
+        )
+        route = respx.get(f"{BASE}/test-skill/data.bin").respond(content=b"12")
+        assert await provider.read_file("test-skill", "data.bin") == b"12"
+        route.respond(content=b"123")
+        with pytest.raises(AgentSkillsError, match="maximum size"):
+            await provider.read_file("test-skill", "data.bin")
+
+    def test_redirecting_client_is_rejected(self, lossless_client, monkeypatch):
+        monkeypatch.setattr(lossless_client, "follow_redirects", True)
+        with pytest.raises(ValueError, match="follow_redirects=False"):
+            HTTPStaticFileSkillProvider(BASE, client=lossless_client, file_manifest=True)
+
+    @respx.mock
+    async def test_redirects_remain_disabled_after_client_mutation(
+        self, provider, lossless_client, monkeypatch
+    ):
+        monkeypatch.setattr(lossless_client, "follow_redirects", True)
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(
+            status_code=302, headers={"Location": "https://other.example/SKILL.md"}
+        )
+        with pytest.raises(AgentSkillsError, match="302"):
+            await provider.read_file("test-skill", "SKILL.md")
+        assert len(respx.calls) == 1
+
+    def test_negative_response_limit_rejected(self, lossless_client):
+        with pytest.raises(ValueError, match="max_response_bytes"):
+            HTTPStaticFileSkillProvider(BASE, client=lossless_client, max_response_bytes=-1)
+
+
+@pytest.fixture(scope="module")
+async def lossless_client():
+    async with httpx.AsyncClient() as client:
+        yield client
 
 
 class TestMetadataAndBody:

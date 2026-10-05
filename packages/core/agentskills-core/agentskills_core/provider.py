@@ -40,6 +40,7 @@ from typing import Any
 
 from agentskills_core.exceptions import (
     DiscoveryNotSupportedError,
+    FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
 )
 
@@ -86,6 +87,46 @@ class SkillProvider(ABC):
     #: ``True`` by implementations that override :meth:`discover`.  Also
     #: a plain attribute, for the same reason.
     supports_discovery: bool = False
+
+    supports_file_access: bool = False
+
+    async def list_files(self, skill_id: str) -> list[str]:
+        """List every original file, including SKILL.md, relative to the skill root.
+
+        Optional capability paired with :meth:`read_file`. Implementations set
+        ``supports_file_access`` and return sorted, unique POSIX relative paths.
+        The listing must include arbitrary supporting directories, not only the
+        standard resource kinds. Missing skills raise ``SkillNotFoundError``.
+        Listing must not read supporting file contents.
+
+        Args:
+            skill_id: The skill whose files should be enumerated.
+
+        Raises:
+            FileAccessNotSupportedError: If lossless file access is unavailable.
+        """
+        raise FileAccessNotSupportedError(
+            f"{type(self).__name__} does not support lossless skill file access."
+        )
+
+    async def read_file(self, skill_id: str, path: str) -> bytes:
+        """Read one original file without decoding, truncation, or reconstruction.
+
+        Args:
+            skill_id: The skill containing the file.
+            path: A POSIX relative path returned by :meth:`list_files`.
+
+        Returns:
+            Original bytes, including frontmatter and line endings for SKILL.md.
+
+        Raises:
+            FileAccessNotSupportedError: If lossless file access is unavailable.
+            SkillNotFoundError: If the skill does not exist.
+            ResourceNotFoundError: If the path is absent or escapes the skill root.
+        """
+        raise FileAccessNotSupportedError(
+            f"{type(self).__name__} does not support lossless skill file access."
+        )
 
     @abstractmethod
     async def get_metadata(self, skill_id: str) -> dict[str, Any]:

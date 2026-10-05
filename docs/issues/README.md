@@ -1,4 +1,7 @@
-# Issue Specifications
+---
+title: Issue Specifications
+description: Milestone specifications and their relationship to the SDK roadmap and GitHub issues.
+---
 
 > Detailed write-ups for [roadmap](../ROADMAP.md) items, kept in the repo whether or not they
 > have been filed as GitHub issues yet.
@@ -13,8 +16,9 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 | [v0.3 — Foundations](./v0.3.md) | 12 | Shipped |
 | [v0.4 — Developer Experience](./v0.4.md) | 12 | Shipped |
 | [v0.5 — Agent Effectiveness](./v0.5.md) | 6 | Shipped |
-| v0.6 — Trust & Operability | — | Not specified; see the [roadmap](../ROADMAP.md) |
-| v0.7 — Ecosystem | — | Not specified; see the [roadmap](../ROADMAP.md) |
+| v0.6: MCP-First Skills | 7 | Roadmap priorities only. See the [roadmap](../ROADMAP.md#now-v06-mcp-first-skills). |
+| v0.7: Trust & Operability | 7 | Roadmap priorities only. See the [roadmap](../ROADMAP.md#next-v07-trust-operability). |
+| v0.8: Portable Distribution | 5 | Candidate priorities. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
 | v1.0 — Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
 A milestone only gets a file once its items are concrete enough to have acceptance criteria.

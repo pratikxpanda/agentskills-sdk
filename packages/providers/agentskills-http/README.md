@@ -1,4 +1,7 @@
-# agentskills-http
+---
+title: agentskills-http
+description: Static HTTP file provider for Agent Skills.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-http)](https://pypi.org/project/agentskills-http/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-http)](https://pypi.org/project/agentskills-http/)
@@ -87,6 +90,7 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `revalidate` | `bool` | `False` | Re-check cached `SKILL.md` on every access with `If-None-Match` / `If-Modified-Since` |
 | `resource_manifest` | `bool` | `False` | Enable `list_resources()` by reading a per-skill `index.json` |
 | `skill_manifest` | `bool` | `False` | Enable `discover()` by reading a root `index.json` |
+| `file_manifest` | `bool` | `False` | Enable lossless access using a complete per-skill `files` list |
 | `timeout` | `float` | `30.0` | Request timeout in seconds (ignored when you supply `client`) |
 | `max_retries` | `int` | `2` | Retries after the initial attempt, for retryable failures only |
 | `retry_backoff` | `float` | `0.5` | Base delay in seconds for exponential backoff |
@@ -103,6 +107,8 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `get_reference(skill_id, name)` | `bytes` | Raw reference content |
 | `list_resources(skill_id)` | `dict[str, list[str]]` | Resource names from `index.json` (requires `resource_manifest=True`) |
 | `discover()` | `list[str]` | Skill IDs from the root `index.json` (requires `skill_manifest=True`) |
+| `list_files(skill_id)` | `list[str]` | Complete sorted paths from `index.json` (requires `file_manifest=True`) |
+| `read_file(skill_id, path)` | `bytes` | Original bytes, including nested paths (requires `file_manifest=True`) |
 | `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 | `aclose()` | `None` | Close the HTTP client (if owned by the provider) |
 
@@ -130,6 +136,34 @@ listing = await provider.list_resources("incident-response")
 ```
 
 Missing categories default to empty lists. A manifest is host-supplied data whose entries are later interpolated into URLs, so names failing the identifier-safety check are dropped. If a given skill has no `index.json`, `list_resources()` raises `ResourceListingNotSupportedError` for that skill — again, not an empty result.
+
+## Lossless File Access
+
+For v0.6 byte-preserving delivery, publish a complete `files` list in each skill's
+`index.json`. This can coexist with the legacy grouped resource keys:
+
+```json
+{
+  "files": ["SKILL.md", "index.json", "data/nested.bin", "references/severity.md"],
+  "references": ["severity.md"]
+}
+```
+
+```python
+async with HTTPStaticFileSkillProvider(BASE, file_manifest=True) as provider:
+    paths = await provider.list_files("incident-response")
+    original = await provider.read_file("incident-response", "SKILL.md")
+```
+
+The host is responsible for listing every file. The provider cannot discover
+omitted files on a static host. Unlike legacy resource listing, unsafe paths,
+duplicates, non-string entries, or a missing `SKILL.md` entry reject the manifest.
+Enabling `resource_manifest` alone does not enable lossless file access.
+
+Reads preserve bytes and bypass the parsed `SKILL.md` cache. Size limits apply,
+and redirects, partial responses, and unsolicited `304` responses are refused.
+An injected client must have `follow_redirects=False`. Publish immutable content
+when building verified manifests. Listing and reading do not form an atomic snapshot.
 
 ## Skill Discovery
 

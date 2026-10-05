@@ -1,4 +1,7 @@
-# agentskills-fs
+---
+title: agentskills-fs
+description: Local filesystem provider for Agent Skills.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
@@ -58,6 +61,27 @@ provider.invalidate("incident-response")  # forget one skill
 provider.invalidate()                      # forget everything
 ```
 
+## Lossless File Access
+
+The v0.6 file-access capability preserves original bytes and lists the complete
+skill tree, including hidden files and arbitrary nested directories:
+
+```python
+paths = await provider.list_files("incident-response")
+original = await provider.read_file("incident-response", "SKILL.md")
+data = await provider.read_file("incident-response", "data/nested.bin")
+```
+
+Listing does not read file contents. Reads bypass the parsed `SKILL.md` cache and
+enforce `max_file_bytes`. Negative limits are rejected. Zero permits empty files only.
+Links, junctions, special files, absolute paths, and traversal are rejected instead
+of silently producing an incomplete listing.
+
+Publish only directories intended for sharing. Hidden files are not automatically
+excluded, so remove credentials and private files before exposing a skill. The
+provider does not freeze the tree or prevent concurrent filesystem changes. Use a
+trusted, immutable publication directory when constructing verified manifests.
+
 ## Security
 
 - **Path-traversal protection** - Skill IDs and resource names are validated to stay within the root directory. Attempts to escape (e.g. `../../etc/passwd`) raise `SkillNotFoundError` or `ResourceNotFoundError`.
@@ -83,6 +107,8 @@ For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/
 | `get_asset(skill_id, name)` | `bytes` | Raw content of an asset file |
 | `get_reference(skill_id, name)` | `bytes` | Raw content of a reference file |
 | `list_resources(skill_id)` | `dict[str, list[str]]` | Resource filenames grouped by kind |
+| `list_files(skill_id)` | `list[str]` | Complete sorted tree, including `SKILL.md` and nested files |
+| `read_file(skill_id, path)` | `bytes` | Original bytes from a skill-relative path |
 | `invalidate(skill_id=None)` | `None` | Drop cached `SKILL.md` content for one skill, or all skills |
 
 ## Resource Discovery
