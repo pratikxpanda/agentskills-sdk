@@ -40,7 +40,7 @@ async def registry() -> SkillRegistry:
 
 
 def _blocks(result):
-    return result[0]
+    return result[0] if isinstance(result, tuple) else result.content
 
 
 class TestOff:
@@ -62,7 +62,7 @@ class TestOn:
         )
         (block,) = _blocks(result)
         assert isinstance(block, ImageContent)
-        assert block.mimeType == "image/png"
+        assert block.model_dump(by_alias=True)["mimeType"] == "image/png"
         assert base64.b64decode(block.data) == PNG
 
     async def test_references_get_the_same_treatment(self, registry):

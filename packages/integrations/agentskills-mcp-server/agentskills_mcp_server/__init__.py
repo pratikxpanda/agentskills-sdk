@@ -3,7 +3,7 @@
 This package bridges :mod:`agentskills_core` and the `Model Context
 Protocol <https://modelcontextprotocol.io>`_, providing:
 
-* :func:`create_mcp_server` -- builds a FastMCP server from a
+* :func:`create_mcp_server` -- builds an MCP server from a
   :class:`~agentskills_core.SkillRegistry`.  Useful when you have
   custom providers or need full control over registration.
 * CLI entry-point (``python -m agentskills_mcp_server --config server.json``)

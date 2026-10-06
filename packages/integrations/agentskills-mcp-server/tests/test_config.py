@@ -228,6 +228,44 @@ async def _build_server_from_config(config: ServerConfig):
 
 
 class TestConfigDrivenServer:
+    async def test_stdio_legacy_roundtrip(self, tmp_path):
+        import asyncio
+        import os
+        import sys
+
+        from mcp import ClientSession, StdioServerParameters, stdio_client
+
+        _write_skill(tmp_path, "test-skill")
+        config = ServerConfig(
+            name="Transport test",
+            skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
+        )
+        config_path = tmp_path / "server.json"
+        config_path.write_text(config.model_dump_json(), encoding="utf-8")
+        parameters = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+            env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+        )
+        async with (
+            asyncio.timeout(20),
+            stdio_client(parameters) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            initialized = await session.initialize()
+            assert initialized.capabilities.tools is not None
+            assert initialized.capabilities.resources is not None
+            assert len((await session.list_tools()).tools) == 8
+            resources = await session.list_resources()
+            assert len(resources.resources) == 3
+            catalog = await session.read_resource("skills://catalog/xml")
+            assert "test-skill" in catalog.contents[0].text
+            metadata = await session.call_tool("get_skill_metadata", {"skill_id": "test-skill"})
+            assert json.loads(metadata.content[0].text)["name"] == "test-skill"
+            missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
+            assert missing.model_dump(by_alias=True)["isError"] is True
+            assert "missing" in missing.content[0].text
+
     async def test_creates_fastmcp_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
@@ -241,7 +279,10 @@ class TestConfigDrivenServer:
             ],
         )
 
-        from mcp.server.fastmcp import FastMCP
+        try:
+            from mcp.server.fastmcp import FastMCP
+        except ModuleNotFoundError:
+            from mcp.server import MCPServer as FastMCP
 
         server = await _build_server_from_config(config)
         assert isinstance(server, FastMCP)
@@ -331,11 +372,13 @@ class TestConfigDrivenServer:
 
         # Verify both skills are accessible via tools
         result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-a"})
-        meta_a = json.loads(result[0][0].text)
+        blocks = result[0] if isinstance(result, tuple) else result.content
+        meta_a = json.loads(blocks[0].text)
         assert meta_a["name"] == "skill-a"
 
         result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-b"})
-        meta_b = json.loads(result[0][0].text)
+        blocks = result[0] if isinstance(result, tuple) else result.content
+        meta_b = json.loads(blocks[0].text)
         assert meta_b["name"] == "skill-b"
 
     async def test_instructions_default_none(self, tmp_path):

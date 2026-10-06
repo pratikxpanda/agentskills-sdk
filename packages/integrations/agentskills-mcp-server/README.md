@@ -1,4 +1,7 @@
-# agentskills-mcp-server
+---
+title: agentskills-mcp-server
+description: MCP tools and resources for Agent Skills registries.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server)](https://pypi.org/project/agentskills-mcp-server/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-mcp-server)](https://pypi.org/project/agentskills-mcp-server/)
@@ -6,7 +9,7 @@
 
 > MCP server integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - expose a skill registry as an MCP server.
 
-Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills as MCP tools and resources. Works with any MCP-compatible client (Claude Desktop, VS Code, custom clients, etc.).
+Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. Native Skills extension support is separate work and is not yet implemented.
 
 ## Installation
 
@@ -28,6 +31,32 @@ pip install agentskills-mcp-server[agentframework]  # MCP context provider for A
 ```
 
 Requires Python 3.12 or newer. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
+
+### MCP SDK Compatibility (v0.6 Development)
+
+Development builds accept MCP SDK 1.28.1 or newer in the 1.x line, or 2.2.0 or
+newer in the 2.x line. SDK 2.0 and 2.1 are excluded. The repository lock keeps
+1.29.0, while a separate CI job exercises 2.2.0 and the unlocked job checks the
+latest permitted dependencies. Direct server tests and real legacy stdio sessions
+cover the same eight tools and three static `skills://` resources.
+
+`create_mcp_server()` returns the installed SDK's server class: `FastMCP` on 1.x
+and `MCPServer` on 2.x. SDK-level Python APIs follow that SDK's version. For
+example, direct `call_tool()` calls return a tuple on 1.x and `CallToolResult` on
+2.x. Protocol clients receive standard MCP results in either case. This support
+does not imply native Skills support or host-specific certification.
+
+Agent Framework's upstream MCP client still declares an MCP 1.x constraint. Keep
+that client and the existing context-provider bridge in a 1.x environment:
+
+```bash
+pip install "agentskills-mcp-server[agentframework]" "mcp>=1.28.1,<2"
+```
+
+Run a 2.x server in a separate environment or process when using that client.
+Do not force incompatible framework extras into the server environment. The
+native integrations and context-provider bridge remain available during the
+planned deprecation window.
 
 ## Quick Start (CLI)
 
@@ -245,7 +274,7 @@ The ceiling, the arithmetic behind its default, and why resource tools stay are 
 
 A `ContextProvider` that reads the skills catalog and tools-usage-instructions from an MCP session and injects them as session instructions via `before_run()`. Requires the `[agentframework]` extra.
 
-### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536, fast_path=None, vision=False, max_inline_image_bytes=5242880) -> FastMCP`
+### `create_mcp_server(registry, *, name, instructions=None, max_inline_binary_bytes=65536, fast_path=None, vision=False, max_inline_image_bytes=5242880)`
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -257,7 +286,7 @@ A `ContextProvider` that reads the skills catalog and tools-usage-instructions f
 | `vision` | `bool` | Return bundled images as native `ImageContent` instead of a base64 envelope |
 | `max_inline_image_bytes` | `int` | Size ceiling for native images; only consulted when `vision` is on |
 
-Returns a configured `FastMCP` instance ready for `server.run()`.
+Returns the installed SDK's configured server instance, ready for `server.run()`.
 
 Supported transport modes: `stdio` (default), `streamable-http`.
 
