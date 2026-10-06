@@ -174,6 +174,7 @@ class TestResolveProvider:
         )
         try:
             assert provider.supports_file_access is True
+            assert provider._max_response_bytes == 0
         finally:
             await provider.aclose()
 
