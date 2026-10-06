@@ -165,6 +165,31 @@ Provider per-file limits still apply. Callers must bound the number of snapshots
 they retain. This server-side preparation is not client-side prefetching and does
 not itself implement the MCP Skills protocol.
 
+### Building a Native Manifest
+
+`build_skill_manifest(snapshot)` returns the official MCP Skills entry shape:
+`uri`, complete `frontmatter`, and one `{uri, digest, size}` entry per captured
+file. It never reconstructs or normalizes the original file bytes.
+
+```python
+from agentskills_core import build_skill_manifest, capture_skill
+
+snapshot = await capture_skill(registry.get_skill("incident-response"))
+manifest = build_skill_manifest(snapshot, skill_path="operations/incident-response")
+```
+
+The final URI path segment must match the declared name. Prefix segments are
+server-chosen and escaped as URI components. A differing snapshot ID becomes a
+prefix by default. Native validation follows current-spec names and known field
+types while preserving other JSON-compatible author fields. Duplicate YAML keys,
+non-JSON values, and expanded frontmatter JSON above 16 MiB are rejected. The
+builder also enforces the native 512-file and 16 MiB file-set limits.
+
+This helper does not start a protocol server or establish host approval. Use
+`create_native_mcp_server` from
+[agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server#native-skills-v06-development)
+for protocol delivery.
+
 ### Building a Catalog
 
 Generate a catalog string for system-prompt injection:

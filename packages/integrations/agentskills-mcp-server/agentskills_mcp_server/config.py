@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -66,6 +66,12 @@ class ServerConfig(BaseModel):
     name: str = Field(..., description="Display name for the MCP server")
     instructions: str | None = Field(None, description="Optional server-level instructions")
     skills: list[SkillConfig] = Field(..., description="Skills to register", min_length=1)
+    mode: Literal["legacy", "native"] = "legacy"
+    skill_paths: dict[str, str] = Field(default_factory=dict)
+    listed_skill_ids: list[str] | None = None
+    page_size: int = Field(100, gt=0)
+    max_skills: int = Field(128, gt=0)
+    max_total_bytes: int = Field(64 * 1024 * 1024, ge=0)
 
 
 # ------------------------------------------------------------------

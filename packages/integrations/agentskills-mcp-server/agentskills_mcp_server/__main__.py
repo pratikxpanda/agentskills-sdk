@@ -55,6 +55,7 @@ import argparse
 import asyncio
 import json
 import sys
+from contextlib import AsyncExitStack
 from pathlib import Path
 
 
@@ -114,13 +115,33 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Build and run
     # ------------------------------------------------------------------
-    from agentskills_core import SkillRegistry
+    from agentskills_core import Skill, SkillRegistry
     from agentskills_mcp_server.config import ServerConfig
     from agentskills_mcp_server.server import _resolve_provider, create_mcp_server
 
     config = ServerConfig(**data)
 
     async def _build() -> object:
+        if config.mode == "native":
+            from agentskills_mcp_server import create_native_mcp_server
+
+            async with AsyncExitStack() as stack:
+                handles = []
+                for skill_cfg in config.skills:
+                    provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
+                    if close := getattr(provider, "aclose", None):
+                        stack.push_async_callback(close)
+                    handles.append(Skill(skill_cfg.id, provider))
+                return await create_native_mcp_server(
+                    handles,
+                    name=config.name,
+                    instructions=config.instructions,
+                    skill_paths=config.skill_paths,
+                    listed_skill_ids=config.listed_skill_ids,
+                    page_size=config.page_size,
+                    max_skills=config.max_skills,
+                    max_total_bytes=config.max_total_bytes,
+                )
         registry = SkillRegistry()
         for skill_cfg in config.skills:
             provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)

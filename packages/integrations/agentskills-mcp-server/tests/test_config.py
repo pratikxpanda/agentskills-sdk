@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from agentskills_core import SkillProvider, SkillRegistry
+from agentskills_core import ResourceNotFoundError, SkillProvider, SkillRegistry
 from agentskills_mcp_server.config import ServerConfig, SkillConfig, resolve_env_vars
 from agentskills_mcp_server.server import (
     SUPPORTED_PROVIDERS,
@@ -65,6 +65,30 @@ class TestSkillConfig:
 
 
 class TestServerConfig:
+    def test_native_builder_missing_sdk_error(self, monkeypatch):
+        import agentskills_mcp_server
+
+        monkeypatch.setattr(agentskills_mcp_server, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"MCP SDK 2\.2"):
+            agentskills_mcp_server.__getattr__("create_native_mcp_server")
+
+    def test_native_mode_options(self):
+        config = ServerConfig(
+            name="Native",
+            mode="native",
+            skills=[SkillConfig(id="example", provider="fs")],
+            skill_paths={"example": "team/example"},
+            listed_skill_ids=[],
+            page_size=1,
+        )
+        assert config.mode == "native"
+        assert config.listed_skill_ids == []
+        assert config.max_skills == 128
+        with pytest.raises(ValidationError):
+            ServerConfig(
+                name="Invalid", mode="other", skills=[SkillConfig(id="example", provider="fs")]
+            )
+
     def test_minimal(self):
         cfg = ServerConfig(
             name="Test",
@@ -139,6 +163,26 @@ class TestServerConfig:
 
 
 class TestResolveProvider:
+    async def test_native_http_file_manifest_and_size_limit(self):
+        provider = _resolve_provider(
+            "http",
+            {
+                "base_url": "https://example.com",
+                "file_manifest": True,
+                "max_response_bytes": 0,
+            },
+        )
+        try:
+            assert provider.supports_file_access is True
+        finally:
+            await provider.aclose()
+
+    async def test_native_filesystem_size_limit(self, tmp_path):
+        _write_skill(tmp_path, "example")
+        provider = _resolve_provider("fs", {"root": str(tmp_path), "max_file_bytes": 0})
+        with pytest.raises(ResourceNotFoundError, match="maximum size"):
+            await provider.read_file("example", "SKILL.md")
+
     def test_supported_providers_constant(self):
         assert "fs" in SUPPORTED_PROVIDERS
         assert "http" in SUPPORTED_PROVIDERS

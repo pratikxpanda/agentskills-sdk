@@ -200,13 +200,17 @@ security fixes required for that path immediately rather than waiting for v0.7.
 
 Implementation progress: core, filesystem, and opted-in HTTP providers now expose
 complete original file access. Core can capture bounded immutable file sets with
-SHA-256 digests and detect ordinary source drift during capture. Canonical MCP
-manifests, complete frontmatter handling, and protocol delivery remain pending.
-The lossless resources item is not yet complete.
+SHA-256 digests and detect ordinary source drift during capture. Native manifests
+preserve JSON-compatible frontmatter and complete file sets. An opt-in SDK 2.2+
+server now implements the 2026-07-28 Skills wire contract, including pagination,
+direct lookup, canonical original-byte reads, aliases, and explicit nested publication.
+Directory reads remain unadvertised because empty-directory enumeration is unavailable.
 
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
-dedicated modern-SDK CI job and real legacy stdio round trips. The native Skills
-wire contract and client compatibility matrix are still pending.
+dedicated modern-SDK CI job and real legacy stdio round trips. Native delivery is
+tested with the official SDK client in-process and over stdio. Streamable HTTP,
+mixed-SDK processes, host compatibility, migration, benchmarks, and diagnostics
+remain release gates. No milestone item is declared complete by transport tests alone.
 
 ---
 

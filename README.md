@@ -48,11 +48,13 @@ If you *write* skills rather than consume them, you want `agentskills-tools` ins
 Development toward v0.6 is MCP-first. The lossless provider foundation adds complete
 file enumeration and original-byte reads for filesystem skills and explicitly
 manifested HTTP skills. Core also provides bounded immutable file snapshots with
-byte-accurate SHA-256 digests. The legacy MCP server supports SDK 1.x and 2.2+ in
-the 2.x line. This is not yet native MCP Skills extension support. See
+byte-accurate SHA-256 digests. An opt-in native server now exposes the official
+Skills extension on MCP SDK 2.2+, with complete manifests, canonical raw resources,
+pagination, and direct URI lookup. The legacy server retains SDK 1.x and 2.x support.
+These additions are development-only until v0.6 ships. See
 the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 
-The SDK uses **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
+The legacy integrations use **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
 
 1. **Register** skills from any source (filesystem, HTTP, database, etc.)
 2. **Inject** the skills catalog and tool usage instructions into the system prompt
