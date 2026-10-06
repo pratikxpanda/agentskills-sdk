@@ -9,7 +9,7 @@ description: MCP tools and resources for Agent Skills registries.
 
 > MCP server integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - expose a skill registry as an MCP server.
 
-Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. Native Skills extension support is separate work and is not yet implemented.
+Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. v0.6 development builds also provide an opt-in native Skills server backed by immutable file captures.
 
 ## Installation
 
@@ -44,7 +44,8 @@ cover the same eight tools and three static `skills://` resources.
 and `MCPServer` on 2.x. SDK-level Python APIs follow that SDK's version. For
 example, direct `call_tool()` calls return a tuple on 1.x and `CallToolResult` on
 2.x. Protocol clients receive standard MCP results in either case. This support
-does not imply native Skills support or host-specific certification.
+does not imply that a host supports the Skills extension. Native mode is a separate
+opt-in and does not establish host-specific certification.
 
 Agent Framework's upstream MCP client still declares an MCP 1.x constraint. Keep
 that client and the existing context-provider bridge in a 1.x environment:
@@ -57,6 +58,112 @@ Run a 2.x server in a separate environment or process when using that client.
 Do not force incompatible framework extras into the server environment. The
 native integrations and context-provider bridge remain available during the
 planned deprecation window.
+
+## Native Skills (v0.6 Development)
+
+Use this development checkout with `mcp>=2.2,<3`. Released 0.5.0 packages do not
+contain this API. The native server implements the official
+[Skills extension](https://modelcontextprotocol.io/extensions/skills/overview)
+against protocol revision `2026-07-28`:
+
+- `server/discover` declares `io.modelcontextprotocol/skills` and resources.
+- `skills/list` returns complete manifests with opaque, server-scoped pagination.
+- `skills/get` returns the same entry directly by its canonical `SKILL.md` URI.
+- `resources/read` returns captured original bytes, including BOMs and line endings.
+- Results carry the required result type, cache fields, and SDK-generated metadata.
+
+Native mode does not register legacy tools or inject a catalog. It does not
+advertise `directoryRead`. The providers cannot enumerate empty directories, so
+the optional directory method is deliberately unavailable.
+
+### Native CLI
+
+```json
+{
+    "name": "Native Skills",
+    "mode": "native",
+    "skills": [
+        {
+            "id": "incident-response",
+            "provider": "fs",
+            "options": {"root": "./skills"}
+        }
+    ]
+}
+```
+
+Run it with `python -m agentskills_mcp_server --config server.json`. Omitted
+`mode` retains legacy behavior. HTTP providers require `"file_manifest": true`
+and complete per-skill file indexes. The CLI closes its provider clients after
+capture. The programmatic builder does not close caller-owned providers.
+
+### Native Python API
+
+```python
+import asyncio
+from pathlib import Path
+
+from agentskills_core import Skill
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_mcp_server import create_native_mcp_server
+
+provider = LocalFileSystemSkillProvider(Path("./skills"))
+server = asyncio.run(create_native_mcp_server(
+        [Skill("incident-response", provider)], name="Native Skills"
+))
+server.run()
+```
+
+The builder also accepts an existing `SkillRegistry`. Raw `Skill` handles avoid
+legacy metadata parsing, including its BOM and ASCII-name restrictions. Native
+validation accepts current-spec Unicode lowercase names and preserves every
+JSON-compatible author field. Known optional fields retain their specified types.
+For example, `metadata` values must be strings. SDK-specific list-valued tags in
+that mapping require an authored format change before native publication.
+
+Duplicate YAML keys, non-JSON values such as unquoted dates, non-finite numbers,
+and recursive values fail publication. Valid YAML merges retain their resolved
+values. Expanded frontmatter JSON is bounded at 16 MiB.
+
+### Publication Boundaries
+
+Each skill is limited to 512 files and 16 MiB. By default, the builder retains at
+most 128 skills and 64 MiB of captured file bytes. `max_skills` and
+`max_total_bytes` control those aggregate limits. Provider per-file limits apply
+as well. Publication fails without returning a server when a capture, manifest,
+limit, or URI conflict is invalid. Use trusted, immutable sources during capture
+and restart the server to publish changes.
+
+`skill_paths` maps handle IDs to unescaped paths ending in the declared skill
+name, such as `{"refunds": "billing/refunds"}`. Without an override, a differing
+handle ID becomes a prefix, so an alias cannot replace the final name segment.
+Names may repeat at distinct canonical URIs. Register nested skills explicitly
+and map their paths under the parent, such as `{"child": "parent/child"}`.
+Their files remain in the parent manifest too. Overlapping captures must agree
+on both directory membership and every shared file's bytes.
+
+`page_size` defaults to 100 complete entries. `listed_skill_ids` can select a
+partial or empty listing, but never restricts direct lookup or resource access.
+It is not an authorization control. All supplied skills must be appropriate for
+the server's audience.
+
+Canonical reads use standard base64 blob resources, including for `SKILL.md`.
+Decode the blob before checking byte size, SHA-256 digest, and frontmatter.
+There are no SDK envelopes, truncation, image conversion, or script execution.
+Cache hints are `ttlMs: 0` and `cacheScope: "private"`. Captured bytes remain
+unchanged for the server instance, but cache hints are not an integrity guarantee.
+
+Hosts remain responsible for origin-scoped identity and reads, lazy retrieval,
+digest and frontmatter verification, and explicit per-skill consent. Reading is
+not activation. Parent approval does not approve nested skills, and
+`allowed-tools` grants no host permissions automatically. Digests establish
+consistency, not publisher trust. Remote HTTP deployments also need authenticated
+transport, TLS, and audience isolation beyond this builder.
+
+The tests use the official MCP SDK 2.2 client in-process and over real stdio.
+Legacy protocol requests cannot invoke native methods, but can read ordinary
+resources. Mixed-SDK process tests, Streamable HTTP conformance, and host-specific
+Skills certification remain separate release gates.
 
 ## Quick Start (CLI)
 
@@ -91,7 +198,8 @@ The server listens on `http://127.0.0.1:8000/mcp`.
 
 ### MCP Client Integration
 
-Any MCP-compatible client (Claude Desktop, VS Code, etc.) can connect to the server.
+Use a client that supports the selected MCP transport. Ordinary legacy
+tools/resources connectivity does not establish native Skills support.
 
 Stdio (local):
 
@@ -119,6 +227,12 @@ The `server.json` file supports the following structure:
 | `name` | `str` | Yes | Display name shown to MCP clients |
 | `instructions` | `str` | No | Server-level instructions sent during handshake |
 | `skills` | `list` | Yes | One or more skill definitions (see below) |
+| `mode` | `str` | No | `legacy` by default, or `native` for the official Skills extension |
+| `skill_paths` | `dict` | No | Native handle-ID to canonical skill-path mapping |
+| `listed_skill_ids` | `list` | No | Native listing selection only, not access control |
+| `page_size` | `int` | No | Native entries per page, default 100 |
+| `max_skills` | `int` | No | Native captured skill count, default 128 |
+| `max_total_bytes` | `int` | No | Native aggregate captured byte limit, default 64 MiB |
 
 Each skill entry:
 
@@ -130,8 +244,9 @@ Each skill entry:
 
 **Provider options:**
 
-- **`fs`**: `root` (path to skills directory, default `"."`)
-- **`http`**: `base_url` (required), `headers` (optional), `params` (optional query string parameters)
+- `fs` accepts `root` (default `"."`) and `max_file_bytes`.
+- `http` accepts `base_url`, `headers`, `params`, `resource_manifest`,
+  `file_manifest`, and `max_response_bytes`.
 
 Only `"fs"` and `"http"` are supported as provider types.
 

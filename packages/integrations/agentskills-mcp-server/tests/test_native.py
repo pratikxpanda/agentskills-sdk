@@ -1,0 +1,389 @@
+"""Native Skills requests through the official modern MCP client."""
+
+import base64
+import importlib.util
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from agentskills_core import FileAccessNotSupportedError, Skill, SkillRegistry
+from agentskills_fs import LocalFileSystemSkillProvider
+
+pytestmark = pytest.mark.skipif(
+    importlib.util.find_spec("mcp.server.extension") is None,
+    reason="Native Skills requires MCP SDK 2.2+",
+)
+
+
+async def _request(client, method: str, **params):
+    from mcp.types import Request
+    from pydantic import TypeAdapter
+
+    return await client.session.send_request(
+        Request[dict[str, Any], str](method=method, params=params), TypeAdapter(dict[str, Any])
+    )
+
+
+async def test_native_discovery_lookup_and_original_bytes(tmp_path):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    root = tmp_path / "example"
+    root.mkdir()
+    raw = (
+        b"\xef\xbb\xbf---\r\nname: example\r\ndescription: Example\r\n"
+        b"custom: true\r\n---\r\nBody\r\n"
+    )
+    (root / "SKILL.md").write_bytes(raw)
+    (root / "binary.bin").write_bytes(b"\x00\xff")
+    server = await create_native_mcp_server(
+        [Skill("example", LocalFileSystemSkillProvider(tmp_path))]
+    )
+    async with Client(server) as client:
+        assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+        assert client.server_capabilities.resources is not None
+        listed = await _request(client, "skills/list")
+        assert listed["resultType"] == "complete"
+        assert listed["ttlMs"] == 0
+        assert listed["cacheScope"] == "private"
+        entry = listed["skills"][0]
+        assert entry["frontmatter"]["custom"] is True
+        assert len(entry["resources"]) == 2
+        fetched = await _request(client, "skills/get", uri=entry["uri"])
+        assert fetched["skill"] == entry
+        (root / "SKILL.md").write_bytes(b"changed after capture")
+        contents = await client.read_resource(entry["uri"])
+        assert base64.b64decode(contents.contents[0].blob) == raw
+        assert contents.result_type == "complete"
+        assert contents.ttl_ms == 0
+        assert contents.cache_scope == "private"
+        with pytest.raises(MCPError) as missing:
+            await _request(client, "skills/get", uri="skill://missing/SKILL.md")
+        assert missing.value.code == -32602
+        with pytest.raises(MCPError) as missing_file:
+            await client.read_resource("skill://example/missing.txt")
+        assert missing_file.value.code == -32602
+
+
+def _skill(root: Path, skill_id: str, *, name: str | None = None) -> Skill:
+    directory = root / skill_id
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "SKILL.md").write_bytes(
+        f"---\nname: {name or skill_id}\ndescription: Example\n---\nBody\n".encode()
+    )
+    return Skill(skill_id, LocalFileSystemSkillProvider(root))
+
+
+async def test_pagination_and_direct_lookup_are_independent(tmp_path):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    skills = [_skill(tmp_path, name) for name in ("alpha", "beta", "gamma")]
+    (tmp_path / "alpha" / "extra.txt").write_bytes(b"supporting file")
+    server = await create_native_mcp_server(skills, page_size=1)
+    other_server = await create_native_mcp_server(skills, page_size=1)
+    async with Client(server) as client, Client(other_server) as other:
+        direct = await _request(client, "skills/get", uri="skill://gamma/SKILL.md")
+        assert direct["skill"]["frontmatter"]["name"] == "gamma"
+        assert "nextCursor" not in direct
+        first = await _request(client, "skills/list")
+        assert len(first["skills"]) == 1
+        assert len(first["skills"][0]["resources"]) == 2
+        second = await _request(client, "skills/list", cursor=first["nextCursor"])
+        third = await _request(client, "skills/list", cursor=second["nextCursor"])
+        assert [page["skills"][0]["frontmatter"]["name"] for page in (first, second, third)] == [
+            "alpha",
+            "beta",
+            "gamma",
+        ]
+        assert "nextCursor" not in third
+        for cursor in ("invalid", ""):
+            with pytest.raises(MCPError) as error:
+                await _request(client, "skills/list", cursor=cursor)
+            assert error.value.code == -32602
+        with pytest.raises(MCPError) as foreign:
+            await _request(other, "skills/list", cursor=first["nextCursor"])
+        assert foreign.value.code == -32602
+
+
+@pytest.mark.parametrize("listed_ids", [[], ["alpha"]])
+async def test_partial_or_empty_listing_still_allows_direct_lookup(tmp_path, listed_ids):
+    from mcp import Client
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    server = await create_native_mcp_server(
+        [_skill(tmp_path, name) for name in ("alpha", "beta")], listed_skill_ids=listed_ids
+    )
+    async with Client(server) as client:
+        listed = await _request(client, "skills/list")
+        assert [entry["frontmatter"]["name"] for entry in listed["skills"]] == listed_ids
+        fetched = await _request(client, "skills/get", uri="skill://beta/SKILL.md")
+        assert fetched["skill"]["frontmatter"]["name"] == "beta"
+
+
+async def test_nested_skills_share_exact_resources_without_duplicate_listing(tmp_path):
+    from mcp import Client
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    parent = _skill(tmp_path, "parent")
+    child = _skill(tmp_path / "parent", "child")
+    (tmp_path / "parent" / "child" / "raw.bin").write_bytes(b"\xff\x00")
+    server = await create_native_mcp_server([child, parent], skill_paths={"child": "parent/child"})
+    async with Client(server) as client:
+        listed = await _request(client, "skills/list")
+        entries = {entry["uri"]: entry for entry in listed["skills"]}
+        assert len(entries) == 2
+        parent_files = entries["skill://parent/SKILL.md"]["resources"]
+        child_files = entries["skill://parent/child/SKILL.md"]["resources"]
+        assert len(parent_files) == 3
+        assert len(child_files) == 2
+        assert all(file in parent_files for file in child_files)
+        resources = (await client.list_resources()).resources
+        assert len(resources) == 3
+        child_resource = next(
+            resource for resource in resources if resource.uri == "skill://parent/child/SKILL.md"
+        )
+        assert child_resource.name == "child"
+        assert child_resource.description == "Example"
+        assert child_resource.mime_type == "text/markdown"
+
+
+async def test_conflicting_nested_capture_fails_before_serving(tmp_path):
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    parent = _skill(tmp_path, "parent")
+    _skill(tmp_path / "parent", "child")
+    child = _skill(tmp_path / "other", "child")
+    (tmp_path / "other" / "child" / "SKILL.md").write_bytes(
+        b"---\nname: child\ndescription: Different capture\n---\n"
+    )
+    with pytest.raises(ValueError, match="Conflicting captured bytes"):
+        await create_native_mcp_server([parent, child], skill_paths={"child": "parent/child"})
+
+
+@pytest.mark.parametrize("extra_parent", [False, True])
+async def test_nested_capture_membership_must_match(tmp_path, extra_parent):
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    parent = _skill(tmp_path, "parent")
+    _skill(tmp_path / "parent", "child")
+    child = _skill(tmp_path / "other", "child")
+    extra_root = tmp_path / ("parent" if extra_parent else "other") / "child"
+    (extra_root / "extra.txt").write_bytes(b"not present in both captures")
+    with pytest.raises(ValueError, match="complete file set"):
+        await create_native_mcp_server([parent, child], skill_paths={"child": "parent/child"})
+
+
+async def test_canonical_escaped_uris_are_exact_and_do_not_traverse(tmp_path):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    skill = _skill(tmp_path, "alias", name="\u00e9tude")
+    (tmp_path / "alias" / "raw #%2F.bin").write_bytes(b"\x00\xff")
+    server = await create_native_mcp_server([skill], skill_paths={"alias": "team space/\u00e9tude"})
+    async with Client(server) as client:
+        entry = (await _request(client, "skills/list"))["skills"][0]
+        assert entry["uri"] == "skill://team%20space/%C3%A9tude/SKILL.md"
+        raw_uri = "skill://team%20space/%C3%A9tude/raw%20%23%252F.bin"
+        contents = await client.read_resource(raw_uri)
+        assert base64.b64decode(contents.contents[0].blob) == b"\x00\xff"
+        for uri in (
+            "skill://team%20space/%C3%A9tude/../SKILL.md",
+            "skill://team%20space/%C3%A9tude/%2e%2e/SKILL.md",
+            "skill://other/SKILL.md",
+        ):
+            with pytest.raises(MCPError) as error:
+                await client.read_resource(uri)
+            assert error.value.code == -32602
+
+
+async def test_aliases_can_publish_same_name_at_distinct_uris(tmp_path):
+    from mcp import Client
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    handles = [_skill(tmp_path, alias, name="shared") for alias in ("one", "two")]
+    server = await create_native_mcp_server(handles)
+    async with Client(server) as client:
+        result = await _request(client, "skills/list")
+        assert [entry["uri"] for entry in result["skills"]] == [
+            "skill://one/shared/SKILL.md",
+            "skill://two/shared/SKILL.md",
+        ]
+    with pytest.raises(ValueError, match="Duplicate canonical"):
+        await create_native_mcp_server(handles, skill_paths={"one": "shared", "two": "shared"})
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"page_size": 0},
+        {"max_skills": 0},
+        {"max_total_bytes": -1},
+        {"skill_paths": {"missing": "missing"}},
+        {"listed_skill_ids": ["missing"]},
+    ],
+)
+async def test_invalid_publication_options(options):
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    with pytest.raises(ValueError):
+        await create_native_mcp_server(SkillRegistry(), **options)
+
+
+async def test_publication_bounds_and_lossless_requirement(tmp_path):
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    first = _skill(tmp_path, "first")
+    second = _skill(tmp_path, "second")
+    with pytest.raises(ValueError, match="max_skills"):
+        await create_native_mcp_server([first, second], max_skills=1)
+    with pytest.raises(ValueError, match="Duplicate skill IDs"):
+        await create_native_mcp_server([first, first])
+    total = sum((tmp_path / name / "SKILL.md").stat().st_size for name in ("first", "second"))
+    await create_native_mcp_server([first, second], max_total_bytes=total)
+    with pytest.raises(ValueError, match="byte snapshot limit"):
+        await create_native_mcp_server([first, second], max_total_bytes=total - 1)
+    provider = LocalFileSystemSkillProvider(tmp_path)
+    provider.supports_file_access = False
+    with pytest.raises(FileAccessNotSupportedError):
+        await create_native_mcp_server([Skill("first", provider)])
+
+
+async def test_empty_registry_and_unsupported_directory_method():
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    server = await create_native_mcp_server(SkillRegistry())
+    async with Client(server) as client:
+        assert (await _request(client, "skills/list"))["skills"] == []
+        assert (await client.list_tools()).tools == []
+        assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+        with pytest.raises(MCPError) as error:
+            await _request(client, "resources/directory/read", uri="skill://missing")
+        assert error.value.code == -32601
+
+
+@pytest.mark.parametrize(
+    ("method", "params"),
+    [("skills/get", {}), ("skills/get", {"uri": None}), ("skills/list", {"cursor": 2})],
+)
+async def test_invalid_method_params_use_protocol_errors(method, params):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    server = await create_native_mcp_server([])
+    async with Client(server) as client:
+        with pytest.raises(MCPError) as error:
+            await _request(client, method, **params)
+        assert error.value.code == -32602
+
+
+async def test_native_methods_reject_legacy_protocol_but_resources_remain_ordinary(tmp_path):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    server = await create_native_mcp_server([_skill(tmp_path, "example")])
+    async with Client(server, mode="legacy") as client:
+        with pytest.raises(MCPError) as error:
+            await _request(client, "skills/list")
+        assert error.value.code == -32601
+        result = await client.read_resource("skill://example/SKILL.md")
+        assert b"name: example" in base64.b64decode(result.contents[0].blob)
+
+
+def test_native_builder_is_a_lazy_public_export():
+    import agentskills_mcp_server
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    assert agentskills_mcp_server.create_native_mcp_server is create_native_mcp_server
+
+
+async def test_native_cli_stdio_roundtrip(tmp_path):
+    import asyncio
+    import json
+    import os
+    import sys
+
+    from mcp import Client, StdioServerParameters
+
+    _skill(tmp_path, "example")
+    config_path = tmp_path / "server.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "name": "Native CLI",
+                "mode": "native",
+                "skill_paths": {"example": "team/example"},
+                "skills": [{"id": "example", "provider": "fs", "options": {"root": str(tmp_path)}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    parameters = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+        env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+    )
+    async with asyncio.timeout(20), Client(parameters) as client:
+        assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+        result = await _request(client, "skills/list")
+        entry = result["skills"][0]
+        assert entry["uri"] == "skill://team/example/SKILL.md"
+        contents = await client.read_resource(entry["uri"])
+        assert (
+            base64.b64decode(contents.contents[0].blob)
+            == (tmp_path / "example" / "SKILL.md").read_bytes()
+        )
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_native_cli_closes_owned_providers(tmp_path, monkeypatch, fails):
+    import json
+    import sys
+    from unittest.mock import AsyncMock, MagicMock
+
+    import agentskills_mcp_server
+    from agentskills_mcp_server.__main__ import main
+
+    _skill(tmp_path, "example")
+    provider = LocalFileSystemSkillProvider(tmp_path)
+    close = AsyncMock()
+    monkeypatch.setattr(provider, "aclose", close, raising=False)
+    monkeypatch.setattr("agentskills_mcp_server.server._resolve_provider", lambda *args: provider)
+    server = MagicMock()
+    builder = AsyncMock(
+        return_value=server, side_effect=ValueError("capture failed") if fails else None
+    )
+    monkeypatch.setattr(agentskills_mcp_server, "create_native_mcp_server", builder)
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "name": "Owned providers",
+                "mode": "native",
+                "instructions": "Explicit instructions",
+                "skills": [{"id": "example", "provider": "fs"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(sys, "argv", ["server", "--config", str(config_path)])
+    if fails:
+        with pytest.raises(ValueError, match="capture failed"):
+            main()
+        server.run.assert_not_called()
+    else:
+        main()
+        server.run.assert_called_once_with(transport="stdio")
+        assert builder.await_args.kwargs["instructions"] == "Explicit instructions"
+    close.assert_awaited_once()
