@@ -9,6 +9,7 @@ nav:
   - Getting Started: getting-started.md
   - Concepts: concepts.md
   - MCP Migration: mcp-migration.md
+  - MCP Benchmarks: mcp-benchmarks.md
   - Packages:
       - Core: packages/core.md
       - Format adapters: packages/adapters.md

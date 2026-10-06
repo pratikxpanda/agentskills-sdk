@@ -93,6 +93,15 @@ Without overrides, tests use the current interpreter and skip native publication
 when SDK 2.2+ is unavailable. Each interpreter needs this checkout's core, provider,
 and MCP packages. The client also needs pytest and pytest-asyncio.
 
+### Discovery and Delivery Benchmarks
+
+The development checkout includes a model-free benchmark for catalogs of 1, 10,
+and 100 skills. It records actual request counts, payload sizes, token estimates,
+and in-process timings for native Skills and the retained legacy API. Native
+publication reads are separated from client delivery, and discovery prefetch is
+rejected. See the [benchmark guide and measured trade-offs](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-benchmarks.md).
+Synthetic ranking scores are not production accuracy or host certification.
+
 ## Native Skills (v0.6 Development)
 
 Use this development checkout with `mcp>=2.2,<3`. Released 0.5.0 packages do not
