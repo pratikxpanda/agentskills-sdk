@@ -131,6 +131,34 @@ Run it with `python -m agentskills_mcp_server --config server.json`. Omitted
 and complete per-skill file indexes. The CLI closes its provider clients after
 capture. The programmatic builder does not close caller-owned providers.
 
+Check configured providers and publication without starting a listener:
+
+```bash
+python -m agentskills_mcp_server --config server.json --check
+```
+
+The JSON success report includes the installed MCP SDK version, selected mode,
+provider types, skill count, and native client requirements. It excludes provider
+options, including credential-bearing URLs. Its `localServerConstruction` scope
+does not claim a transport connection, authentication check, or host verification.
+Provider reads do occur during preflight. Native mode reads and verifies every
+file, while legacy mode validates registration. Provider clients opened by a
+preflight are closed before it returns, including when construction fails.
+
+For a filesystem source, the companion tools can inspect canonical manifests and
+run the same native builder without a config file:
+
+```bash
+agentskills inspect ./skills --native --format json
+agentskills serve ./skills --native --check
+```
+
+Those tools default to a 16 MiB per-file bound. To compare a config-driven source
+with that inspection, set its `max_file_bytes` filesystem option or
+`max_response_bytes` HTTP option to the intended bound. HTTP native publication
+also requires `file_manifest: true`. A lower provider limit can reject a skill
+that fits the extension's total limit.
+
 ### Native Python API
 
 ```python
@@ -229,6 +257,33 @@ python -m agentskills_mcp_server --config server.json --transport streamable-htt
 ```
 
 The server listens on `http://127.0.0.1:8000/mcp`.
+
+### Remote HTTP Deployment Boundaries
+
+Keep the backend listener private. A remote deployment needs a TLS-terminating,
+authenticated endpoint in front of it, or an equivalent secured ASGI deployment.
+The local CLI commands do not configure a public OAuth resource server.
+
+Before exposing `/mcp`, validate these deployment controls:
+
+- Use MCP-compatible authorization discovery and validate issuer, audience, expiry, and required scopes for the public resource identifier
+- Enforce the intended server audience and skill access policy, not `listed_skill_ids`, which only filters enumeration
+- Restrict accepted hosts and browser origins, including forwarded-header trust at the proxy boundary
+- Preserve streaming responses and supported HTTP methods without proxy buffering or unintended timeouts
+- Route stateful sessions consistently when the deployment uses session state
+- Keep bearer tokens out of public MCP URLs, and redact provider credentials from logs and published configuration
+- Test rejected and expired credentials, cross-origin requests, disconnect cleanup, and exact native bytes through the public endpoint
+
+The authentication component must validate credentials before traffic reaches
+the private backend. Forwarding an unchecked `Authorization` header is not
+authentication. Account for the backend's host and origin protections when
+configuring the trusted proxy, rather than disabling them without a replacement.
+
+Real loopback HTTP and stdio interoperability are tested. A production gateway,
+TLS setup, authorization server, and host-specific approval workflow are not
+certified by those tests or by `--check`. A host must still verify manifests and
+obtain per-skill consent before activation. Use legacy mode when its client lacks
+native Skills support.
 
 ### MCP Client Integration
 

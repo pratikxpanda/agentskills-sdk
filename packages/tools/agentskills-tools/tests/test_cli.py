@@ -211,6 +211,59 @@ class TestInspectCost:
         assert "cannot inspect" in capsys.readouterr().err
 
 
+class TestNativeInspect:
+    def test_json_manifest_without_mcp_dependency(
+        self, write_skill, skills_root, monkeypatch, capsys
+    ):
+        write_skill("alpha")
+        write_skill("beta")
+        monkeypatch.setitem(sys.modules, "mcp", None)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", None)
+
+        code = main(["inspect", str(skills_root), "--native", "--format", "json"])
+
+        payload = json.loads(capsys.readouterr().out)
+        assert code == 0
+        assert payload["command"] == "inspect"
+        assert payload["schemaVersion"] >= 1
+        assert {skill["manifest"]["uri"] for skill in payload["skills"]} == {
+            "skill://alpha/SKILL.md",
+            "skill://beta/SKILL.md",
+        }
+        assert all(skill["scope"] == "localSkillSnapshot" for skill in payload["skills"])
+
+    def test_text_reports_scope_limits_and_fallback(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+        write_skill("beta")
+
+        assert main(["inspect", str(skills_root), "--native"]) == 0
+
+        output = capsys.readouterr().out
+        assert "native manifest  skill://alpha/SKILL.md" in output
+        assert "protocol required  2026-07-28" in output
+        assert "limits  512 files" in output
+        assert "not live server or host verification" in output
+        assert "Client fallback" in output
+
+    def test_limit_failure_is_actionable(self, write_skill, skills_root, capsys):
+        write_skill("alpha")
+
+        code = main(["inspect", str(skills_root), "--native", "--max-file-bytes", "1"])
+
+        assert code == 2
+        output = capsys.readouterr()
+        assert output.out == ""
+        assert "cannot inspect native skill 'alpha'" in output.err
+
+    def test_cost_and_native_modes_are_exclusive(self, write_skill, skills_root):
+        write_skill("alpha")
+
+        with pytest.raises(SystemExit) as caught:
+            main(["inspect", str(skills_root), "--native", "--cost"])
+
+        assert caught.value.code == 2
+
+
 EVAL_FILE = """
 skill: alpha
 cases:
@@ -391,6 +444,61 @@ class TestEval:
 
 
 class TestServe:
+    @pytest.mark.parametrize("native", [False, True])
+    def test_check_does_not_start_transport(
+        self, write_skill, skills_root, monkeypatch, capsys, native
+    ):
+        write_skill("alpha")
+
+        async def build(root, locations, *, name, max_file_bytes):
+            return object()
+
+        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
+        monkeypatch.setattr("agentskills_tools.cli.create_server", lambda registry, name: object())
+        arguments = ["serve", str(skills_root), "--check"]
+        if native:
+            arguments.append("--native")
+
+        assert main(arguments) == 0
+        output = capsys.readouterr()
+        assert "Publication ready" in output.out
+        assert "host behavior not tested" in output.out
+        assert output.err == ""
+
+    def test_native_serving_uses_native_builder(
+        self, write_skill, skills_root, monkeypatch, capsys
+    ):
+        write_skill("alpha")
+        started = {}
+
+        class FakeServer:
+            def run(self, *, transport):
+                started["transport"] = transport
+
+        async def build(root, locations, *, name, max_file_bytes):
+            assert name == "Native test"
+            assert max_file_bytes == 1024
+            return FakeServer()
+
+        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
+
+        assert (
+            main(
+                [
+                    "serve",
+                    str(skills_root),
+                    "--native",
+                    "--name",
+                    "Native test",
+                    "--max-file-bytes",
+                    "1024",
+                ]
+            )
+            == 0
+        )
+        assert started == {"transport": "stdio"}
+        assert "Serving 1 skill" in capsys.readouterr().err
+
     def test_runs_the_server_with_the_requested_transport(
         self, write_skill, skills_root, monkeypatch, capsys
     ):
