@@ -24,6 +24,13 @@ python examples/agent-framework/fs/mcp_tools.py --smoke --server-python /path/to
 These checks use legacy tools and resources. They do not certify native Skills
 activation, host consent, or remote HTTP authentication.
 
+## MCP Benchmarks
+
+Run `python examples/mcp/benchmark.py --sizes 1 10 100 --repeats 3` with the
+development checkout and MCP 2.2.0. The [benchmark guide](../docs/mcp-benchmarks.md)
+defines the synthetic corpus, native and legacy workloads, metrics, and limitations.
+The benchmark uses its own temporary skills and does not call a model.
+
 ## Structure
 
 ### LangChain
@@ -67,7 +74,7 @@ explicit resource reading instead, without automatically replacing session behav
 
 ## Prerequisites
 
-All examples use the `incident-response` sample skill in `examples/skills/`.
+Framework examples use the `incident-response` sample skill in `examples/skills/`.
 
 ### LangChain examples
 

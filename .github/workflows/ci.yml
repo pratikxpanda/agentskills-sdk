@@ -205,6 +205,16 @@ jobs:
           .mcp-legacy/bin/python examples/agent-framework/fs/mcp_tools.py \
             --smoke --server-python "$(poetry env info --executable)"
 
+      - name: Measure synthetic MCP discovery and delivery
+        run: poetry run python examples/mcp/benchmark.py --sizes 1 10 100 --repeats 3 > mcp-benchmark.json
+
+      - name: Upload MCP benchmark measurements
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mcp-benchmark
+          path: mcp-benchmark.json
+          retention-days: 14
+
   test-unlocked:
     name: Test (latest permitted dependencies)
     runs-on: ubuntu-latest

@@ -59,6 +59,8 @@ examples and explicit feature gaps. Foreign-format adapters remain maintained.
 Development builds also provide `inspect --native`, `serve --native`, and
 publication preflight with `--check`. See the
 [CLI diagnostics](packages/tools/agentskills-tools/README.md) for scope and limits.
+The [MCP benchmark](docs/mcp-benchmarks.md) compares native discovery and progressive
+reads with the retained legacy workflow using bounded synthetic catalogs.
 These additions are development-only until v0.6 ships. See
 the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 

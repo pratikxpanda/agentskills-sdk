@@ -220,6 +220,13 @@ closes its provider clients. Reports distinguish local construction from live
 transport, authentication, and host verification. Remote HTTP deployment controls
 remain explicit operational requirements, not a certification from preflight.
 
+The [discovery and delivery benchmark](mcp-benchmarks.md) now measures the
+native and retained v0.5-style workflows across small and large synthetic
+catalogs. It separates optional lexical ranking, source snapshot reads, client
+resource reads, token estimates, result bytes, and in-process timings. A real
+request observer checks zero native discovery prefetch. Synthetic scores and
+local timings do not certify production accuracy, model costs, or remote hosts.
+
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
 dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
 directions in isolated environments. Native delivery is tested with the official
