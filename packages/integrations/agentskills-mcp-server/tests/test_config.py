@@ -596,6 +596,97 @@ class TestResolveEnvVars:
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
+    @pytest.mark.parametrize("mode", ["legacy", "native"])
+    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys, mode):
+        from agentskills_mcp_server.__main__ import main
+
+        config_file = tmp_path / "check.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "Check",
+                    "mode": mode,
+                    "skills": [
+                        {
+                            "id": "example",
+                            "provider": "http",
+                            "options": {"base_url": "https://example.invalid/?sig=private-value"},
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def build(coroutine):
+            coroutine.close()
+            return object()
+
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
+            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+        ):
+            mock_asyncio.run.side_effect = build
+            main()
+
+        output = capsys.readouterr().out
+        report = json.loads(output)
+        assert report["status"] == "ready"
+        assert report["scope"] == "localServerConstruction"
+        assert report["mode"] == mode
+        assert report["providerTypes"] == ["http"]
+        assert report["mcpSdkVersion"]
+        assert report["requiresProtocol"] == ("2026-07-28" if mode == "native" else None)
+        assert report["transportTested"] is False
+        assert "private-value" not in output
+        assert "example.invalid" not in output
+
+    @pytest.mark.parametrize("invalid", [False, True])
+    def test_legacy_check_closes_provider(self, tmp_path, capsys, invalid):
+        from agentskills_fs import LocalFileSystemSkillProvider
+        from agentskills_mcp_server.__main__ import main
+
+        _write_skill(tmp_path, "example")
+        if invalid:
+            (tmp_path / "example" / "SKILL.md").write_text(
+                "---\nname: example\n---\n", encoding="utf-8"
+            )
+        closed = []
+
+        class ClosingProvider(LocalFileSystemSkillProvider):
+            async def aclose(self):
+                closed.append(True)
+
+        config_file = tmp_path / "check.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "Check",
+                    "skills": [{"id": "example", "provider": "http", "options": {}}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
+            patch(
+                "agentskills_mcp_server.server._resolve_provider",
+                return_value=ClosingProvider(tmp_path),
+            ),
+        ):
+            if invalid:
+                with pytest.raises(ValueError):
+                    main()
+            else:
+                main()
+
+        assert closed == [True]
+        output = capsys.readouterr().out
+        if invalid:
+            assert output == ""
+        else:
+            assert json.loads(output)["status"] == "ready"
+
     def test_argparse_requires_config(self):
         """CLI exits with error when --config is missing."""
         from agentskills_mcp_server.__main__ import main

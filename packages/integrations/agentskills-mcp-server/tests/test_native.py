@@ -308,7 +308,8 @@ def test_native_builder_is_a_lazy_public_export():
     assert agentskills_mcp_server.create_native_mcp_server is create_native_mcp_server
 
 
-async def test_native_cli_stdio_roundtrip(tmp_path):
+@pytest.mark.parametrize("entrypoint", ["mcp", "tools"])
+async def test_native_cli_stdio_roundtrip(tmp_path, entrypoint):
     import asyncio
     import json
     import os
@@ -329,16 +330,43 @@ async def test_native_cli_stdio_roundtrip(tmp_path):
         ),
         encoding="utf-8",
     )
+    if entrypoint == "tools":
+        arguments = ["-m", "agentskills_tools", "serve", str(tmp_path), "--native"]
+        expected_uri = "skill://example/SKILL.md"
+    else:
+        arguments = ["-m", "agentskills_mcp_server", "--config", str(config_path)]
+        expected_uri = "skill://team/example/SKILL.md"
     parameters = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+        args=arguments,
         env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
     )
+    process = await asyncio.create_subprocess_exec(
+        parameters.command,
+        *arguments,
+        "--check",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        output, errors = await asyncio.wait_for(process.communicate(), timeout=20)
+    finally:
+        if process.returncode is None:
+            process.kill()
+            await process.wait()
+    assert process.returncode == 0, errors.decode()
+    if entrypoint == "mcp":
+        report = json.loads(output)
+        assert report["status"] == "ready"
+        assert report["requiresProtocol"] == "2026-07-28"
+        assert report["transportTested"] is False
+    else:
+        assert b"Publication ready" in output
     async with asyncio.timeout(20), Client(parameters) as client:
         assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
         result = await _request(client, "skills/list")
         entry = result["skills"][0]
-        assert entry["uri"] == "skill://team/example/SKILL.md"
+        assert entry["uri"] == expected_uri
         contents = await client.read_resource(entry["uri"])
         assert (
             base64.b64decode(contents.contents[0].blob)

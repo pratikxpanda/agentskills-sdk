@@ -212,6 +212,14 @@ minor-release window, release-note guidance, and feature gaps. Model-free
 filesystem examples exercise LangChain's upstream MCP adapter and Agent Framework's
 MCPStdioTool against a separate SDK 2 server. No APIs or packages have been removed.
 
+Native inspection now reports canonical manifests, original-byte digests and
+sizes, protocol requirements, and local size-limit failures. Both CLI entry points
+support publication preflight without listening, and the tools CLI can serve
+native Skills directly. Config-driven preflight checks provider readiness and
+closes its provider clients. Reports distinguish local construction from live
+transport, authentication, and host verification. Remote HTTP deployment controls
+remain explicit operational requirements, not a certification from preflight.
+
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
 dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
 directions in isolated environments. Native delivery is tested with the official

@@ -56,6 +56,9 @@ Native framework integrations and the Agent Framework MCP bridge become deprecat
 and maintenance-only in v0.6, without removal. The
 [migration guide](docs/mcp-migration.md) includes verified framework-owned MCP
 examples and explicit feature gaps. Foreign-format adapters remain maintained.
+Development builds also provide `inspect --native`, `serve --native`, and
+publication preflight with `--check`. See the
+[CLI diagnostics](packages/tools/agentskills-tools/README.md) for scope and limits.
 These additions are development-only until v0.6 ships. See
 the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 

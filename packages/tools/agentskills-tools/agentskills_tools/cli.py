@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from agentskills_core import LOGGER_NAMESPACE, Skill
+from agentskills_core.snapshots import DEFAULT_SNAPSHOT_MAX_BYTES
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.cost import (
     TOKENIZERS,
@@ -46,7 +47,12 @@ from agentskills_tools.evals import (
 )
 from agentskills_tools.evalspec import EvalSuite, load_skill_evals
 from agentskills_tools.findings import SkillReport
-from agentskills_tools.inspection import inspect_location, render_inspection_text
+from agentskills_tools.inspection import (
+    inspect_location,
+    inspect_native_location,
+    render_inspection_text,
+    render_native_inspection_text,
+)
 from agentskills_tools.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
 from agentskills_tools.render import (
     SCHEMA_VERSION,
@@ -57,7 +63,7 @@ from agentskills_tools.render import (
     render_text,
 )
 from agentskills_tools.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
-from agentskills_tools.serve import build_registry, create_server
+from agentskills_tools.serve import build_native_server, build_registry, create_server
 from agentskills_tools.validate import validate_locations
 
 EXIT_OK = 0
@@ -162,10 +168,23 @@ def build_parser() -> argparse.ArgumentParser:
         description="Render the catalog entry, metadata, and body, with estimated token cost.",
     )
     inspect.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
-    inspect.add_argument(
+    inspection_mode = inspect.add_mutually_exclusive_group()
+    inspection_mode.add_argument(
         "--cost",
         action="store_true",
         help="Report token cost per turn, per load, and on demand instead of the content.",
+    )
+    inspection_mode.add_argument(
+        "--native",
+        action="store_true",
+        help="Check complete native Skills manifests locally without connecting to a server.",
+    )
+    inspect.add_argument(
+        "--max-file-bytes",
+        type=int,
+        default=DEFAULT_SNAPSHOT_MAX_BYTES,
+        metavar="N",
+        help="With --native, bound each source file (default: 16 MiB).",
     )
     inspect.add_argument(
         "--budget",
@@ -226,6 +245,23 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run an MCP server over a folder of skills, with no config file.",
     )
     serve.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
+    serve.add_argument(
+        "--native",
+        action="store_true",
+        help="Publish the native Skills extension instead of legacy tools (requires MCP 2.2+).",
+    )
+    serve.add_argument(
+        "--check",
+        action="store_true",
+        help="Validate server construction and publication, then exit without listening.",
+    )
+    serve.add_argument(
+        "--max-file-bytes",
+        type=int,
+        default=DEFAULT_SNAPSHOT_MAX_BYTES,
+        metavar="N",
+        help="With --native, bound each source file (default: 16 MiB).",
+    )
     serve.add_argument(
         "--transport",
         choices=["stdio", "streamable-http"],
@@ -294,7 +330,18 @@ def _run_lint(args: argparse.Namespace, out: TextIO) -> int:
     return exit_code(reports, strict=args.strict)
 
 
-async def _inspect_all(root: Path, locations: list[SkillLocation]) -> list[dict[str, Any]]:
+async def _inspect_all(
+    root: Path,
+    locations: list[SkillLocation],
+    *,
+    native: bool = False,
+    max_file_bytes: int = DEFAULT_SNAPSHOT_MAX_BYTES,
+) -> list[dict[str, Any]]:
+    if native:
+        return [
+            await inspect_native_location(root, location, max_file_bytes=max_file_bytes)
+            for location in locations
+        ]
     return [await inspect_location(root, location) for location in locations]
 
 
@@ -339,7 +386,9 @@ def _run_inspect(args: argparse.Namespace, out: TextIO) -> int:
         return _run_cost(args, out)
 
     root, locations = discover(args.path)
-    inspections = asyncio.run(_inspect_all(root, locations))
+    inspections = asyncio.run(
+        _inspect_all(root, locations, native=args.native, max_file_bytes=args.max_file_bytes)
+    )
     if args.format == "json":
         payload = {
             "schemaVersion": SCHEMA_VERSION,
@@ -352,7 +401,10 @@ def _run_inspect(args: argparse.Namespace, out: TextIO) -> int:
         for index, inspection in enumerate(inspections):
             if index:
                 print("\n" + "-" * 60 + "\n", file=out)
-            render_inspection_text(inspection, out)
+            if args.native:
+                render_native_inspection_text(inspection, out)
+            else:
+                render_inspection_text(inspection, out)
     return EXIT_OK
 
 
@@ -406,8 +458,26 @@ def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
 
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
-    registry = asyncio.run(build_registry(root, locations))
-    server = create_server(registry, name=args.name)
+    if args.native:
+        server = asyncio.run(
+            build_native_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
+        )
+    else:
+        registry = asyncio.run(build_registry(root, locations))
+        server = create_server(registry, name=args.name)
+    if args.check:
+        mode = "native" if args.native else "legacy"
+        print(f"Publication ready: {len(locations)} skills in {mode} mode.", file=out)
+        print(
+            "Local construction checked. Transport, authentication, and host behavior not tested.",
+            file=out,
+        )
+        if args.native:
+            print(
+                "Requires a Skills client on protocol 2026-07-28. Use legacy mode otherwise.",
+                file=out,
+            )
+        return EXIT_OK
     print(f"Serving {plural(len(locations), 'skill')} over {args.transport}", file=sys.stderr)
     server.run(transport=args.transport)
     return EXIT_OK
