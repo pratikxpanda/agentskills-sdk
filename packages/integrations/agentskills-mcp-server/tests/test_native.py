@@ -346,8 +346,7 @@ async def test_native_cli_stdio_roundtrip(tmp_path):
         )
 
 
-@pytest.mark.parametrize("json_response", [False, True])
-async def test_native_streamable_http_roundtrip(tmp_path, json_response):
+async def _native_http_roundtrip(tmp_path, json_response, *, timeout=20):
     import asyncio
     import hashlib
     import socket
@@ -372,32 +371,90 @@ async def test_native_streamable_http_roundtrip(tmp_path, json_response):
             started.set()
 
     app = server.streamable_http_app(json_response=json_response)
-    http_server = ListeningServer(uvicorn.Config(app, log_level="error", lifespan="on"))
+    http_server = ListeningServer(
+        uvicorn.Config(app, log_level="error", lifespan="on", timeout_graceful_shutdown=1)
+    )
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
-        async with asyncio.timeout(20), asyncio.TaskGroup() as tasks:
-            tasks.create_task(http_server.serve(sockets=[listener]))
+        async with asyncio.TaskGroup() as tasks:
+            server_task = tasks.create_task(http_server.serve(sockets=[listener]))
             try:
-                await started.wait()
-                async with Client(f"http://127.0.0.1:{port}/mcp") as client:
-                    assert client.server_capabilities.extensions == {
-                        "io.modelcontextprotocol/skills": {}
-                    }
-                    entry = (await _request(client, "skills/list"))["skills"][0]
-                    fetched = await _request(client, "skills/get", uri=entry["uri"])
-                    assert fetched["skill"] == entry
-                    for resource in entry["resources"]:
-                        result = await client.read_resource(resource["uri"])
-                        raw = base64.b64decode(result.contents[0].blob)
-                        assert raw == expected[resource["uri"]]
-                        assert resource["size"] == len(raw)
-                        assert resource["digest"] == f"sha256:{hashlib.sha256(raw).hexdigest()}"
-                        assert result.result_type == "complete"
-                        assert result.ttl_ms == 0
-                        assert result.cache_scope == "private"
+                async with asyncio.timeout(timeout):
+                    await started.wait()
+                    async with Client(f"http://127.0.0.1:{port}/mcp") as client:
+                        assert client.server_capabilities.extensions == {
+                            "io.modelcontextprotocol/skills": {}
+                        }
+                        entry = (await _request(client, "skills/list"))["skills"][0]
+                        assert {resource["uri"] for resource in entry["resources"]} == set(expected)
+                        fetched = await _request(client, "skills/get", uri=entry["uri"])
+                        assert fetched["skill"] == entry
+                        for resource in entry["resources"]:
+                            result = await client.read_resource(resource["uri"])
+                            raw = base64.b64decode(result.contents[0].blob)
+                            assert raw == expected[resource["uri"]]
+                            assert resource["size"] == len(raw)
+                            assert resource["digest"] == f"sha256:{hashlib.sha256(raw).hexdigest()}"
+                            assert result.result_type == "complete"
+                            assert result.ttl_ms == 0
+                            assert result.cache_scope == "private"
             finally:
                 http_server.should_exit = True
+                await asyncio.wait_for(asyncio.shield(server_task), timeout=5)
+
+
+@pytest.mark.parametrize("json_response", [False, True])
+async def test_native_streamable_http_roundtrip(tmp_path, json_response):
+    await _native_http_roundtrip(tmp_path, json_response)
+
+
+@pytest.mark.parametrize("failure", ["assertion", "cancellation", "timeout"])
+async def test_native_http_shutdown_after_client_failure(tmp_path, monkeypatch, failure):
+    import asyncio
+
+    import uvicorn
+    from mcp import Client
+
+    existing_tasks = asyncio.all_tasks()
+    servers = []
+
+    class ObservedServer(uvicorn.Server):
+        async def serve(self, sockets=None):
+            servers.append((self, list(sockets or [])))
+            await super().serve(sockets=sockets)
+
+    async def fail_read(*args, **kwargs):
+        if failure == "assertion":
+            raise AssertionError("injected client failure")
+        if failure == "cancellation":
+            asyncio.current_task().cancel()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(uvicorn, "Server", ObservedServer)
+    monkeypatch.setattr(Client, "read_resource", fail_read)
+    client_task = asyncio.create_task(
+        _native_http_roundtrip(tmp_path, False, timeout=1 if failure == "timeout" else 20)
+    )
+    if failure == "assertion":
+        with pytest.RaisesGroup(
+            pytest.RaisesExc(AssertionError, match="injected client failure"),
+            flatten_subgroups=True,
+        ):
+            await client_task
+    elif failure == "cancellation":
+        with pytest.raises(asyncio.CancelledError):
+            await client_task
+    else:
+        with pytest.RaisesGroup(TimeoutError, flatten_subgroups=True):
+            await client_task
+    assert len(servers) == 1
+    server, listeners = servers[0]
+    assert all(listener.fileno() == -1 for listener in listeners)
+    assert server.lifespan.shutdown_event.is_set()
+    assert not server.server_state.tasks
+    assert not server.server_state.connections
+    assert asyncio.all_tasks() <= existing_tasks
 
 
 @pytest.mark.parametrize("fails", [False, True])
