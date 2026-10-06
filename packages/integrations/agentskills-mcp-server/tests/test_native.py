@@ -346,6 +346,60 @@ async def test_native_cli_stdio_roundtrip(tmp_path):
         )
 
 
+@pytest.mark.parametrize("json_response", [False, True])
+async def test_native_streamable_http_roundtrip(tmp_path, json_response):
+    import asyncio
+    import hashlib
+    import socket
+
+    import uvicorn
+    from mcp import Client
+
+    from agentskills_mcp_server.native import create_native_mcp_server
+
+    skill = _skill(tmp_path, "example")
+    (tmp_path / "example" / "raw.bin").write_bytes(b"\x00\xff\r\n")
+    expected = {
+        f"skill://example/{path.name}": path.read_bytes()
+        for path in (tmp_path / "example").iterdir()
+    }
+    server = await create_native_mcp_server([skill])
+    started = asyncio.Event()
+
+    class ListeningServer(uvicorn.Server):
+        async def startup(self, sockets: list[socket.socket] | None = None) -> None:
+            await super().startup(sockets=sockets)
+            started.set()
+
+    app = server.streamable_http_app(json_response=json_response)
+    http_server = ListeningServer(uvicorn.Config(app, log_level="error", lifespan="on"))
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+        async with asyncio.timeout(20), asyncio.TaskGroup() as tasks:
+            tasks.create_task(http_server.serve(sockets=[listener]))
+            try:
+                await started.wait()
+                async with Client(f"http://127.0.0.1:{port}/mcp") as client:
+                    assert client.server_capabilities.extensions == {
+                        "io.modelcontextprotocol/skills": {}
+                    }
+                    entry = (await _request(client, "skills/list"))["skills"][0]
+                    fetched = await _request(client, "skills/get", uri=entry["uri"])
+                    assert fetched["skill"] == entry
+                    for resource in entry["resources"]:
+                        result = await client.read_resource(resource["uri"])
+                        raw = base64.b64decode(result.contents[0].blob)
+                        assert raw == expected[resource["uri"]]
+                        assert resource["size"] == len(raw)
+                        assert resource["digest"] == f"sha256:{hashlib.sha256(raw).hexdigest()}"
+                        assert result.result_type == "complete"
+                        assert result.ttl_ms == 0
+                        assert result.cache_scope == "private"
+            finally:
+                http_server.should_exit = True
+
+
 @pytest.mark.parametrize("fails", [False, True])
 def test_native_cli_closes_owned_providers(tmp_path, monkeypatch, fails):
     import json

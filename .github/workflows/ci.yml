@@ -173,6 +173,30 @@ jobs:
       - name: Run tests
         run: poetry run pytest packages/ -v
 
+      - name: Create an isolated MCP 1.29 client and server environment
+        run: |
+          python -m venv .mcp-legacy
+          .mcp-legacy/bin/python -m pip install "mcp==1.29.0" pytest pytest-asyncio \
+            ./packages/core/agentskills-core \
+            ./packages/providers/agentskills-fs \
+            ./packages/providers/agentskills-http \
+            ./packages/integrations/agentskills-mcp-server
+          .mcp-legacy/bin/python -m pip check
+
+      - name: Test MCP 1.29 clients against MCP 2.2 servers
+        run: |
+          export AGENTSKILLS_TEST_MCP_SERVER_PYTHON="$(poetry env info --executable)"
+          export AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON="$AGENTSKILLS_TEST_MCP_SERVER_PYTHON"
+          .mcp-legacy/bin/python -m pytest \
+            packages/integrations/agentskills-mcp-server/tests/test_config.py -k stdio -v
+
+      - name: Test MCP 2.2 clients against MCP 1.29 legacy servers
+        env:
+          AGENTSKILLS_TEST_MCP_SERVER_PYTHON: ${{ github.workspace }}/.mcp-legacy/bin/python
+        run: >-
+          poetry run pytest
+          packages/integrations/agentskills-mcp-server/tests/test_config.py -k stdio -v
+
   test-unlocked:
     name: Test (latest permitted dependencies)
     runs-on: ubuntu-latest

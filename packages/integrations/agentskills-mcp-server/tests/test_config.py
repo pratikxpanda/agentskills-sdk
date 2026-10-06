@@ -288,7 +288,7 @@ class TestConfigDrivenServer:
         config_path = tmp_path / "server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=sys.executable,
+            command=os.environ.get("AGENTSKILLS_TEST_MCP_SERVER_PYTHON", sys.executable),
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
@@ -310,6 +310,54 @@ class TestConfigDrivenServer:
             missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
             assert missing.model_dump(by_alias=True)["isError"] is True
             assert "missing" in missing.content[0].text
+
+    async def test_stdio_native_resources_for_legacy_client(self, tmp_path):
+        import asyncio
+        import base64
+        import importlib.util
+        import os
+        import sys
+
+        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp.types import Request, Result
+
+        try:
+            from mcp.shared.exceptions import MCPError
+        except ImportError:
+            from mcp.shared.exceptions import McpError as MCPError
+
+        executable = os.environ.get("AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON")
+        if executable is None and importlib.util.find_spec("mcp.server.extension") is None:
+            pytest.skip("A native MCP SDK server interpreter is required")
+        _write_skill(tmp_path, "test-skill")
+        raw = (tmp_path / "test-skill" / "SKILL.md").read_bytes()
+        config = ServerConfig(
+            name="Native resource compatibility",
+            mode="native",
+            skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
+        )
+        config_path = tmp_path / "native-server.json"
+        config_path.write_text(config.model_dump_json(), encoding="utf-8")
+        parameters = StdioServerParameters(
+            command=executable or sys.executable,
+            args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+            env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+        )
+        async with (
+            asyncio.timeout(20),
+            stdio_client(parameters) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            initialized = await session.initialize()
+            assert initialized.capabilities.resources is not None
+            assert (await session.list_tools()).tools == []
+            resources = (await session.list_resources()).resources
+            assert [str(resource.uri) for resource in resources] == ["skill://test-skill/SKILL.md"]
+            contents = await session.read_resource("skill://test-skill/SKILL.md")
+            assert base64.b64decode(contents.contents[0].blob) == raw
+            with pytest.raises(MCPError) as unsupported:
+                await session.send_request(Request(method="skills/list", params={}), Result)
+            assert unsupported.value.error.code == -32601
 
     async def test_creates_fastmcp_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
