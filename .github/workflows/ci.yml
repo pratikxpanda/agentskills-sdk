@@ -141,6 +141,32 @@ jobs:
             htmlcov/
           retention-days: 14
 
+  test-mcp-modern:
+    name: Test (MCP 2.2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Install the modern MCP SDK floor
+        run: poetry run python -m pip install "mcp==2.2.0"
+
+      - name: Check dependency consistency
+        run: poetry run python -m pip check
+
+      - name: Run tests
+        run: poetry run pytest packages/ -v
+
   test-unlocked:
     name: Test (latest permitted dependencies)
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 """MCP server builder for Agent Skills.
 
-This module creates a `FastMCP <https://pypi.org/project/mcp/>`_ server
+This module creates an official `MCP SDK <https://pypi.org/project/mcp/>`_ server
 that exposes a :class:`~agentskills_core.SkillRegistry` as a set of MCP
 tools and resources.
 
@@ -46,16 +46,26 @@ from __future__ import annotations
 
 import base64
 import json
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
 from mcp.types import ImageContent
+
+try:
+    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp.exceptions import ToolError
+except ModuleNotFoundError as exc:
+    if exc.name != "mcp.server.fastmcp":
+        raise
+    from mcp.server import MCPServer as FastMCP
+    from mcp.server.mcpserver.exceptions import ToolError
 
 from agentskills_core import (
     DEFAULT_MAX_INLINE_BINARY_BYTES,
     DEFAULT_MAX_INLINE_IMAGE_BYTES,
     FAST_PATH_RESOURCE_INSTRUCTIONS,
+    AgentSkillsError,
     FastPath,
     ResourceListingNotSupportedError,
     SkillProvider,
@@ -164,7 +174,7 @@ def create_mcp_server(
 ) -> FastMCP:
     """Build an MCP server that exposes an Agent Skills registry.
 
-    The returned :class:`~mcp.server.fastmcp.FastMCP` server is
+    The returned server (FastMCP on SDK 1.x, MCPServer on SDK 2.x) is
     transport-agnostic.  Call ``server.run()`` to start with the
     default stdio transport, or ``server.run(transport="streamable-http")``
     for HTTP.
@@ -202,8 +212,8 @@ def create_mcp_server(
             back to the JSON envelope.
 
     Returns:
-        A configured :class:`~mcp.server.fastmcp.FastMCP` server
-        instance, ready for ``server.run()``.
+        A configured server from the installed MCP SDK, ready for
+        ``server.run()``. Its direct Python methods follow that SDK's API.
     """
     mcp = FastMCP(name, instructions=instructions)
 
@@ -216,7 +226,15 @@ def create_mcp_server(
         """
         if fast_path is not None and not fast_path.keeps(func.__name__):
             return func
-        return mcp.tool()(func)
+
+        @wraps(func)
+        async def expose_domain_errors(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except AgentSkillsError as exc:
+                raise ToolError(str(exc)) from exc
+
+        return mcp.tool()(expose_domain_errors)
 
     async def _list_resources_json(skill_id: str) -> str:
         """Serialize a skill's resource listing, or why it is unavailable."""

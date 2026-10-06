@@ -1,10 +1,21 @@
 """Tests for the MCP server builder."""
 
 import base64
+import builtins
+import inspect
 import json
+import runpy
+from types import SimpleNamespace
 
 import pytest
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.types import CallToolResult
+
+try:
+    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp.exceptions import ToolError
+except ModuleNotFoundError:
+    from mcp.server import MCPServer as FastMCP
+    from mcp.server.mcpserver.exceptions import ToolError
 
 from agentskills_core import SkillRegistry
 from agentskills_mcp_server import create_mcp_server
@@ -12,13 +23,8 @@ from agentskills_testing import InMemorySkillProvider, build_skill
 
 
 def _tool_text(result) -> str:
-    """Extract the text from a call_tool result.
-
-    ``FastMCP.call_tool`` returns ``(content_list, structured_content)``
-    when ``convert_result=True``.  We want the text of the first content
-    block.
-    """
-    content_list = result[0]
+    """Extract the first text block from either supported SDK result shape."""
+    content_list = result.content if isinstance(result, CallToolResult) else result[0]
     return content_list[0].text
 
 
@@ -68,9 +74,30 @@ async def server(registry):
 
 
 class TestCreateMCPServer:
-    async def test_returns_fastmcp_instance(self, server):
-        from mcp.server.fastmcp import FastMCP
+    @pytest.mark.parametrize("missing", ["mcp.server.fastmcp", "broken_dependency"])
+    def test_sdk_fallback_does_not_hide_broken_dependencies(self, monkeypatch, missing):
+        original_import = builtins.__import__
 
+        def sdk_import(name, *args, **kwargs):
+            if name == "mcp.server.fastmcp":
+                raise ModuleNotFoundError(name=missing)
+            if name == "mcp.server":
+                return SimpleNamespace(MCPServer=FastMCP)
+            if name == "mcp.server.mcpserver.exceptions":
+                return SimpleNamespace(ToolError=ToolError)
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", sdk_import)
+        source = inspect.getfile(create_mcp_server)
+        if missing == "mcp.server.fastmcp":
+            namespace = runpy.run_path(source)
+            assert namespace["FastMCP"] is FastMCP
+        else:
+            with pytest.raises(ModuleNotFoundError) as caught:
+                runpy.run_path(source)
+            assert caught.value.name == missing
+
+    async def test_returns_fastmcp_instance(self, server):
         assert isinstance(server, FastMCP)
 
     async def test_server_name(self, server):

@@ -204,6 +204,10 @@ SHA-256 digests and detect ordinary source drift during capture. Canonical MCP
 manifests, complete frontmatter handling, and protocol delivery remain pending.
 The lossless resources item is not yet complete.
 
+The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
+dedicated modern-SDK CI job and real legacy stdio round trips. The native Skills
+wire contract and client compatibility matrix are still pending.
+
 ---
 
 ## Next: v0.7 "Trust & Operability"
