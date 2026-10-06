@@ -273,6 +273,95 @@ async def _build_server_from_config(config: ServerConfig):
 
 
 class TestConfigDrivenServer:
+    def test_mcpc_native_discovery_and_verified_reads(self, tmp_path):
+        import base64
+        import os
+        import subprocess
+        import sys
+        from hashlib import sha256
+
+        mcpc = os.environ.get("AGENTSKILLS_TEST_MCPC")
+        if not mcpc:
+            pytest.skip("Set AGENTSKILLS_TEST_MCPC to the pinned mcpc JavaScript entry point")
+        for skill_id in ("skill-a", "skill-b"):
+            _write_skill(tmp_path, skill_id)
+        files = {
+            "SKILL.md": (tmp_path / "skill-a" / "SKILL.md").read_bytes(),
+            "references/details.md": b"# Details\r\nExact reference bytes.\r\n",
+            "assets/sample.bin": bytes(range(256)),
+        }
+        for relative_path, data in files.items():
+            target = tmp_path / "skill-a" / relative_path
+            target.parent.mkdir(exist_ok=True)
+            target.write_bytes(data)
+        config = ServerConfig(
+            name="mcpc compatibility",
+            mode="native",
+            page_size=1,
+            skill_paths={"skill-a": "team/skill-a"},
+            skills=[
+                SkillConfig(id=skill_id, provider="fs", options={"root": str(tmp_path)})
+                for skill_id in ("skill-a", "skill-b")
+            ],
+        )
+        server_path = tmp_path / "server.json"
+        server_path.write_text(config.model_dump_json(), encoding="utf-8")
+        client_path = tmp_path / "client.json"
+        client_path.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "native": {
+                            "command": sys.executable,
+                            "args": ["-m", "agentskills_mcp_server", "--config", str(server_path)],
+                            "env": {"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+                            "protocolVersion": "2026-07-28",
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        environment = {**os.environ, "MCPC_HOME_DIR": str(tmp_path / "mcpc-state")}
+        session = "@native-test"
+
+        def invoke(*arguments):
+            result = subprocess.run(
+                ["node", mcpc, "--json", "--timeout", "20", *arguments],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=45,
+                check=False,
+            )
+            assert result.returncode == 0, result.stderr or result.stdout
+            return json.loads(result.stdout)
+
+        uri = "skill://team/skill-a/SKILL.md"
+        try:
+            invoke("connect", f"{client_path}:native", session)
+            direct = invoke(session, "skills-get", uri)
+            assert base64.b64decode(direct["contents"][0]["blob"]) == files["SKILL.md"]
+            listing = invoke(session, "skills-list")
+            assert {skill["uri"] for skill in listing} == {uri, "skill://skill-b/SKILL.md"}
+            assert all("contents" not in skill for skill in listing)
+            manifest = next(skill for skill in listing if skill["uri"] == uri)["resources"]
+            assert len(manifest) == len(files)
+            for relative_path, expected in files.items():
+                result = invoke(session, "skills-get", uri, relative_path)
+                actual = base64.b64decode(result["contents"][0]["blob"])
+                resource = next(
+                    entry
+                    for entry in manifest
+                    if entry["uri"] == f"skill://team/skill-a/{relative_path}"
+                )
+                assert actual == expected
+                assert resource["size"] == len(actual)
+                assert resource["digest"] == f"sha256:{sha256(actual).hexdigest()}"
+        finally:
+            invoke("close", session)
+
     async def test_stdio_legacy_roundtrip(self, tmp_path):
         import asyncio
         import os

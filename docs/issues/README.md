@@ -16,7 +16,7 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 | [v0.3 — Foundations](./v0.3.md) | 12 | Shipped |
 | [v0.4 — Developer Experience](./v0.4.md) | 12 | Shipped |
 | [v0.5 — Agent Effectiveness](./v0.5.md) | 6 | Shipped |
-| v0.6: MCP-First Skills | 7 | Roadmap priorities only. See the [roadmap](../ROADMAP.md#now-v06-mcp-first-skills). |
+| [v0.6: MCP-First Skills](./v0.6.md) | 7 | Implemented. Release verification and deployment deferral recorded in the checklist. |
 | v0.7: Trust & Operability | 7 | Roadmap priorities only. See the [roadmap](../ROADMAP.md#next-v07-trust-operability). |
 | v0.8: Portable Distribution | 5 | Candidate priorities. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
 | v1.0 — Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
