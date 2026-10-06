@@ -247,24 +247,24 @@ class TestConfigDrivenServer:
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
-        async with asyncio.timeout(20):
-            async with stdio_client(parameters) as (read, write):
-                async with ClientSession(read, write) as session:
-                    initialized = await session.initialize()
-                    assert initialized.capabilities.tools is not None
-                    assert initialized.capabilities.resources is not None
-                    assert len((await session.list_tools()).tools) == 8
-                    resources = await session.list_resources()
-                    assert len(resources.resources) == 3
-                    catalog = await session.read_resource("skills://catalog/xml")
-                    assert "test-skill" in catalog.contents[0].text
-                    metadata = await session.call_tool(
-                        "get_skill_metadata", {"skill_id": "test-skill"}
-                    )
-                    assert json.loads(metadata.content[0].text)["name"] == "test-skill"
-                    missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
-                    assert missing.model_dump(by_alias=True)["isError"] is True
-                    assert "missing" in missing.content[0].text
+        async with (
+            asyncio.timeout(20),
+            stdio_client(parameters) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            initialized = await session.initialize()
+            assert initialized.capabilities.tools is not None
+            assert initialized.capabilities.resources is not None
+            assert len((await session.list_tools()).tools) == 8
+            resources = await session.list_resources()
+            assert len(resources.resources) == 3
+            catalog = await session.read_resource("skills://catalog/xml")
+            assert "test-skill" in catalog.contents[0].text
+            metadata = await session.call_tool("get_skill_metadata", {"skill_id": "test-skill"})
+            assert json.loads(metadata.content[0].text)["name"] == "test-skill"
+            missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
+            assert missing.model_dump(by_alias=True)["isError"] is True
+            assert "missing" in missing.content[0].text
 
     async def test_creates_fastmcp_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
