@@ -76,12 +76,21 @@ from agentskills_core.sections import (
     split_sections,
 )
 from agentskills_core.skill import Skill
+from agentskills_core.snapshots import (
+    DEFAULT_SNAPSHOT_MAX_BYTES,
+    DEFAULT_SNAPSHOT_MAX_FILES,
+    SkillFile,
+    SkillSnapshot,
+    capture_skill,
+)
 from agentskills_core.validation import SELECTION_FIELDS, validate_skill, validate_version
 
 __all__ = [
     "DEFAULT_FAST_PATH_MAX_TOKENS",
     "DEFAULT_MAX_INLINE_BINARY_BYTES",
     "DEFAULT_MAX_INLINE_IMAGE_BYTES",
+    "DEFAULT_SNAPSHOT_MAX_BYTES",
+    "DEFAULT_SNAPSHOT_MAX_FILES",
     "FAST_PATH_DROPPED_TOOLS",
     "FAST_PATH_RESOURCE_INSTRUCTIONS",
     "LOGGER_NAMESPACE",
@@ -102,11 +111,14 @@ __all__ = [
     "SectionNotFoundError",
     "SectionRef",
     "Skill",
+    "SkillFile",
     "SkillNotFoundError",
     "SkillOutline",
     "SkillProvider",
     "SkillRegistry",
+    "SkillSnapshot",
     "SkillUnavailableError",
+    "capture_skill",
     "classify_resource",
     "encode_resource_content",
     "estimate_tokens",

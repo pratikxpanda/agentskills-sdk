@@ -198,6 +198,12 @@ v0.6 is complete when a conforming client can discover, verify, and progressivel
 without SDK-specific tools, and existing MCP users retain a tested migration path. Ship any
 security fixes required for that path immediately rather than waiting for v0.7.
 
+Implementation progress: core, filesystem, and opted-in HTTP providers now expose
+complete original file access. Core can capture bounded immutable file sets with
+SHA-256 digests and detect ordinary source drift during capture. Canonical MCP
+manifests, complete frontmatter handling, and protocol delivery remain pending.
+The lossless resources item is not yet complete.
+
 ---
 
 ## Next: v0.7 "Trust & Operability"

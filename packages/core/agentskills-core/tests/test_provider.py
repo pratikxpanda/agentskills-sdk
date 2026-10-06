@@ -1,5 +1,8 @@
 """Tests for SkillProvider ABC."""
 
+from dataclasses import FrozenInstanceError
+from hashlib import sha256
+
 import pytest
 
 from agentskills_core import (
@@ -7,8 +10,11 @@ from agentskills_core import (
     DiscoveryNotSupportedError,
     FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
+    ResourceNotFoundError,
     Skill,
     SkillProvider,
+    SkillUnavailableError,
+    capture_skill,
 )
 
 
@@ -124,6 +130,135 @@ class TestFileAccessCapability:
         assert skill.supports_file_access
         assert await skill.list_files() == ["SKILL.md", "data/nested.bin"]
         assert await skill.read_file("SKILL.md") == original
+
+
+class _RawProvider(_StubProvider):
+    supports_file_access = True
+
+    def __init__(self, files):
+        self.files = files
+        self.reads = []
+
+    async def list_files(self, skill_id):
+        return list(self.files)
+
+    async def read_file(self, skill_id, path):
+        self.reads.append(path)
+        return self.files[path]
+
+
+class TestSkillSnapshots:
+    async def test_capture_preserves_original_bytes_and_remains_immutable(self):
+        original = b"\xef\xbb\xbf---\r\nname: demo\r\n---\r\n# Body\r\n"
+        provider = _RawProvider({"z/deep.bin": b"\x00\xff", "SKILL.md": original})
+        snapshot = await capture_skill(Skill("demo", provider))
+        provider.files["SKILL.md"] = b"changed"
+        assert snapshot.skill_id == "demo"
+        assert [file.path for file in snapshot.files] == ["SKILL.md", "z/deep.bin"]
+        assert snapshot.total_bytes == len(original) + 2
+        for file in snapshot.files:
+            assert file.digest == "sha256:" + sha256(file.data).hexdigest()
+            assert file.size == len(file.data)
+        assert snapshot.get_file("SKILL.md").data == original
+        assert snapshot.get_file("z/deep.bin").data == b"\x00\xff"
+        assert provider.reads == ["SKILL.md", "z/deep.bin"] * 2
+        with pytest.raises(FrozenInstanceError):
+            snapshot.get_file("SKILL.md").data = b"changed"
+        with pytest.raises(FrozenInstanceError):
+            snapshot.files = ()
+        with pytest.raises(ResourceNotFoundError):
+            snapshot.get_file("../SKILL.md")
+
+    @pytest.mark.parametrize("limits", [{"max_files": 0}, {"max_total_bytes": -1}])
+    async def test_invalid_limits(self, limits):
+        with pytest.raises(ValueError, match="Snapshot limits"):
+            await capture_skill(Skill("demo", _StubProvider()), **limits)
+
+    async def test_requires_lossless_capability(self):
+        with pytest.raises(FileAccessNotSupportedError):
+            await capture_skill(Skill("demo", _StubProvider()))
+
+    @pytest.mark.parametrize(
+        "path", ["", "/root", "../bad", "a//b", "a/./b", "a\\b", "a:b", "a\0b"]
+    )
+    async def test_rejects_unsafe_listing_before_reading(self, path):
+        provider = _RawProvider({"SKILL.md": b"", path: b""})
+        with pytest.raises(ValueError, match="unsafe"):
+            await capture_skill(Skill("demo", provider))
+        assert not provider.reads
+
+    async def test_requires_skill_document(self):
+        with pytest.raises(ValueError, match=r"include SKILL\.md"):
+            await capture_skill(Skill("demo", _RawProvider({})))
+
+    async def test_rejects_duplicate_paths(self):
+        class DuplicateProvider(_RawProvider):
+            async def list_files(self, skill_id):
+                return ["SKILL.md", "SKILL.md"]
+
+        with pytest.raises(ValueError, match="unique"):
+            await capture_skill(Skill("demo", DuplicateProvider({})))
+
+    async def test_limits_accept_boundary_and_reject_overflow(self):
+        provider = _RawProvider({"SKILL.md": b"123", "empty": b""})
+        assert await capture_skill(Skill("demo", provider), max_files=2, max_total_bytes=3)
+        with pytest.raises(ValueError, match="1-file"):
+            await capture_skill(Skill("demo", provider), max_files=1)
+        provider.reads.clear()
+        with pytest.raises(ValueError, match="2-byte"):
+            await capture_skill(Skill("demo", provider), max_total_bytes=2)
+        assert provider.reads == ["SKILL.md"]
+        empty = await capture_skill(
+            Skill("demo", _RawProvider({"SKILL.md": b""})), max_total_bytes=0
+        )
+        assert empty.total_bytes == 0
+
+    async def test_rejects_non_bytes(self):
+        with pytest.raises(ValueError, match="return bytes"):
+            await capture_skill(Skill("demo", _RawProvider({"SKILL.md": "text"})))
+
+    async def test_default_file_limit(self):
+        provider = _RawProvider(
+            {"SKILL.md": b"", **{f"files/{index}": b"" for index in range(511)}}
+        )
+        snapshot = await capture_skill(Skill("demo", provider))
+        assert len(snapshot.files) == 512
+        provider.files["overflow"] = b""
+        provider.reads.clear()
+        with pytest.raises(ValueError, match="512-file"):
+            await capture_skill(Skill("demo", provider))
+        assert not provider.reads
+
+    async def test_default_byte_limit(self):
+        provider = _RawProvider({"SKILL.md": b"x" * (16 * 1024 * 1024)})
+        snapshot = await capture_skill(Skill("demo", provider))
+        assert snapshot.total_bytes == 16 * 1024 * 1024
+        provider.files["extra"] = b"x"
+        with pytest.raises(ValueError, match="16777216-byte"):
+            await capture_skill(Skill("demo", provider))
+
+    async def test_rejects_non_string_path(self):
+        with pytest.raises(ValueError, match="unsafe"):
+            await capture_skill(Skill("demo", _RawProvider({"SKILL.md": b"", 7: b""})))
+
+    async def test_rejects_membership_change(self):
+        class ChangingProvider(_RawProvider):
+            async def read_file(self, skill_id, path):
+                self.files["new"] = b""
+                return await super().read_file(skill_id, path)
+
+        with pytest.raises(SkillUnavailableError, match="listing changed"):
+            await capture_skill(Skill("demo", ChangingProvider({"SKILL.md": b"first"})))
+
+    async def test_rejects_content_change(self):
+        class ChangingProvider(_RawProvider):
+            async def read_file(self, skill_id, path):
+                data = await super().read_file(skill_id, path)
+                self.files[path] = b"changed"
+                return data
+
+        with pytest.raises(SkillUnavailableError, match="content changed"):
+            await capture_skill(Skill("demo", ChangingProvider({"SKILL.md": b"first"})))
 
 
 class TestSkillProviderABC:

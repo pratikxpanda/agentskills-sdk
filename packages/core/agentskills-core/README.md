@@ -130,6 +130,41 @@ lists the keys that do exist.
 tool call and outline tokens cost more than they save; `render()` says so in words, so agents
 reading only the rendered text still get the guidance.
 
+### Capturing Original Files
+
+`capture_skill()` creates a bounded, immutable collection for delivery systems
+that need file bytes to match a previously advertised manifest:
+
+```python
+from agentskills_core import capture_skill
+
+snapshot = await capture_skill(registry.get_skill("incident-response"))
+for file in snapshot.files:
+  print(file.path, file.digest, file.size)
+original = snapshot.get_file("SKILL.md").data
+```
+
+Files are sorted by relative path. Each `SkillFile` holds original `bytes`, a
+`sha256:` digest, and a raw byte size. Reads from the snapshot never contact the
+provider, even after its source changes. `SkillSnapshot.total_bytes` reports the
+aggregate size. Unknown paths raise `ResourceNotFoundError`.
+
+The defaults are 512 files and 16 MiB per skill, including `SKILL.md`. Pass
+`max_files` and `max_total_bytes` to impose tighter application limits. Invalid
+listings and exceeded limits raise `ValueError` without returning a partial
+snapshot. Providers without lossless access raise `FileAccessNotSupportedError`.
+
+Capture reads every file twice and checks the listing again to detect ordinary
+concurrent changes, raising `SkillUnavailableError` when it detects drift. Use
+trusted, immutable publication sources during capture. These checks cannot make
+a mutable filesystem transactional or prove consistency against a malicious
+provider. They do not parse or validate frontmatter, grant consent, execute
+scripts, or establish publisher trust.
+
+Provider per-file limits still apply. Callers must bound the number of snapshots
+they retain. This server-side preparation is not client-side prefetching and does
+not itself implement the MCP Skills protocol.
+
 ### Building a Catalog
 
 Generate a catalog string for system-prompt injection:
