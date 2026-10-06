@@ -36,6 +36,7 @@ from agentskills_core.encoding import (
 from agentskills_core.exceptions import (
     AgentSkillsError,
     DiscoveryNotSupportedError,
+    FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SectionNotFoundError,
@@ -93,6 +94,7 @@ __all__ = [
     "AgentSkillsError",
     "DiscoveryNotSupportedError",
     "FastPath",
+    "FileAccessNotSupportedError",
     "ResourceListingNotSupportedError",
     "ResourceMedia",
     "ResourceNotFoundError",

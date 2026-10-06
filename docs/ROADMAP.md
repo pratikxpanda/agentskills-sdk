@@ -1,4 +1,7 @@
-# Agent Skills SDK — Roadmap
+---
+title: Agent Skills SDK Roadmap
+description: MCP-first priorities, native adapter retirement, and future SDK capabilities.
+---
 
 > Public roadmap for the [Agent Skills SDK](index.md). Themes and ordering, not dates.
 
@@ -22,9 +25,63 @@ explicit design doc arguing the trade-off.
 3. **Skills are untrusted code.** Skill content lands verbatim in an agent's context. Trust,
    provenance, and integrity are first-class product features, not documentation footnotes.
 4. **Small, composable packages.** `agentskills-core` stays dependency-light. Providers and
-   framework integrations are optional installs and never leak into core.
-5. **Framework-agnostic core, thin adapters.** Framework-specific behaviour belongs in the
-   integration package. If two integrations need the same logic, it moves to core.
+    MCP support are optional installs and never leak into core.
+5. **MCP-first interoperability.** MCP is the maintained integration boundary. Frameworks
+    connect through their own MCP clients, not SDK-owned native adapters. Reusable skill
+    behaviour belongs in core or retrieval, not in a framework lifecycle hook.
+
+## Direction After v0.5.0
+
+v0.5.0 is shipped. The next priority is standards-aligned skill delivery over MCP, followed
+by production trust and operability. Native LangChain and Microsoft Agent Framework
+integrations will be retired through a documented migration window. This roadmap changes
+future priorities, not the support status or behaviour of the already-published v0.5.0 packages.
+
+### Official MCP Skills Support
+
+Checked 2026-10-05: MCP has an official, optional
+[Skills extension](https://modelcontextprotocol.io/extensions/skills/overview),
+`io.modelcontextprotocol/skills`. [SEP-2640](https://modelcontextprotocol.io/seps/2640-skills-extension)
+is Final. The [published extension specification](https://github.com/modelcontextprotocol/ext-skills/blob/main/specification/stable/skills.mdx)
+is authoritative for current requirements, rather than the historical SEP text. The current
+base protocol revision is [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28).
+The [client support matrix](https://modelcontextprotocol.io/extensions/client-matrix) still shows
+uneven adoption, so ordinary MCP connectivity is not proof of Skills extension support.
+
+The Agent Skills specification defines the file format. The MCP extension defines its
+discovery and transport binding. Alignment means:
+
+- Declare the Resources capability and Skills extension through the supported protocol's
+   capability mechanism. For 2026-07-28, this includes `server/discover` and per-request metadata.
+- Implement paginated `skills/list` and direct `skills/get`. Entries carry the full,
+   unchanged frontmatter and a complete file manifest with raw-byte SHA-256 digests and sizes,
+   or the explicit `"dynamic"` marker where stable content cannot be promised.
+- Serve the full `SKILL.md`, including frontmatter, and supporting files through
+   `resources/read`, conventionally at `skill://<skill-path>/SKILL.md` and sibling URIs.
+   Preserve arbitrary supporting directories, relative references, and native text/blob content.
+- Follow the current result, cache, error, and pagination contracts. Gate optional
+   `resources/directory/read` behind `directoryRead`, and account for the extension's
+   interoperability limits of 512 files and 16 MiB per skill.
+- Keep discovery metadata-only on the client. Reading a resource is not skill activation.
+   Hosts own selection, approval, context injection, and execution permissions. Skills are
+   identified by originating server plus URI, not by name alone.
+
+The existing `get_skill_*` tools and `skills://catalog/*` resources are a legacy compatibility
+surface, not this extension. MCP prompts may provide user-invoked shortcuts, but do not
+substitute for native skill discovery. Section disclosure and retrieval remain useful SDK
+features, without becoming proprietary requirements for reading a standards-compliant skill.
+
+### Native Integration Retirement
+
+| Stage | Planned change | Exit condition |
+| --- | --- | --- |
+| v0.6: deprecate | Announce maintenance-only status for `agentskills-langchain`, `agentskills-agentframework`, and `AgentSkillsMcpContextProvider` plus the `[agentframework]` extra in `agentskills-mcp-server`. No new framework-specific features. Continue critical correctness and security fixes during the migration window. | Publish replacement examples using framework-owned MCP clients, a feature-gap matrix, deprecation warnings, and release notes. Audit catalog injection, retrieval, session pruning, fast path, and image delivery rather than assuming tool connectivity replaces them. |
+| v0.7 or later: retire | End the two native distributions' participation in lockstep releases and remove the Agent Framework bridge/extra from the maintained MCP package. Update dependency, test, build, publish, and documentation inventories together. | At least one full minor-release migration window after deprecation ships, tested migration paths for both frameworks, and an explicit breaking-change notice. Unresolved gaps must have documented alternatives before removal. |
+| After retirement | Keep previously published wheels and versioned documentation available. Framework-specific integration examples may remain, using upstream MCP clients. | No deletion or yanking solely for retirement, no new first-party native adapters, and no claim that archived versions track future framework releases. |
+
+Retiring framework adapters does not retire `agentskills-adapters`, which imports instruction
+formats. Nor does it remove the framework-neutral core, providers, retrieval, testing, or CLI.
+Migration parity need not reproduce every framework convenience, but any loss must be explicit.
 
 ## Themes
 
@@ -37,7 +94,8 @@ explicit design doc arguing the trade-off.
 | **Trust & supply chain** | The differentiator for enterprise adoption. Skills are code; treat them like it. |
 | **Operability** | Platform teams cannot run what they cannot see. Logs, traces, metrics, usage signals. |
 | **Developer experience** | Adoption is gated on how fast someone can author, validate, and ship a skill. |
-| **Ecosystem breadth** | More providers and framework integrations widen the addressable surface. |
+| **MCP interoperability** | One standards-aligned delivery path reaches multiple hosts without maintaining a native adapter for each framework. |
+| **Distribution** | Reproducible, portable skill sources matter more than a long list of speculative providers. |
 | **Project health** | An open-source project is a product; release engineering and governance are features. |
 
 ---
@@ -120,39 +178,61 @@ body fetch — so the table is ordered by dependency rather than by value.
 
 ---
 
-## Now — v0.6 "Trust & Operability"
+## Now: v0.6 "MCP-First Skills"
 
-The enterprise story. This is the work that makes the SDK viable as the substrate for a control
-plane that publishes skills centrally and governs who may use which version.
+Make the official Skills extension the primary integration path. Order the work around the
+wire contract and migration safety. Protocol-required integrity is part of this milestone,
+not postponed to the broader trust work in v0.7.
 
 | Item | Theme | Package(s) | Notes |
-|---|---|---|---|
-| Skill integrity & provenance | Trust | `agentskills-core` | Optional manifest with per-file SHA-256, verified on load. Then detached signature verification (Sigstore) and an "unverified skill" policy switch. Skills are code — this is the missing supply-chain control. |
-| Content policy pipeline | Trust | `agentskills-core` | Pluggable `SkillPolicy` hooks that run before content enters agent context: reject, redact, or annotate. Ships with a heuristic prompt-injection scanner and a max-token guard; enterprises plug in their own. |
-| `allowed-tools` enforcement | Trust | integrations | The field is validated but never enforced. Integrations should be able to constrain the agent's tool surface while a skill is active. |
-| SSRF hardening | Trust | `agentskills-http` | Host allow/deny lists, private/link-local IP range blocking by default, DNS-rebinding-aware connection checks. `require_tls` alone is not an SSRF control. |
-| Secret redaction | Trust | `agentskills-core`, `agentskills-http` | Central redaction helper applied to exception messages and log records so `Authorization` headers and SAS tokens never surface in tracebacks. |
-| OpenTelemetry instrumentation | Operability | `agentskills-core` + providers | Spans for fetch/parse/validate, metrics for fetch latency, cache hit ratio, and payload size. Optional dependency, no-op when OTel is absent. |
-| Skill usage telemetry hooks | Operability | `agentskills-core` | Callback protocol emitting "skill X disclosed at level Y". Answers the question every platform team asks: *which skills are actually being used?* Feeds adoption analytics directly. |
-| Startup health check | Resilience | `agentskills-core` | `registry.health()` verifying every provider is reachable and every skill parses, at boot. A misconfigured provider should fail deployment, not fail silently mid-conversation. |
-| Serve-stale on provider failure | Resilience | providers | If a refresh fails but cached content exists, serve the stale copy and flag it rather than failing the agent turn. A registry outage should degrade the agent, not break it. Builds on v0.3 caching and error classification. |
+| --- | --- | --- | --- |
+| Native adapter deprecation and migration | Interoperability | native integrations, MCP, docs | Start the retirement sequence above. Provide LangChain and Microsoft Agent Framework examples using their upstream MCP clients. Inventory framework-only behaviour and publish supported replacements or explicit gaps before removing anything. |
+| Official Skills extension and protocol baseline | Correctness | `agentskills-mcp-server` | Select an official Python MCP SDK release with the required protocol/extension support. Implement capability declaration, `skills/list`, `skills/get`, required request metadata and result/cache fields, pagination, and specified errors. Record supported protocol and extension revisions. An empty or partial listing must not prevent direct lookup of a served skill. |
+| Lossless skill resources and manifests | Correctness / Trust | core, providers, MCP | Add the provider capabilities needed to serve complete raw `SKILL.md` content and every supporting file, including nonstandard and nested directories. Preserve all frontmatter fields, resolve registry aliases to conforming URI paths, and publish complete byte-accurate manifests. Retain coherent snapshots so files cannot drift from advertised digests. Do not pass canonical reads through body-only, section, image-conversion, or binary-omission paths. Reserve `"dynamic"` for genuinely dynamic content, not as a workaround for missing enumeration. |
+| Legacy MCP compatibility and host boundaries | Interoperability | MCP, core, retrieval | Keep existing tools and `skills://` resources as an explicit compatibility mode during adoption. Do not silently rewrite their URIs or claim feature parity. Native Skills mode must not eagerly inline a lone skill at discovery or connection time. Keep selection, consent, session/context tracking, and `allowed-tools` grants host-owned. Avoid duplicate catalog injection when the host already manages skills. |
+| MCP conformance and client compatibility matrix | Correctness | `agentskills-testing`, MCP tests, examples | Exercise real protocol round trips over stdio and Streamable HTTP, using upstream conformance scenarios where available. Cover pagination, direct lookup, exact frontmatter/bytes, digest drift, binary files, traversal, nested skills, unsupported capabilities, and legacy clients. Publish tested client versions and distinguish ordinary tools/resources support from full Skills support. This is a release gate, not an unverified "any client" promise. |
+| Skill discovery and delivery benchmarks | Agent effectiveness / Performance | retrieval, tools, MCP | Measure selection precision/recall including no-match cases, metadata tokens, bytes read, tool/model round trips, and latency against the v0.5 path. Exercise small and large catalogs. Keep optional ranking separate from standards-based enumeration and preserve direct lookup. Prove discovery does not prefetch skill files into clients. |
+| MCP inspection and deployment diagnostics | DX / Resilience | `agentskills-tools`, MCP | Extend inspect/serve diagnostics to report protocol capabilities, canonical skill URIs, manifest consistency, size-limit violations, provider readiness, and actionable client fallback guidance. Keep local stdio and remote Streamable HTTP recipes, with secure transport and authentication boundaries stated explicitly. |
+
+v0.6 is complete when a conforming client can discover, verify, and progressively read a skill
+without SDK-specific tools, and existing MCP users retain a tested migration path. Ship any
+security fixes required for that path immediately rather than waiting for v0.7.
 
 ---
 
-## Next — v0.7 "Ecosystem"
+## Next: v0.7 "Trust & Operability"
 
-Breadth, once the core contracts are stable enough that each new package is cheap to add.
+Build production controls on the MCP contract, and complete adapter retirement only when the
+migration gates above pass. Server-provided hashes establish consistency, not publisher trust.
+
+| Item | Theme | Package(s) | Notes |
+| --- | --- | --- | --- |
+| Complete native adapter retirement | Project health | integrations, release tooling | Remove the deprecated native packages and Agent Framework bridge from maintained releases once the v0.6 migration window and replacement checks pass. Otherwise defer removal, not the rest of this milestone. |
+| Provenance and verified-content policy | Trust | core, providers | Build on v0.6 manifests with detached signature verification, trusted-publisher policy, and immutable content/version pinning. Keep unsigned, dynamically generated, and verified content distinguishable. Do not imply that a matching server-supplied digest establishes authorship or safety. |
+| Content policy and host approval contract | Trust | core, MCP, docs | Add pluggable reject/redact/annotate hooks and token limits. Treat injection heuristics as advisory, not a security boundary. Server-side transformations must precede manifest generation. Document host duties for origin visibility, content-bound approvals, nested-skill consent, and permission grants. An MCP server cannot enforce another host's `allowed-tools` or sandbox. |
+| Remote access hardening and secret redaction | Trust | HTTP, MCP, core | Cover outbound SSRF controls, redirect and DNS-rebinding checks, configurable private-network access, timeouts, and size limits. Cover inbound HTTP origin/host validation and integration with MCP authorization supplied by the deployment. Never pass client bearer tokens through to upstream providers. Redact credentials consistently from failures and diagnostics. |
+| OpenTelemetry and disclosure events | Operability | core, providers, MCP | Optional spans and metrics for discovery, lookup, fetch, verification, cache hit rate, bytes, and latency. Emit privacy-preserving disclosure hooks with origin and content revision, not bodies or secrets. Distinguish server reads from actual host activation or task success. |
+| Health checks and controlled refresh | Resilience | core, providers, MCP | Validate readiness before serving. Refresh registry metadata and manifests atomically, with cache scopes and TTLs appropriate to the negotiated protocol. Keep authorization-sensitive catalogs isolated and make changed or removed content observable. |
+| Verified stale-cache policy | Resilience / Trust | providers, MCP | Opt-in, bounded-age stale serving for provider outages only. Serve a coherent previously verified snapshot with its matching manifest. Never downgrade on verification failure, revoked access, or known content removal. Make stale status observable without weakening host approval rules. |
+
+---
+
+## Later: v0.8 "Portable Distribution"
+
+Expand sources and composition after MCP interoperability is proven. These are candidates,
+ordered by expected value rather than a commitment to add every provider.
 
 | Item | Theme | Notes |
-|---|---|---|
-| Skills as MCP prompts | Interoperability | The MCP server exposes skills as tools only. Many clients surface *prompts* as slash commands, so the same registry becomes user-invocable in Claude Desktop, VS Code, and others for very little work. |
-| Git provider | Ecosystem | Most skills live in Git repos. Clone/fetch with ref or commit pinning, sparse checkout, local cache. Likely the single most requested provider. |
-| Object storage provider | Ecosystem | S3 / Azure Blob / GCS via a common abstraction, with native credential chains instead of hand-rolled headers. |
-| OCI artifact provider | Ecosystem | Skills as OCI artifacts in any container registry — inherits existing signing, replication, and RBAC infrastructure. Pairs naturally with the integrity work in v0.6. |
-| Database provider | Ecosystem | Reference implementation over SQL for teams storing skills in an existing system of record. |
-| OpenAI Agents SDK integration | Ecosystem | Notable gap in the current integration matrix. |
-| Additional framework adapters | Ecosystem | Pydantic AI, Semantic Kernel, LlamaIndex, CrewAI. Prioritize by inbound demand rather than building all of them speculatively. |
-| Node/TypeScript port | Ecosystem | Large commitment. Only if there is clear pull — the MCP server already serves TS agents today, which may be sufficient. |
+| --- | --- | --- |
+| Git provider with reproducible resolution | Distribution | Resolve refs to immutable commits, support subdirectory selection and a bounded local cache, and record origin and content digests. Do not run repository hooks or skill scripts. This is the first additional provider priority. |
+| Skill lockfile and offline verification | Trust / DX | Record source, resolved revision, and per-file digests so CI and agents use the same content. Add drift detection and explicit update/rollback workflows. Reuse extension manifests rather than inventing a second skill format. This is local tooling, not an archive transport extension. |
+| Framework-neutral MCP consumption and composition | Interoperability | Assess an optional MCP-backed provider/client helper using the official client SDK. Preserve originating server plus URI, on-demand reads, verification, cache isolation, and caller-owned approval. Avoid eager `register_all` content validation on discovery and prevent identity loss or loops when composing servers. No framework lifecycle adapters. |
+| Object storage and OCI sources | Distribution | Add only with demonstrated demand. Object stores should reuse native credential chains. OCI should reuse existing artifact signing and registry controls. Both must preserve the same manifest and progressive-disclosure contracts. |
+| Optional MCP prompt shortcuts | DX | User-invoked workflows for hosts that support prompts. Add only where they improve a tested workflow, without replacing Skills discovery or bypassing approval and provenance. |
+
+SQL providers and a Node/TypeScript port are deferred pending demand that MCP cannot satisfy.
+New OpenAI Agents SDK, Pydantic AI, Semantic Kernel, LlamaIndex, and CrewAI native adapters are
+removed from the roadmap. Examples using those frameworks' MCP clients remain in scope.
 
 ---
 
@@ -160,10 +240,10 @@ Breadth, once the core contracts are stable enough that each new package is chea
 
 | Item | Notes |
 |---|---|
-| API freeze | Public surface documented and frozen; anything not documented is explicitly private. |
-| Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated cross-package version guarantees. |
-| Release automation end-to-end | Changelog generation, signed artifacts with build provenance/attestations, automated publish on tag. |
-| Control plane interoperability | The SDK contracts a central publishing layer depends on (versioning, integrity, telemetry, MCP gateway composition) are stable and documented. |
+| API freeze | Public surface documented and frozen, with native adapter retirement complete. Anything not documented is explicitly private. |
+| Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated version guarantees for maintained packages. Publish supported MCP protocol/extension revisions and the legacy compatibility lifecycle. |
+| Release automation end-to-end | Preserve existing Trusted Publishing and attestations. Complete changelog automation and validate the reduced package inventory and reproducible release process. |
+| Control plane interoperability | Stabilize versioning, integrity, telemetry, origin-preserving MCP composition, and caller-owned authorization boundaries. Protocol conformance and tested host compatibility are release gates. |
 
 ---
 
@@ -175,9 +255,13 @@ Stating these prevents recurring proposals and scope creep.
   execution is the host application's responsibility. We will document the hazard, not own it.
 - **Authoring or hosting UI.** That belongs to a control plane built on top of the SDK, not to the
   SDK itself.
-- **Authentication and authorization.** Providers accept caller-supplied credentials. The SDK
-  is not an identity or policy system.
-- **Being an agent framework.** We integrate with frameworks; we do not compete with them.
+- **Owning an identity system.** Providers accept caller-supplied credentials and remote MCP
+   deployments integrate with standard authorization. Building an identity provider, approval UI,
+   or enterprise authorization service is outside the SDK.
+- **Being an agent framework.** Frameworks connect through MCP. The SDK does not own their
+   orchestration, conversation state, tool permissions, or execution sandbox.
+- **Maintaining native framework adapters.** Retire the LangChain and Microsoft Agent Framework
+   integrations through the migration policy above. New framework support uses MCP examples.
 - **Forking the skill format.** Divergence from the open spec is a last resort.
 
 ---

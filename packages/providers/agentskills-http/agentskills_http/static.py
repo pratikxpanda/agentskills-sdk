@@ -49,6 +49,7 @@ from agentskills_core import (
     RESOURCE_KINDS,
     AgentSkillsError,
     DiscoveryNotSupportedError,
+    FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
     ResourceNotFoundError,
     SkillNotFoundError,
@@ -176,6 +177,11 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             <agentskills_core.SkillRegistry.register_all>`.  Defaults to
             ``False`` for the same reason: without a manifest, "no
             skills found" would be a lie.
+        file_manifest: Set ``True`` if each skill's ``index.json`` has a
+            complete ``"files"`` list of relative paths including ``SKILL.md``.
+            Enables lossless file access. Invalid or incomplete manifests fail
+            instead of silently omitting entries. Clients that follow redirects
+            are rejected in this mode to keep file reads on the configured host.
         timeout: Request timeout in seconds.  Ignored when you supply
             your own *client*.
         max_retries: Retries after the initial attempt, for retryable
@@ -218,6 +224,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         revalidate: bool = False,
         resource_manifest: bool = False,
         skill_manifest: bool = False,
+        file_manifest: bool = False,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
         max_retries: int = DEFAULT_MAX_RETRIES,
         retry_backoff: float = DEFAULT_RETRY_BACKOFF_SECONDS,
@@ -230,6 +237,10 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             )
         if max_retries < 0:
             raise ValueError("max_retries must not be negative")
+        if max_response_bytes < 0:
+            raise ValueError("max_response_bytes must not be negative")
+        if file_manifest and client is not None and client.follow_redirects:
+            raise ValueError("file_manifest requires a client with follow_redirects=False")
         if retry_backoff <= 0:
             raise ValueError("retry_backoff must be positive")
         if max_retry_delay <= 0:
@@ -257,6 +268,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._skill_md_cache: dict[str, _CachedSkillMd] = {}
         self.supports_resource_listing = resource_manifest
         self.supports_discovery = skill_manifest
+        self.supports_file_access = file_manifest
         self._max_retries = max_retries
         self._retry_backoff = retry_backoff
         self._max_retry_delay = max_retry_delay
@@ -521,6 +533,62 @@ class HTTPStaticFileSkillProvider(SkillProvider):
     # Internal helpers
     # ------------------------------------------------------------------
 
+    async def list_files(self, skill_id: str) -> list[str]:
+        """Return the complete, sorted file list without fetching file contents.
+
+        The host must publish ``{"files": ["SKILL.md", "data/nested.bin"]}``
+        in the skill's ``index.json``. This is separate from legacy grouped
+        resource listing and must include every supporting file.
+        """
+        if not self.supports_file_access:
+            raise FileAccessNotSupportedError("Enable file_manifest for lossless file access")
+        self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/{MANIFEST_NAME}"
+        subject = f"File manifest for skill {skill_id!r}"
+        try:
+            manifest = await self._fetch_manifest(url, subject)
+        except ResourceNotFoundError as exc:
+            await self.read_file(skill_id, "SKILL.md")
+            raise FileAccessNotSupportedError(f"{subject} is not published") from exc
+        paths = manifest.get("files")
+        if not isinstance(paths, list) or "SKILL.md" not in paths:
+            raise AgentSkillsError(f"{subject} requires a files list including SKILL.md")
+        for path in paths:
+            if not isinstance(path, str):
+                raise AgentSkillsError(f"{subject} contains a non-string path")
+            self._validate_file_path(path)
+        if len(set(paths)) != len(paths):
+            raise AgentSkillsError(f"{subject} contains duplicate paths")
+        return sorted(paths)
+
+    async def read_file(self, skill_id: str, path: str) -> bytes:
+        """Fetch exact file bytes, bypassing the parsed SKILL.md cache.
+
+        Paths are POSIX-relative to the skill directory. Nested paths are
+        supported. Redirects and unsolicited conditional responses are refused.
+        """
+        if not self.supports_file_access:
+            raise FileAccessNotSupportedError("Enable file_manifest for lossless file access")
+        self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
+        self._validate_file_path(path)
+        url = f"{self._base_url}/{quote(skill_id, safe='')}/{quote(path, safe='/')}"
+        error = SkillNotFoundError if path == "SKILL.md" else ResourceNotFoundError
+        try:
+            data, _ = await self._stream_bytes(url, error)
+        except ResourceNotFoundError:
+            await self.read_file(skill_id, "SKILL.md")
+            raise
+        if data is None:
+            raise AgentSkillsError("Lossless file reads require a complete response")
+        return data
+
+    @staticmethod
+    def _validate_file_path(path: str) -> None:
+        if any(part in ("", ".", "..") for part in path.split("/")) or any(
+            character in path for character in ("\\", ":", "\x00")
+        ):
+            raise ResourceNotFoundError("Invalid relative skill file path")
+
     async def _fetch_manifest(self, url: str, subject: str) -> dict[str, Any]:
         """Fetch and parse an ``index.json`` manifest.
 
@@ -635,12 +703,19 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         safe_url = self._describe(url)
         _logger.debug("GET %s", safe_url)
         try:
-            async with self._client.stream("GET", url, headers=extra_headers) as resp:
+            async with self._client.stream(
+                "GET",
+                url,
+                headers=extra_headers,
+                follow_redirects=False if self.supports_file_access else httpx.USE_CLIENT_DEFAULT,
+            ) as resp:
                 status = resp.status_code
                 if status in _NOT_FOUND_STATUS_CODES:
                     raise not_found_error(f"Skill content not found at {safe_url}")
                 if status == 304:
                     return None, resp.headers
+                if self.supports_file_access and status != 200 and status < 400:
+                    raise AgentSkillsError(f"HTTP {status} is not a complete file response")
                 if status in _RETRYABLE_STATUS_CODES or status >= 500:
                     raise SkillUnavailableError(
                         f"HTTP {status} from {safe_url}",

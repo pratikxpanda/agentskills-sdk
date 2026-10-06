@@ -184,3 +184,16 @@ class Skill:
 
     def __repr__(self) -> str:
         return f"Skill({self._skill_id!r})"
+
+    @property
+    def supports_file_access(self) -> bool:
+        """Whether the provider can enumerate and read all original files."""
+        return self._provider.supports_file_access
+
+    async def list_files(self) -> list[str]:
+        """Return every file path relative to this skill's root, including SKILL.md."""
+        return await self._provider.list_files(self._skill_id)
+
+    async def read_file(self, path: str) -> bytes:
+        """Return the original bytes of a file relative to this skill's root."""
+        return await self._provider.read_file(self._skill_id, path)

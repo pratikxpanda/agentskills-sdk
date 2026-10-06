@@ -134,6 +134,131 @@ class TestLocalFileSystemSkillProvider:
             await provider.get_reference("test-skill", "../../pyproject.toml")
 
 
+class TestLosslessFiles:
+    @pytest.mark.parametrize("limit", [-1, -2, -100])
+    def test_negative_size_limit_is_rejected(self, tmp_path: Path, limit: int):
+        with pytest.raises(ValueError, match="max_file_bytes must be non-negative"):
+            LocalFileSystemSkillProvider(tmp_path, max_file_bytes=limit)
+
+    async def test_complete_tree_and_exact_bytes(self, tmp_path: Path):
+        skill_dir = _create_skill(tmp_path)
+        original = b"\xef\xbb\xbf---\r\nname: test-skill\r\n---\r\n# Body\r\n"
+        (skill_dir / "SKILL.md").write_bytes(original)
+        nested = skill_dir / "custom" / "nested"
+        nested.mkdir(parents=True)
+        (nested / "data.bin").write_bytes(b"\x00\xff\x80")
+        (skill_dir / ".included").write_bytes(b"hidden")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        assert provider.supports_file_access
+        assert await provider.list_files("test-skill") == [
+            ".included",
+            "SKILL.md",
+            "custom/nested/data.bin",
+        ]
+        assert await provider.read_file("test-skill", "SKILL.md") == original
+        assert await provider.read_file("test-skill", "custom/nested/data.bin") == b"\x00\xff\x80"
+
+    async def test_listing_does_not_read_contents(self, tmp_path: Path, monkeypatch):
+        _create_skill(tmp_path)
+
+        def refuse_read(*args, **kwargs):
+            pytest.fail("listing must not read file bytes")
+
+        monkeypatch.setattr(Path, "open", refuse_read)
+        assert await LocalFileSystemSkillProvider(tmp_path).list_files("test-skill") == ["SKILL.md"]
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "",
+            "/SKILL.md",
+            "../other/SKILL.md",
+            "./SKILL.md",
+            "custom//file",
+            "custom/../SKILL.md",
+            "custom\\file",
+            "C:/file",
+            "SKILL.md:stream",
+            "\x00",
+            "missing",
+        ],
+    )
+    async def test_unsafe_or_missing_paths(self, tmp_path: Path, path: str):
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(ResourceNotFoundError):
+            await provider.read_file("test-skill", path)
+
+    @pytest.mark.parametrize("skill_id", ["", ".", "..", "../test-skill", "C:/file", "\x00"])
+    async def test_invalid_skill_ids(self, tmp_path: Path, skill_id: str):
+        _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError):
+            await provider.list_files(skill_id)
+        with pytest.raises(SkillNotFoundError):
+            await provider.read_file(skill_id, "SKILL.md")
+
+    async def test_missing_skill_document(self, tmp_path: Path):
+        (tmp_path / "empty").mkdir()
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises(SkillNotFoundError):
+            await provider.list_files("empty")
+
+    async def test_size_limit_and_fresh_read(self, tmp_path: Path):
+        skill_dir = _create_skill(tmp_path)
+        provider = LocalFileSystemSkillProvider(tmp_path, max_file_bytes=3)
+        (skill_dir / "data").write_bytes(b"abc")
+        assert await provider.read_file("test-skill", "data") == b"abc"
+        (skill_dir / "data").write_bytes(b"abcd")
+        with pytest.raises(ResourceNotFoundError, match="maximum size"):
+            await provider.read_file("test-skill", "data")
+
+    @pytest.mark.parametrize("target_name", ["SKILL.md", "linked"])
+    async def test_symlinks_fail_closed(self, tmp_path: Path, target_name: str):
+        skill_dir = _create_skill(tmp_path)
+        target = tmp_path / "outside"
+        target.write_bytes(b"private")
+        link = skill_dir / target_name
+        if link.exists():
+            link.unlink()
+        try:
+            link.symlink_to(target)
+        except OSError:
+            pytest.skip("Symlink creation is unavailable")
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        with pytest.raises((SkillNotFoundError, ResourceNotFoundError)):
+            await provider.list_files("test-skill")
+        with pytest.raises((SkillNotFoundError, ResourceNotFoundError)):
+            await provider.read_file("test-skill", target_name)
+
+    @pytest.mark.parametrize("link_check", ["is_symlink", "is_junction"])
+    @pytest.mark.parametrize("location", ["skill", "supporting-file", "nested-directory"])
+    async def test_link_guards_without_link_privileges(
+        self, tmp_path: Path, monkeypatch, link_check: str, location: str
+    ):
+        skill_dir = _create_skill(tmp_path)
+        nested = skill_dir / "nested"
+        nested.mkdir()
+        (nested / "data.bin").write_bytes(b"private")
+        target = {
+            "skill": skill_dir,
+            "supporting-file": nested / "data.bin",
+            "nested-directory": nested,
+        }[location]
+        original_check = getattr(Path, link_check)
+
+        def reported_link(path: Path) -> bool:
+            return path == target or original_check(path)
+
+        monkeypatch.setattr(Path, link_check, reported_link)
+        provider = LocalFileSystemSkillProvider(tmp_path)
+        error = SkillNotFoundError if location == "skill" else ResourceNotFoundError
+        with pytest.raises(error, match="Linked skill"):
+            await provider.list_files("test-skill")
+        with pytest.raises(error, match="Linked skill"):
+            await provider.read_file("test-skill", "nested/data.bin")
+
+
 class TestProgressiveDisclosure:
     """Ensure get_metadata does not eagerly load body content."""
 

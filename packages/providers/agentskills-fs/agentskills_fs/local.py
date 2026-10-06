@@ -90,6 +90,7 @@ class LocalFileSystemSkillProvider(SkillProvider):
     Raises:
         NotADirectoryError: If *root* does not exist or is not a
             directory.
+        ValueError: If *max_file_bytes* is negative.
 
     Example::
 
@@ -104,11 +105,14 @@ class LocalFileSystemSkillProvider(SkillProvider):
 
     supports_resource_listing = True
     supports_discovery = True
+    supports_file_access = True
 
     def __init__(self, root: Path, *, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> None:
         self._root = Path(root)
         if not self._root.is_dir():
             raise NotADirectoryError(f"Skill root does not exist: {self._root}")
+        if max_file_bytes < 0:
+            raise ValueError("max_file_bytes must be non-negative")
         self._max_file_bytes = max_file_bytes
         self._skill_md_cache: dict[str, str] = {}
 
@@ -244,6 +248,80 @@ class LocalFileSystemSkillProvider(SkillProvider):
             SkillNotFoundError: If the skill directory does not exist.
         """
         return await asyncio.to_thread(self._list_resources_sync, skill_id)
+
+    async def list_files(self, skill_id: str) -> list[str]:
+        """List the complete tree without reading file contents.
+
+        Includes SKILL.md, hidden files, and arbitrary nested directories.
+        Links and special files are rejected instead of silently publishing
+        an incomplete manifest. Only publish a directory intended for sharing.
+        """
+        return await asyncio.to_thread(self._list_files_sync, skill_id)
+
+    async def read_file(self, skill_id: str, path: str) -> bytes:
+        """Read original bytes from a confined, link-free skill tree.
+
+        This deliberately bypasses the parsed SKILL.md cache. No decoding or
+        newline conversion is performed. The configured file-size limit applies.
+        """
+        return await asyncio.to_thread(self._read_file_sync, skill_id, path)
+
+    def _file_skill_dir(self, skill_id: str) -> Path:
+        """Validate a skill directory for complete file access."""
+        if not skill_id or skill_id in {".", ".."} or any(char in skill_id for char in "/\\:\x00"):
+            raise SkillNotFoundError(f"Invalid skill_id: {skill_id!r}")
+        candidate = self._root / skill_id
+        if candidate.is_symlink() or candidate.is_junction():
+            raise SkillNotFoundError(f"Linked skill directory: {skill_id!r}")
+        skill_dir = self._skill_dir(skill_id)
+        skill_md = skill_dir / SKILL_FILE_NAME
+        if skill_md.is_symlink() or not skill_md.is_file():
+            raise SkillNotFoundError(f"Original SKILL.md not found for {skill_id!r}")
+        return skill_dir
+
+    def _file_path(self, skill_dir: Path, path: str) -> Path:
+        """Reject aliases and links before resolving a skill-relative file."""
+        parts = path.split("/")
+        if any(part in {"", ".", ".."} for part in parts) or any(
+            char in path for char in "\\:\x00"
+        ):
+            raise ResourceNotFoundError(f"Invalid file path: {path!r}")
+        candidate = skill_dir
+        for part in parts:
+            candidate = candidate / part
+            if candidate.is_symlink() or candidate.is_junction():
+                raise ResourceNotFoundError(f"Linked skill file path: {path!r}")
+        if not candidate.resolve().is_relative_to(skill_dir) or not candidate.is_file():
+            raise ResourceNotFoundError(f"Skill file not found: {path!r}")
+        return candidate
+
+    def _list_files_sync(self, skill_id: str) -> list[str]:
+        """Enumerate every regular file, refusing links and special files."""
+        skill_dir = self._file_skill_dir(skill_id)
+        pending = [skill_dir]
+        paths: list[str] = []
+        while pending:
+            for entry in pending.pop().iterdir():
+                relative = entry.relative_to(skill_dir).as_posix()
+                if entry.is_symlink() or entry.is_junction():
+                    raise ResourceNotFoundError(f"Linked skill file path: {relative!r}")
+                if entry.is_dir():
+                    pending.append(entry)
+                else:
+                    self._file_path(skill_dir, relative)
+                    paths.append(relative)
+        return sorted(paths)
+
+    def _read_file_sync(self, skill_id: str, path: str) -> bytes:
+        """Read at most the file-size limit plus one byte."""
+        candidate = self._file_path(self._file_skill_dir(skill_id), path)
+        with candidate.open("rb") as stream:
+            data = stream.read(self._max_file_bytes + 1)
+        if len(data) > self._max_file_bytes:
+            raise ResourceNotFoundError(
+                f"Skill file {path!r} exceeds maximum size ({self._max_file_bytes} bytes)"
+            )
+        return data
 
     async def discover(self) -> list[str]:
         """List the skill directories directly beneath the root.

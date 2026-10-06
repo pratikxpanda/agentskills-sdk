@@ -5,7 +5,9 @@ import pytest
 from agentskills_core import (
     RESOURCE_KINDS,
     DiscoveryNotSupportedError,
+    FileAccessNotSupportedError,
     ResourceListingNotSupportedError,
+    Skill,
     SkillProvider,
 )
 
@@ -88,6 +90,40 @@ class TestDiscoveryCapability:
         provider = DiscoverableProvider()
         assert provider.supports_discovery is True
         assert await provider.discover() == ["alpha", "bravo"]
+
+
+class TestFileAccessCapability:
+    def test_default_flag_is_false(self):
+        provider = _StubProvider()
+        assert not provider.supports_file_access
+        assert not Skill("some-skill", provider).supports_file_access
+
+    async def test_default_raises_instead_of_reconstructing(self):
+        skill = Skill("some-skill", _StubProvider())
+        with pytest.raises(FileAccessNotSupportedError, match="_StubProvider"):
+            await skill.list_files()
+        with pytest.raises(FileAccessNotSupportedError, match="_StubProvider"):
+            await skill.read_file("SKILL.md")
+
+    async def test_handle_delegates_without_changing_bytes(self):
+        original = b"---\r\nname: some-skill\r\n---\r\n# Body\r\n"
+
+        class FileProvider(_StubProvider):
+            supports_file_access = True
+
+            async def list_files(self, skill_id: str) -> list[str]:
+                assert skill_id == "some-skill"
+                return ["SKILL.md", "data/nested.bin"]
+
+            async def read_file(self, skill_id: str, path: str) -> bytes:
+                assert skill_id == "some-skill"
+                assert path == "SKILL.md"
+                return original
+
+        skill = Skill("some-skill", FileProvider())
+        assert skill.supports_file_access
+        assert await skill.list_files() == ["SKILL.md", "data/nested.bin"]
+        assert await skill.read_file("SKILL.md") == original
 
 
 class TestSkillProviderABC:

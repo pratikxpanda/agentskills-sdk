@@ -1,4 +1,7 @@
-# Agent Skills SDK
+---
+title: Agent Skills SDK
+description: Python packages for discovering, retrieving, and serving Agent Skills.
+---
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-brightgreen.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
@@ -41,6 +44,11 @@ pip install agentskills-fs agentskills-langchain
 If you *write* skills rather than consume them, you want `agentskills-tools` instead.
 
 ## How It Works
+
+Development toward v0.6 is MCP-first. The lossless provider foundation adds complete
+file enumeration and original-byte reads for filesystem skills and explicitly
+manifested HTTP skills. This is not yet native MCP Skills extension support. See
+the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 
 The SDK uses **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
 
