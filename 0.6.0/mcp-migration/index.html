@@ -1,0 +1,1476 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Migrate native framework integrations to framework-owned MCP clients with explicit compatibility limits.">
+      
+      
+      
+        <link rel="canonical" href="https://pratikxpanda.github.io/agentskills-sdk/0.6.0/mcp-migration/">
+      
+      
+        <link rel="prev" href="../concepts/">
+      
+      
+        <link rel="next" href="../mcp-benchmarks/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>MCP Migration - Agent Skills SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#deprecation-window" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Agent Skills SDK" class="md-header__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP Migration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agent Skills SDK" class="md-nav__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agent Skills SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Migration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation Window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-a-delivery-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choose a Delivery Mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-framework-replacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified Framework Replacements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified Framework Replacements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#langchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangChain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft-agent-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft Agent Framework
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-gap-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-Gap Matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-and-deployment-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust and Deployment Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v06-release-note-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6 Release-Note Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/fs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/langchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/agentframework/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Framework integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP server integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issue plans
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Issue plans
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6 MCP-First Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5 Agent Effectiveness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 Developer Experience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3 Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation Window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choose-a-delivery-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choose a Delivery Mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-framework-replacements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified Framework Replacements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified Framework Replacements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#langchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangChain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft-agent-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft Agent Framework
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-gap-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature-Gap Matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-and-deployment-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust and Deployment Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v06-release-note-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6 Release-Note Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>MCP Migration</h1>
+
+<h2 id="deprecation-window">Deprecation Window<a class="headerlink" href="#deprecation-window" title="Permanent link">&para;</a></h2>
+<p>v0.6.0 deprecates <code>agentskills-langchain</code>,
+<code>agentskills-agentframework</code>, <code>AgentSkillsMcpContextProvider</code>, and the
+<code>agentskills-mcp-server[agentframework]</code> extra. Published 0.5.0 wheels are unchanged.
+These surfaces receive critical correctness and security fixes only. They remain
+in lockstep releases during the migration window, with no API removal in v0.6.</p>
+<p>Removal is no earlier than v0.7 and requires at least one full minor-release
+migration window after deprecation ships, tested replacements, documented gaps,
+and a breaking-change notice. Existing wheels and versioned documentation will
+remain available. No package will be yanked solely because it was retired.</p>
+<p>Core, providers, retrieval, testing, CLI tooling, and <code>agentskills-mcp-server</code>
+remain maintained. <code>agentskills-adapters</code> imports foreign instruction formats
+and is not part of this retirement.</p>
+<p><code>get_tools()</code> in either native integration emits <code>DeprecationWarning</code>.
+Constructing <code>AgentSkillsContextProvider</code> or <code>AgentSkillsMcpContextProvider</code>
+also emits one warning attributed to the caller. Imports remain quiet. Python
+normally hides library deprecation warnings, so use <code>python -W default</code> when
+auditing an application. Warning messages link to this migration guide.</p>
+<h2 id="choose-a-delivery-mode">Choose a Delivery Mode<a class="headerlink" href="#choose-a-delivery-mode" title="Permanent link">&para;</a></h2>
+<p>Use the maintained legacy MCP server with framework-owned MCP clients when your
+host only supports MCP tools and resources. The eight <code>get_skill_*</code> and resource
+listing tools, catalog resources, and section disclosure remain available.
+The examples below use this compatibility mode. They do not demonstrate native
+Skills activation.</p>
+<p>Use native mode only with a host that implements the Skills extension and its
+consent and verification responsibilities. It requires server SDK 2.2+ and
+protocol 2026-07-28. Discovery returns manifests, not inlined instructions.
+An older client reading a <code>skill://</code> resource does not establish native support.
+See the <a href="https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/integrations/agentskills-mcp-server/README.md">tested transport matrix</a> and the
+<a href="../ROADMAP/#native-integration-retirement">roadmap</a>.</p>
+<h2 id="verified-framework-replacements">Verified Framework Replacements<a class="headerlink" href="#verified-framework-replacements" title="Permanent link">&para;</a></h2>
+<p>Checked 2026-10-06 with <code>langchain-mcp-adapters</code> 0.3.2, <code>langchain-core</code> 1.6.5,
+and <code>agent-framework-core</code> 1.12.1 in a client environment using MCP 1.29.0.
+Both clients connected to the checkout's legacy server on MCP 2.2.0 in a separate
+process. The checks loaded eight framework tools, read the catalog and usage
+instructions, and invoked <code>get_skill_body</code> through the framework-owned client.
+They did not call an LLM or verify model behavior.</p>
+<p>Run the commands below from the repository root. In a dedicated server environment,
+install this checkout to reproduce the examples:</p>
+<pre><code class="language-bash">python -m pip install &quot;mcp==2.2.0&quot; ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+</code></pre>
+<p>In a separate client environment, install the tested clients:</p>
+<pre><code class="language-bash">python -m pip install &quot;mcp==1.29.0&quot; &quot;langchain-mcp-adapters==0.3.2&quot; &quot;agent-framework-core==1.12.1&quot;
+</code></pre>
+<p>Replace the server executable placeholder with its actual path. On Windows it
+is normally the server environment's <code>Scripts/python.exe</code>.</p>
+<pre><code class="language-bash">python examples/langchain/fs/mcp_tools.py --smoke --server-python /absolute/path/to/server/python
+python examples/agent-framework/fs/mcp_tools.py --smoke --server-python /absolute/path/to/server/python
+</code></pre>
+<p>The smoke mode fails nonzero on a missing dependency or failed MCP check and has
+a 30-second deadline. It needs no model credentials. Omitting <code>--smoke</code> retains
+the interactive agent examples and their optional model dependencies.</p>
+<h3 id="langchain">LangChain<a class="headerlink" href="#langchain" title="Permanent link">&para;</a></h3>
+<p>Replace <code>agentskills_langchain.get_tools()</code> with <code>MultiServerMCPClient</code> from
+<code>langchain_mcp_adapters.client</code>. The existing
+<a href="https://github.com/pratikxpanda/agentskills-sdk/blob/main/examples/langchain/fs/mcp_tools.py">filesystem example</a>
+reads the legacy catalog and usage-instruction resources explicitly and obtains
+framework tools with <code>client.get_tools()</code>.</p>
+<p>That API opens a new MCP session for each tool call. For a persistent session,
+use <code>client.session("skills")</code> and <code>load_mcp_tools(session)</code> from
+<code>langchain_mcp_adapters.tools</code>, keeping the session open for the entire agent run.
+Do not use session-bound tools after leaving that context. Prompt resources read
+earlier do not automatically refresh when a later session reconnects.</p>
+<h3 id="microsoft-agent-framework">Microsoft Agent Framework<a class="headerlink" href="#microsoft-agent-framework" title="Permanent link">&para;</a></h3>
+<p>Replace <code>agentskills_agentframework.get_tools()</code> and the SDK context providers
+with <code>MCPStdioTool</code> from <code>agent_framework</code>. Keep it open with <code>async with</code> for
+the entire agent run and pass it to the agent's <code>tools</code> parameter. The
+<a href="https://github.com/pratikxpanda/agentskills-sdk/blob/main/examples/agent-framework/fs/mcp_tools.py">filesystem example</a>
+reads prompt resources explicitly through <code>mcp_skills.session</code> and demonstrates
+model-free invocation through <code>mcp_skills.call_tool()</code>.</p>
+<p>The verified framework client requires MCP 1.x. Keep it separate from an SDK 2
+server rather than forcing incompatible dependencies into one environment.
+The replacement does not reproduce <code>before_run</code> catalog injection, prompt
+caching, or session pruning automatically.</p>
+<h2 id="feature-gap-matrix">Feature-Gap Matrix<a class="headerlink" href="#feature-gap-matrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Existing behavior</th>
+<th>Maintained replacement</th>
+<th>Remaining responsibility or gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Native framework tool wrappers</td>
+<td>Framework-owned MCP clients consume the eight legacy tools</td>
+<td>Verified tool discovery and a body call, not every model/provider combination</td>
+</tr>
+<tr>
+<td>Automatic catalog injection</td>
+<td>Read <code>skills://catalog/xml</code> and <code>skills://tools-usage-instructions</code> explicitly</td>
+<td>Application chooses when to refresh and inject, and avoids duplicate injection</td>
+</tr>
+<tr>
+<td>Query-time retrieval</td>
+<td>Framework-neutral <code>agentskills-retrieval</code> remains maintained</td>
+<td>Host integration is required, not automatically attached to remote MCP clients</td>
+</tr>
+<tr>
+<td>Cached prompts and loaded-skill session pruning</td>
+<td>Existing native context provider remains during migration</td>
+<td>Host must implement conversation-aware caching and pruning before removal</td>
+</tr>
+<tr>
+<td>Single-skill fast path</td>
+<td>Framework-neutral core API and legacy server option remain available</td>
+<td>Not automatic in the example or native discovery, which stays metadata-only</td>
+</tr>
+<tr>
+<td>Section-level disclosure</td>
+<td>Legacy outline and section tools remain available</td>
+<td>Native Skills requires full canonical resources, not proprietary section tools</td>
+</tr>
+<tr>
+<td>Vision-native assets</td>
+<td>Legacy server retains opt-in image tool delivery</td>
+<td>Native resources preserve original blobs, host decoding and rendering are required</td>
+</tr>
+<tr>
+<td>Context-provider metadata about loaded skills</td>
+<td>Host-owned session state</td>
+<td>No automatic replacement for <code>METADATA_LOADED_SKILLS</code> in framework clients</td>
+</tr>
+<tr>
+<td>Native Skills verification and activation</td>
+<td>A conforming Skills host</td>
+<td>Ordinary MCP tool connectivity does not supply consent, digest checks, or activation</td>
+</tr>
+</tbody>
+</table>
+<p>Gaps are not removal approvals. Keep the deprecated integration until your
+application has implemented and tested the behavior it relies on. Before removal,
+each remaining gap needs a documented alternative and an explicit migration
+decision, rather than an assumption that successful tool calls imply parity.</p>
+<h2 id="trust-and-deployment-boundaries">Trust and Deployment Boundaries<a class="headerlink" href="#trust-and-deployment-boundaries" title="Permanent link">&para;</a></h2>
+<p>The smoke examples use the repository's trusted sample skills. Applications must
+choose trusted servers, isolate skill identity by server and URI, and control
+which content enters the model context. Reading scripts does not execute them.
+Listing filters are not authorization, and <code>allowed-tools</code> does not grant host
+permissions. A matching digest proves consistency, not publisher trust.</p>
+<p>A native host must verify the complete manifest, size, digests, and frontmatter,
+obtain per-skill consent, and treat nested skills as separate approval decisions.
+Fetch content only when needed. Remote HTTP additionally requires appropriate
+authentication, TLS, origin checks, and audience isolation. These examples do not
+certify those deployment controls.</p>
+<h2 id="v06-release-note-guidance">v0.6 Release-Note Guidance<a class="headerlink" href="#v06-release-note-guidance" title="Permanent link">&para;</a></h2>
+<p>Native LangChain and Microsoft Agent Framework integrations, the Agent Framework
+MCP context-provider bridge, and its optional extra are deprecated and
+maintenance-only. Existing APIs remain available throughout v0.6. Migrate using
+framework-owned MCP clients and review the feature-gap matrix before replacing
+context-provider behavior. The maintained MCP server and foreign-format adapters
+are unaffected by this deprecation. No retirement or package publication has been
+performed by this development change.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
