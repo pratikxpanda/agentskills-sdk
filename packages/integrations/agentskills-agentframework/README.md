@@ -1,4 +1,7 @@
-# agentskills-agentframework
+---
+title: agentskills-agentframework
+description: Maintenance-only native Agent Framework integration and migration to framework-owned MCP clients.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-agentframework)](https://pypi.org/project/agentskills-agentframework/)
@@ -8,19 +11,27 @@
 
 Generates a set of [Microsoft Agent Framework](https://pypi.org/project/agent-framework/) `FunctionTool` instances from a `SkillRegistry`, ready to be passed to any Agent Framework agent.
 
+> [!WARNING]
+> Deprecated and maintenance-only in the v0.6 development checkout, including
+> `AgentSkillsContextProvider`. Existing APIs remain available and receive critical
+> correctness and security fixes. Removal is no earlier than v0.7 after a full
+> minor-release migration window and explicit migration gates. Published 0.5.0
+> wheels are unchanged. Use
+> [framework-owned MCP clients](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md)
+> for new integrations and review the session-state and prompt-management gaps.
+
 ## Installation
 
 ```bash
 pip install agentskills-agentframework
 ```
 
-Requires Python 3.12 or newer. Installs `agentskills-core` and `agent-framework` as dependencies.
-
-> **Note:** `agent-framework` is currently a pre-release dependency (`>=1.0.0rc3`). The constraint will be updated once a stable release is published.
+Requires Python 3.12 or newer. Installs `agentskills-core` and `agent-framework-core`
+(`>=1.0,<2.0`) as dependencies.
 
 ## Usage
 
-### Context Provider (recommended)
+### Existing Context Provider
 
 The simplest way to integrate is via `AgentSkillsContextProvider`. It plugs into the Agent Framework lifecycle and automatically injects the skill catalog and tools on every `agent.run()` call — no manual system-prompt assembly required.
 

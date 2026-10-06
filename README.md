@@ -52,6 +52,10 @@ byte-accurate SHA-256 digests. An opt-in native server now exposes the official
 Skills extension on MCP SDK 2.2+, with complete manifests, canonical raw resources,
 pagination, and direct URI lookup. The legacy server retains SDK 1.x and 2.x support.
 Tests cover mixed-SDK stdio processes and native delivery over loopback HTTP.
+Native framework integrations and the Agent Framework MCP bridge become deprecated
+and maintenance-only in v0.6, without removal. The
+[migration guide](docs/mcp-migration.md) includes verified framework-owned MCP
+examples and explicit feature gaps. Foreign-format adapters remain maintained.
 These additions are development-only until v0.6 ships. See
 the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 

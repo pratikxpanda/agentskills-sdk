@@ -8,6 +8,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Concepts: concepts.md
+  - MCP Migration: mcp-migration.md
   - Packages:
       - Core: packages/core.md
       - Format adapters: packages/adapters.md

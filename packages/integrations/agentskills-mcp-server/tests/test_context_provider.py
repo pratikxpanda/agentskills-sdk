@@ -54,6 +54,18 @@ def _mock_context() -> MagicMock:
 
 
 class TestConstruction:
+    def test_deprecation_points_to_caller_without_changing_provider(self):
+        from agentskills_mcp_server.context_provider import AgentSkillsMcpContextProvider
+
+        with pytest.warns(
+            DeprecationWarning, match="AgentSkillsMcpContextProvider.*v0.6"
+        ) as captured:
+            provider = AgentSkillsMcpContextProvider(_mock_mcp_session())
+        assert provider.source_id == "agentskills_mcp"
+        assert len(captured) == 1
+        assert captured[0].filename == __file__
+        assert "agentskills-mcp-server[agentframework]" in str(captured[0].message)
+
     def test_default_source_id(self):
         from agentskills_mcp_server.context_provider import AgentSkillsMcpContextProvider
 

@@ -206,6 +206,12 @@ server now implements the 2026-07-28 Skills wire contract, including pagination,
 direct lookup, canonical original-byte reads, aliases, and explicit nested publication.
 Directory reads remain unadvertised because empty-directory enumeration is unavailable.
 
+Native framework entry points now emit caller-attributed deprecation warnings.
+The [migration guide](mcp-migration.md) records maintenance-only status, the full
+minor-release window, release-note guidance, and feature gaps. Model-free
+filesystem examples exercise LangChain's upstream MCP adapter and Agent Framework's
+MCPStdioTool against a separate SDK 2 server. No APIs or packages have been removed.
+
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
 dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
 directions in isolated environments. Native delivery is tested with the official

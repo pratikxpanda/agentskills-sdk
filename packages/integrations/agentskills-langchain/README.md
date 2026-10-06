@@ -1,4 +1,7 @@
-# agentskills-langchain
+---
+title: agentskills-langchain
+description: Maintenance-only native LangChain integration and migration to framework-owned MCP clients.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-langchain)](https://pypi.org/project/agentskills-langchain/)
@@ -7,6 +10,14 @@
 > LangChain integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - turn a skill registry into LangChain tools.
 
 Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` instances from a `SkillRegistry`, ready to be passed to any LangChain agent.
+
+> [!WARNING]
+> Deprecated and maintenance-only in the v0.6 development checkout. Existing APIs
+> remain available and receive critical correctness and security fixes. Removal
+> is no earlier than v0.7 after a full minor-release migration window and explicit
+> migration gates. Published 0.5.0 wheels are unchanged. Use
+> [framework-owned MCP clients](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md)
+> for new integrations and review the documented feature gaps.
 
 ## Installation
 
