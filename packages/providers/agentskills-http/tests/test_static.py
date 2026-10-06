@@ -75,7 +75,9 @@ class TestLosslessFiles:
     @respx.mock
     async def test_reads_original_bytes_and_refreshes(self, provider):
         original = b"\xef\xbb\xbf---\r\nname: test-skill\r\n---\r\nBody\r\n"
-        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(content=original)
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        assert (await provider.get_metadata("test-skill"))["name"] == "test-skill"
+        route.respond(content=original)
         assert await provider.read_file("test-skill", "SKILL.md") == original
         route.respond(content=b"changed")
         assert await provider.read_file("test-skill", "SKILL.md") == b"changed"
@@ -113,9 +115,11 @@ class TestLosslessFiles:
             "data/\x00",
         ],
     )
+    @respx.mock
     async def test_invalid_paths_fail_before_network(self, provider, path):
         with pytest.raises(ResourceNotFoundError):
             await provider.read_file("test-skill", path)
+        assert len(respx.calls) == 0
 
     @pytest.mark.parametrize("status", [204, 206, 301, 302, 304, 307, 308])
     @respx.mock
@@ -163,6 +167,51 @@ class TestLosslessFiles:
     def test_negative_response_limit_rejected(self, lossless_client):
         with pytest.raises(ValueError, match="max_response_bytes"):
             HTTPStaticFileSkillProvider(BASE, client=lossless_client, max_response_bytes=-1)
+
+    @pytest.mark.parametrize("status", [404, 410])
+    @respx.mock
+    async def test_missing_skill_is_not_a_missing_resource(self, provider, status):
+        route = respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        await provider.get_metadata("test-skill")
+        route.respond(status_code=status)
+        respx.get(f"{BASE}/test-skill/index.json").respond(status_code=status)
+        respx.get(f"{BASE}/test-skill/missing.bin").respond(status_code=status)
+        with pytest.raises(SkillNotFoundError):
+            await provider.list_files("test-skill")
+        for path in ("SKILL.md", "missing.bin"):
+            with pytest.raises(SkillNotFoundError):
+                await provider.read_file("test-skill", path)
+
+    @pytest.mark.parametrize("status", [404, 410])
+    @respx.mock
+    async def test_existing_skill_missing_file_or_manifest(self, provider, status):
+        respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
+        respx.get(f"{BASE}/test-skill/index.json").respond(status_code=status)
+        respx.get(f"{BASE}/test-skill/missing.bin").respond(status_code=status)
+        with pytest.raises(FileAccessNotSupportedError):
+            await provider.list_files("test-skill")
+        with pytest.raises(ResourceNotFoundError):
+            await provider.read_file("test-skill", "missing.bin")
+
+    @respx.mock
+    async def test_stream_limit_without_content_length(self, lossless_client):
+        chunks_read = []
+
+        class ChunkedBody(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                for chunk in (b"12", b"34", b"not-read"):
+                    chunks_read.append(chunk)
+                    yield chunk
+
+        response = httpx.Response(200, stream=ChunkedBody())
+        assert "content-length" not in response.headers
+        respx.get(f"{BASE}/test-skill/data.bin").mock(return_value=response)
+        provider = HTTPStaticFileSkillProvider(
+            BASE, client=lossless_client, file_manifest=True, max_response_bytes=2
+        )
+        with pytest.raises(AgentSkillsError, match="maximum size"):
+            await provider.read_file("test-skill", "data.bin")
+        assert chunks_read == [b"12", b"34"]
 
 
 @pytest.fixture(scope="module")

@@ -545,7 +545,11 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
         url = f"{self._base_url}/{quote(skill_id, safe='')}/{MANIFEST_NAME}"
         subject = f"File manifest for skill {skill_id!r}"
-        manifest = await self._fetch_manifest(url, subject)
+        try:
+            manifest = await self._fetch_manifest(url, subject)
+        except ResourceNotFoundError as exc:
+            await self.read_file(skill_id, "SKILL.md")
+            raise FileAccessNotSupportedError(f"{subject} is not published") from exc
         paths = manifest.get("files")
         if not isinstance(paths, list) or "SKILL.md" not in paths:
             raise AgentSkillsError(f"{subject} requires a files list including SKILL.md")
@@ -568,7 +572,12 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         self._validate_identifier(skill_id, "skill_id", SkillNotFoundError)
         self._validate_file_path(path)
         url = f"{self._base_url}/{quote(skill_id, safe='')}/{quote(path, safe='/')}"
-        data, _ = await self._stream_bytes(url, ResourceNotFoundError)
+        error = SkillNotFoundError if path == "SKILL.md" else ResourceNotFoundError
+        try:
+            data, _ = await self._stream_bytes(url, error)
+        except ResourceNotFoundError:
+            await self.read_file(skill_id, "SKILL.md")
+            raise
         if data is None:
             raise AgentSkillsError("Lossless file reads require a complete response")
         return data
