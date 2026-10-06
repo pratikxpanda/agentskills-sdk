@@ -232,9 +232,17 @@ dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
 directions in isolated environments. Native delivery is tested with the official
 SDK client in-process, over stdio, and through a real loopback Streamable HTTP
 listener. Older clients can read native resources but cannot invoke native
-discovery. The MCP package publishes the tested client matrix. Host compatibility,
-remote deployment validation, migration, benchmarks, and diagnostics remain
-release gates. No milestone item is declared complete by transport tests alone.
+discovery. The MCP package publishes the tested client matrix. The pinned mcpc
+0.7.0 client additionally verifies native direct lookup, paginated discovery,
+aliases, and exact instructions, reference, and binary delivery over stdio.
+The [v0.6 acceptance checklist](issues/v0.6.md) records the seven completed
+implementation areas and the release verification requirements.
+
+Production TLS, authentication, and gateway deployment validation is explicitly
+deferred beyond v0.6 by the maintainer's 2026-10-06 scope decision. It is not a
+passed gate or a production certification. Host selection, approval, context
+injection, and execution policy remain host-owned. Local transport and client
+checks do not certify those behaviors.
 
 ---
 

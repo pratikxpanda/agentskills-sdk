@@ -68,7 +68,8 @@ planned deprecation window.
 ### Tested Client Matrix
 
 The development checkout was verified with the official Python MCP SDK clients
-on 2026-10-06. These are server transport checks, not host Skills certifications.
+and mcpc on 2026-10-06. These are protocol and client checks, not model-host
+activation or production deployment certifications.
 
 | Server mode and SDK | Client SDK and API | Transport | Verified behavior |
 | --- | --- | --- | --- |
@@ -77,6 +78,7 @@ on 2026-10-06. These are server transport checks, not host Skills certifications
 | Legacy 2.2.0 | 1.29.0 `ClientSession` | stdio | Same contract across separate environments |
 | Legacy 1.29.0 | 2.2.0 `ClientSession` | stdio | Same contract across separate environments |
 | Native 2.2.0 | 2.2.0 `Client` | In-process, stdio, loopback HTTP | Native discovery, lookup, and original-byte resources |
+| Native 2.2.0 | `@apify/mcpc` 0.7.0 | stdio | Direct lookup before listing, paginated discovery, aliases, exact instructions/reference/binary reads with sizes and SHA-256 digests |
 | Native 2.2.0 | 1.29.0 or 2.2.0 `ClientSession` | stdio | Canonical resources only, native discovery rejected with `-32601` |
 
 SDK 2's `ClientSession` is its legacy-protocol compatibility API. Use `Client`
@@ -92,6 +94,13 @@ the legacy server interpreter for `test_config.py -k stdio`, and
 Without overrides, tests use the current interpreter and skip native publication
 when SDK 2.2+ is unavailable. Each interpreter needs this checkout's core, provider,
 and MCP packages. The client also needs pytest and pytest-asyncio.
+
+The same CI job installs pinned `@apify/mcpc@0.7.0` and runs the real-client test.
+To repeat it locally with Node 22.12 or later and MCP SDK 2.2, set
+`AGENTSKILLS_TEST_MCPC` to the installed package's `bin/mcpc` JavaScript entry
+point and run `pytest packages/integrations/agentskills-mcp-server/tests/test_config.py -k mcpc`.
+The test isolates its session state and closes the session in a cleanup block.
+It does not call a model, execute skill scripts, or test remote authentication.
 
 ### Discovery and Delivery Benchmarks
 

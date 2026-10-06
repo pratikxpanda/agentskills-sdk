@@ -170,6 +170,16 @@ jobs:
       - name: Check dependency consistency
         run: poetry run python -m pip check
 
+      - name: Install the pinned native Skills client
+        run: npm install --prefix "$RUNNER_TEMP/mcpc" --no-audit --no-fund --engine-strict @apify/mcpc@0.7.0
+
+      - name: Test native Skills with mcpc
+        env:
+          AGENTSKILLS_TEST_MCPC: ${{ runner.temp }}/mcpc/node_modules/@apify/mcpc/bin/mcpc
+        run: >-
+          poetry run pytest
+          packages/integrations/agentskills-mcp-server/tests/test_config.py -k mcpc -v
+
       - name: Run tests
         run: poetry run pytest packages/ -v
 
