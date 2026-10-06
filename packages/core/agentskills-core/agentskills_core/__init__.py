@@ -56,6 +56,7 @@ from agentskills_core.logging import (
     get_logger,
     redact_url,
 )
+from agentskills_core.manifests import build_skill_manifest
 from agentskills_core.media import (
     DEFAULT_MAX_INLINE_IMAGE_BYTES,
     RENDERABLE_MEDIA_TYPES,
@@ -118,6 +119,7 @@ __all__ = [
     "SkillRegistry",
     "SkillSnapshot",
     "SkillUnavailableError",
+    "build_skill_manifest",
     "capture_skill",
     "classify_resource",
     "encode_resource_content",

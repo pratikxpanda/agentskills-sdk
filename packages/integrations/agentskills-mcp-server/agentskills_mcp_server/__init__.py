@@ -28,7 +28,13 @@ Install::
     pip install agentskills-mcp-server
 """
 
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
+
 from agentskills_mcp_server.server import create_mcp_server
+
+if TYPE_CHECKING:
+    from agentskills_mcp_server.native import create_native_mcp_server as create_native_mcp_server
 
 __all__ = [
     "create_mcp_server",
@@ -37,6 +43,14 @@ __all__ = [
 
 def __getattr__(name: str) -> object:
     """Lazy-load optional extras to avoid hard dependencies at import time."""
+    if name == "create_native_mcp_server":
+        if find_spec("mcp.server.extension") is None:
+            raise ImportError("Native Skills requires MCP SDK 2.2+. Install 'mcp>=2.2,<3'.")
+        from agentskills_mcp_server.native import create_native_mcp_server
+
+        globals()[name] = create_native_mcp_server
+        __all__.append(name)
+        return create_native_mcp_server
     if name == "AgentSkillsMcpContextProvider":
         from agentskills_mcp_server.context_provider import AgentSkillsMcpContextProvider
 

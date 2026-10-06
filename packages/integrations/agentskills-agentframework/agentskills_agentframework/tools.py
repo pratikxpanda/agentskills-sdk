@@ -37,6 +37,8 @@ from __future__ import annotations
 
 import base64
 import json
+import warnings
+from pathlib import Path
 
 from agent_framework import Content, FunctionTool, tool
 
@@ -123,6 +125,14 @@ def get_tools(
         A list of :class:`~agent_framework.FunctionTool`
         instances ready to be passed to an Agent Framework agent.
     """
+    warnings.warn(
+        "agentskills-agentframework is deprecated in v0.6 and receives only critical fixes. "
+        "Use a framework-owned MCP client. Migration: "
+        "https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md",
+        DeprecationWarning,
+        stacklevel=2,
+        skip_file_prefixes=(str(Path(__file__).parent),),
+    )
 
     @tool(
         name="get_skill_metadata",

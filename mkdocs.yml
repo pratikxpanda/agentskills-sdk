@@ -8,6 +8,8 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Concepts: concepts.md
+  - MCP Migration: mcp-migration.md
+  - MCP Benchmarks: mcp-benchmarks.md
   - Packages:
       - Core: packages/core.md
       - Format adapters: packages/adapters.md
@@ -23,6 +25,7 @@ nav:
   - ADRs: adr/README.md
   - Issue plans:
       - Overview: issues/README.md
+      - v0.6 MCP-First Skills: issues/v0.6.md
       - v0.5 Agent Effectiveness: issues/v0.5.md
       - v0.4 Developer Experience: issues/v0.4.md
       - v0.3 Foundations: issues/v0.3.md

@@ -52,6 +52,14 @@ async def registry() -> SkillRegistry:
 
 
 class TestGetTools:
+    async def test_deprecation_points_to_caller_without_changing_tools(self, registry):
+        with pytest.warns(DeprecationWarning, match="agentskills-langchain.*v0.6") as captured:
+            tools = get_tools(registry)
+        assert len(tools) == 8
+        assert len(captured) == 1
+        assert captured[0].filename == __file__
+        assert "mcp-migration.md" in str(captured[0].message)
+
     async def test_returns_8_tools(self, registry):
         tools = get_tools(registry)
         assert len(tools) == 8

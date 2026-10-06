@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from agentskills_core import SkillProvider, SkillRegistry
+from agentskills_core import ResourceNotFoundError, SkillProvider, SkillRegistry
 from agentskills_mcp_server.config import ServerConfig, SkillConfig, resolve_env_vars
 from agentskills_mcp_server.server import (
     SUPPORTED_PROVIDERS,
@@ -65,6 +65,30 @@ class TestSkillConfig:
 
 
 class TestServerConfig:
+    def test_native_builder_missing_sdk_error(self, monkeypatch):
+        import agentskills_mcp_server
+
+        monkeypatch.setattr(agentskills_mcp_server, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"MCP SDK 2\.2"):
+            agentskills_mcp_server.__getattr__("create_native_mcp_server")
+
+    def test_native_mode_options(self):
+        config = ServerConfig(
+            name="Native",
+            mode="native",
+            skills=[SkillConfig(id="example", provider="fs")],
+            skill_paths={"example": "team/example"},
+            listed_skill_ids=[],
+            page_size=1,
+        )
+        assert config.mode == "native"
+        assert config.listed_skill_ids == []
+        assert config.max_skills == 128
+        with pytest.raises(ValidationError):
+            ServerConfig(
+                name="Invalid", mode="other", skills=[SkillConfig(id="example", provider="fs")]
+            )
+
     def test_minimal(self):
         cfg = ServerConfig(
             name="Test",
@@ -139,6 +163,27 @@ class TestServerConfig:
 
 
 class TestResolveProvider:
+    async def test_native_http_file_manifest_and_size_limit(self):
+        provider = _resolve_provider(
+            "http",
+            {
+                "base_url": "https://example.com",
+                "file_manifest": True,
+                "max_response_bytes": 0,
+            },
+        )
+        try:
+            assert provider.supports_file_access is True
+            assert provider._max_response_bytes == 0
+        finally:
+            await provider.aclose()
+
+    async def test_native_filesystem_size_limit(self, tmp_path):
+        _write_skill(tmp_path, "example")
+        provider = _resolve_provider("fs", {"root": str(tmp_path), "max_file_bytes": 0})
+        with pytest.raises(ResourceNotFoundError, match="maximum size"):
+            await provider.read_file("example", "SKILL.md")
+
     def test_supported_providers_constant(self):
         assert "fs" in SUPPORTED_PROVIDERS
         assert "http" in SUPPORTED_PROVIDERS
@@ -228,6 +273,95 @@ async def _build_server_from_config(config: ServerConfig):
 
 
 class TestConfigDrivenServer:
+    def test_mcpc_native_discovery_and_verified_reads(self, tmp_path):
+        import base64
+        import os
+        import subprocess
+        import sys
+        from hashlib import sha256
+
+        mcpc = os.environ.get("AGENTSKILLS_TEST_MCPC")
+        if not mcpc:
+            pytest.skip("Set AGENTSKILLS_TEST_MCPC to the pinned mcpc JavaScript entry point")
+        for skill_id in ("skill-a", "skill-b"):
+            _write_skill(tmp_path, skill_id)
+        files = {
+            "SKILL.md": (tmp_path / "skill-a" / "SKILL.md").read_bytes(),
+            "references/details.md": b"# Details\r\nExact reference bytes.\r\n",
+            "assets/sample.bin": bytes(range(256)),
+        }
+        for relative_path, data in files.items():
+            target = tmp_path / "skill-a" / relative_path
+            target.parent.mkdir(exist_ok=True)
+            target.write_bytes(data)
+        config = ServerConfig(
+            name="mcpc compatibility",
+            mode="native",
+            page_size=1,
+            skill_paths={"skill-a": "team/skill-a"},
+            skills=[
+                SkillConfig(id=skill_id, provider="fs", options={"root": str(tmp_path)})
+                for skill_id in ("skill-a", "skill-b")
+            ],
+        )
+        server_path = tmp_path / "server.json"
+        server_path.write_text(config.model_dump_json(), encoding="utf-8")
+        client_path = tmp_path / "client.json"
+        client_path.write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "native": {
+                            "command": sys.executable,
+                            "args": ["-m", "agentskills_mcp_server", "--config", str(server_path)],
+                            "env": {"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+                            "protocolVersion": "2026-07-28",
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        environment = {**os.environ, "MCPC_HOME_DIR": str(tmp_path / "mcpc-state")}
+        session = "@native-test"
+
+        def invoke(*arguments):
+            result = subprocess.run(
+                ["node", mcpc, "--json", "--timeout", "20", *arguments],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+                timeout=45,
+                check=False,
+            )
+            assert result.returncode == 0, result.stderr or result.stdout
+            return json.loads(result.stdout)
+
+        uri = "skill://team/skill-a/SKILL.md"
+        try:
+            invoke("connect", f"{client_path}:native", session)
+            direct = invoke(session, "skills-get", uri)
+            assert base64.b64decode(direct["contents"][0]["blob"]) == files["SKILL.md"]
+            listing = invoke(session, "skills-list")
+            assert {skill["uri"] for skill in listing} == {uri, "skill://skill-b/SKILL.md"}
+            assert all("contents" not in skill for skill in listing)
+            manifest = next(skill for skill in listing if skill["uri"] == uri)["resources"]
+            assert len(manifest) == len(files)
+            for relative_path, expected in files.items():
+                result = invoke(session, "skills-get", uri, relative_path)
+                actual = base64.b64decode(result["contents"][0]["blob"])
+                resource = next(
+                    entry
+                    for entry in manifest
+                    if entry["uri"] == f"skill://team/skill-a/{relative_path}"
+                )
+                assert actual == expected
+                assert resource["size"] == len(actual)
+                assert resource["digest"] == f"sha256:{sha256(actual).hexdigest()}"
+        finally:
+            invoke("close", session)
+
     async def test_stdio_legacy_roundtrip(self, tmp_path):
         import asyncio
         import os
@@ -243,7 +377,7 @@ class TestConfigDrivenServer:
         config_path = tmp_path / "server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=sys.executable,
+            command=os.environ.get("AGENTSKILLS_TEST_MCP_SERVER_PYTHON", sys.executable),
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
@@ -265,6 +399,54 @@ class TestConfigDrivenServer:
             missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
             assert missing.model_dump(by_alias=True)["isError"] is True
             assert "missing" in missing.content[0].text
+
+    async def test_stdio_native_resources_for_legacy_client(self, tmp_path):
+        import asyncio
+        import base64
+        import importlib.util
+        import os
+        import sys
+
+        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp.types import Request, Result
+
+        try:
+            from mcp.shared.exceptions import MCPError
+        except ImportError:
+            from mcp.shared.exceptions import McpError as MCPError
+
+        executable = os.environ.get("AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON")
+        if executable is None and importlib.util.find_spec("mcp.server.extension") is None:
+            pytest.skip("A native MCP SDK server interpreter is required")
+        _write_skill(tmp_path, "test-skill")
+        raw = (tmp_path / "test-skill" / "SKILL.md").read_bytes()
+        config = ServerConfig(
+            name="Native resource compatibility",
+            mode="native",
+            skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
+        )
+        config_path = tmp_path / "native-server.json"
+        config_path.write_text(config.model_dump_json(), encoding="utf-8")
+        parameters = StdioServerParameters(
+            command=executable or sys.executable,
+            args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+            env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+        )
+        async with (
+            asyncio.timeout(20),
+            stdio_client(parameters) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            initialized = await session.initialize()
+            assert initialized.capabilities.resources is not None
+            assert (await session.list_tools()).tools == []
+            resources = (await session.list_resources()).resources
+            assert [str(resource.uri) for resource in resources] == ["skill://test-skill/SKILL.md"]
+            contents = await session.read_resource("skill://test-skill/SKILL.md")
+            assert base64.b64decode(contents.contents[0].blob) == raw
+            with pytest.raises(MCPError) as unsupported:
+                await session.send_request(Request(method="skills/list", params={}), Result)
+            assert unsupported.value.error.code == -32601
 
     async def test_creates_fastmcp_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
@@ -502,6 +684,97 @@ class TestResolveEnvVars:
 
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
+
+    @pytest.mark.parametrize("mode", ["legacy", "native"])
+    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys, mode):
+        from agentskills_mcp_server.__main__ import main
+
+        config_file = tmp_path / "check.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "Check",
+                    "mode": mode,
+                    "skills": [
+                        {
+                            "id": "example",
+                            "provider": "http",
+                            "options": {"base_url": "https://example.invalid/?sig=private-value"},
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def build(coroutine):
+            coroutine.close()
+            return object()
+
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
+            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+        ):
+            mock_asyncio.run.side_effect = build
+            main()
+
+        output = capsys.readouterr().out
+        report = json.loads(output)
+        assert report["status"] == "ready"
+        assert report["scope"] == "localServerConstruction"
+        assert report["mode"] == mode
+        assert report["providerTypes"] == ["http"]
+        assert report["mcpSdkVersion"]
+        assert report["requiresProtocol"] == ("2026-07-28" if mode == "native" else None)
+        assert report["transportTested"] is False
+        assert "private-value" not in output
+        assert "example.invalid" not in output
+
+    @pytest.mark.parametrize("invalid", [False, True])
+    def test_legacy_check_closes_provider(self, tmp_path, capsys, invalid):
+        from agentskills_fs import LocalFileSystemSkillProvider
+        from agentskills_mcp_server.__main__ import main
+
+        _write_skill(tmp_path, "example")
+        if invalid:
+            (tmp_path / "example" / "SKILL.md").write_text(
+                "---\nname: example\n---\n", encoding="utf-8"
+            )
+        closed = []
+
+        class ClosingProvider(LocalFileSystemSkillProvider):
+            async def aclose(self):
+                closed.append(True)
+
+        config_file = tmp_path / "check.json"
+        config_file.write_text(
+            json.dumps(
+                {
+                    "name": "Check",
+                    "skills": [{"id": "example", "provider": "http", "options": {}}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        with (
+            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
+            patch(
+                "agentskills_mcp_server.server._resolve_provider",
+                return_value=ClosingProvider(tmp_path),
+            ),
+        ):
+            if invalid:
+                with pytest.raises(ValueError):
+                    main()
+            else:
+                main()
+
+        assert closed == [True]
+        output = capsys.readouterr().out
+        if invalid:
+            assert output == ""
+        else:
+            assert json.loads(output)["status"] == "ready"
 
     def test_argparse_requires_config(self):
         """CLI exits with error when --config is missing."""

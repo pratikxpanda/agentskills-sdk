@@ -1,6 +1,35 @@
-# Examples
+---
+title: Examples
+description: Framework-owned MCP migration examples and retained native integration demonstrations.
+---
 
 LangChain and Microsoft Agent Framework examples organized by **provider** and **tool approach**.
+
+## v0.6 Migration
+
+Use the framework-owned MCP examples for new integrations. Native tools and the
+SDK-owned context providers become deprecated and maintenance-only in v0.6.
+They remain here for existing users during the migration window. Review the
+[migration guide and feature gaps](../docs/mcp-migration.md) before replacing
+automatic prompt injection or session pruning.
+
+The filesystem MCP examples support `--smoke` for model-free checks and
+`--server-python` for an isolated server interpreter. Run from the repository root:
+
+```bash
+python examples/langchain/fs/mcp_tools.py --smoke --server-python /path/to/server/python
+python examples/agent-framework/fs/mcp_tools.py --smoke --server-python /path/to/server/python
+```
+
+These checks use legacy tools and resources. They do not certify native Skills
+activation, host consent, or remote HTTP authentication.
+
+## MCP Benchmarks
+
+Run `python examples/mcp/benchmark.py --sizes 1 10 100 --repeats 3` with the
+development checkout and MCP 2.2.0. The [benchmark guide](../docs/mcp-benchmarks.md)
+defines the synthetic corpus, native and legacy workloads, metrics, and limitations.
+The benchmark uses its own temporary skills and does not call a model.
 
 ## Structure
 
@@ -39,13 +68,13 @@ standard MCP server that any MCP client can connect to.
 
 **MCP context providers** (Agent Framework only) -
 `AgentSkillsMcpContextProvider` wraps an MCP session and automatically reads
-the skills catalog and usage instructions on every `agent.run()` call. This is
-the recommended MCP approach for Agent Framework — it removes the manual
-resource-reading boilerplate shown in the MCP tools examples.
+the skills catalog and usage instructions on every `agent.run()` call. It is
+deprecated in v0.6. The MCP tools examples use the framework-owned client and
+explicit resource reading instead, without automatically replacing session behavior.
 
 ## Prerequisites
 
-All examples use the `incident-response` sample skill in `examples/skills/`.
+Framework examples use the `incident-response` sample skill in `examples/skills/`.
 
 ### LangChain examples
 
@@ -154,10 +183,10 @@ python examples/langchain/http/mcp_tools.py
 ### Run Agent Framework examples
 
 ```bash
-# Filesystem - context provider (recommended)
+# Filesystem - existing deprecated context provider
 python examples/agent-framework/fs/local_context_provider.py
 
-# HTTP - context provider (recommended, start the local HTTP server first)
+# HTTP - existing deprecated context provider (start the local HTTP server first)
 python examples/agent-framework/http/local_context_provider.py
 
 # Filesystem - local tools

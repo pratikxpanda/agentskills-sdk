@@ -200,13 +200,49 @@ security fixes required for that path immediately rather than waiting for v0.7.
 
 Implementation progress: core, filesystem, and opted-in HTTP providers now expose
 complete original file access. Core can capture bounded immutable file sets with
-SHA-256 digests and detect ordinary source drift during capture. Canonical MCP
-manifests, complete frontmatter handling, and protocol delivery remain pending.
-The lossless resources item is not yet complete.
+SHA-256 digests and detect ordinary source drift during capture. Native manifests
+preserve JSON-compatible frontmatter and complete file sets. An opt-in SDK 2.2+
+server now implements the 2026-07-28 Skills wire contract, including pagination,
+direct lookup, canonical original-byte reads, aliases, and explicit nested publication.
+Directory reads remain unadvertised because empty-directory enumeration is unavailable.
+
+Native framework entry points now emit caller-attributed deprecation warnings.
+The [migration guide](mcp-migration.md) records maintenance-only status, the full
+minor-release window, release-note guidance, and feature gaps. Model-free
+filesystem examples exercise LangChain's upstream MCP adapter and Agent Framework's
+MCPStdioTool against a separate SDK 2 server. No APIs or packages have been removed.
+
+Native inspection now reports canonical manifests, original-byte digests and
+sizes, protocol requirements, and local size-limit failures. Both CLI entry points
+support publication preflight without listening, and the tools CLI can serve
+native Skills directly. Config-driven preflight checks provider readiness and
+closes its provider clients. Reports distinguish local construction from live
+transport, authentication, and host verification. Remote HTTP deployment controls
+remain explicit operational requirements, not a certification from preflight.
+
+The [discovery and delivery benchmark](mcp-benchmarks.md) now measures the
+native and retained v0.5-style workflows across small and large synthetic
+catalogs. It separates optional lexical ranking, source snapshot reads, client
+resource reads, token estimates, result bytes, and in-process timings. A real
+request observer checks zero native discovery prefetch. Synthetic scores and
+local timings do not certify production accuracy, model costs, or remote hosts.
 
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
-dedicated modern-SDK CI job and real legacy stdio round trips. The native Skills
-wire contract and client compatibility matrix are still pending.
+dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
+directions in isolated environments. Native delivery is tested with the official
+SDK client in-process, over stdio, and through a real loopback Streamable HTTP
+listener. Older clients can read native resources but cannot invoke native
+discovery. The MCP package publishes the tested client matrix. The pinned mcpc
+0.7.0 client additionally verifies native direct lookup, paginated discovery,
+aliases, and exact instructions, reference, and binary delivery over stdio.
+The [v0.6 acceptance checklist](issues/v0.6.md) records the seven completed
+implementation areas and the release verification requirements.
+
+Production TLS, authentication, and gateway deployment validation is explicitly
+deferred beyond v0.6 by the maintainer's 2026-10-06 scope decision. It is not a
+passed gate or a production certification. Host selection, approval, context
+injection, and execution policy remain host-owned. Local transport and client
+checks do not certify those behaviors.
 
 ---
 

@@ -55,6 +55,8 @@ import argparse
 import asyncio
 import json
 import sys
+from contextlib import AsyncExitStack
+from importlib.metadata import version
 from pathlib import Path
 
 
@@ -75,6 +77,11 @@ def main() -> None:
         default="stdio",
         choices=["stdio", "streamable-http"],
         help="MCP transport type (default: stdio).",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check provider readiness and publication, then print JSON without listening.",
     )
     args = parser.parse_args()
 
@@ -114,20 +121,67 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Build and run
     # ------------------------------------------------------------------
-    from agentskills_core import SkillRegistry
+    from agentskills_core import Skill, SkillRegistry
     from agentskills_mcp_server.config import ServerConfig
     from agentskills_mcp_server.server import _resolve_provider, create_mcp_server
 
     config = ServerConfig(**data)
 
     async def _build() -> object:
+        if config.mode == "native":
+            from agentskills_mcp_server import create_native_mcp_server
+
+            async with AsyncExitStack() as stack:
+                handles = []
+                for skill_cfg in config.skills:
+                    provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
+                    if close := getattr(provider, "aclose", None):
+                        stack.push_async_callback(close)
+                    handles.append(Skill(skill_cfg.id, provider))
+                return await create_native_mcp_server(
+                    handles,
+                    name=config.name,
+                    instructions=config.instructions,
+                    skill_paths=config.skill_paths,
+                    listed_skill_ids=config.listed_skill_ids,
+                    page_size=config.page_size,
+                    max_skills=config.max_skills,
+                    max_total_bytes=config.max_total_bytes,
+                )
         registry = SkillRegistry()
-        for skill_cfg in config.skills:
-            provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
-            await registry.register(skill_cfg.id, provider)
-        return create_mcp_server(registry, name=config.name, instructions=config.instructions)
+        async with AsyncExitStack() as stack:
+            for skill_cfg in config.skills:
+                provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
+                if args.check and (close := getattr(provider, "aclose", None)):
+                    stack.push_async_callback(close)
+                await registry.register(skill_cfg.id, provider)
+            return create_mcp_server(registry, name=config.name, instructions=config.instructions)
 
     server = asyncio.run(_build())
+    if args.check:
+        print(
+            json.dumps(
+                {
+                    "status": "ready",
+                    "scope": "localServerConstruction",
+                    "mode": config.mode,
+                    "mcpSdkVersion": version("mcp"),
+                    "skillCount": len(config.skills),
+                    "providerTypes": sorted({skill.provider for skill in config.skills}),
+                    "requiresProtocol": "2026-07-28" if config.mode == "native" else None,
+                    "requiresExtension": "io.modelcontextprotocol/skills"
+                    if config.mode == "native"
+                    else None,
+                    "directoryRead": False,
+                    "transportTested": False,
+                    "authenticationTested": False,
+                    "hostBehaviorTested": False,
+                    "clientGuidance": "Use legacy mode for clients without native Skills support.",
+                },
+                indent=2,
+            )
+        )
+        return
     server.run(transport=args.transport)
 
 

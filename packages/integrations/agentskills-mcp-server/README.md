@@ -9,7 +9,13 @@ description: MCP tools and resources for Agent Skills registries.
 
 > MCP server integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - expose a skill registry as an MCP server.
 
-Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. Native Skills extension support is separate work and is not yet implemented.
+Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. v0.6 development builds also provide an opt-in native Skills server backed by immutable file captures.
+
+The MCP server remains maintained. Only `AgentSkillsMcpContextProvider` and the
+`[agentframework]` extra become deprecated and maintenance-only in v0.6. Existing
+bridge APIs remain available during the migration window. See the
+[migration guide and feature-gap matrix](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md)
+for framework-owned replacements and removal gates.
 
 ## Installation
 
@@ -44,7 +50,8 @@ cover the same eight tools and three static `skills://` resources.
 and `MCPServer` on 2.x. SDK-level Python APIs follow that SDK's version. For
 example, direct `call_tool()` calls return a tuple on 1.x and `CallToolResult` on
 2.x. Protocol clients receive standard MCP results in either case. This support
-does not imply native Skills support or host-specific certification.
+does not imply that a host supports the Skills extension. Native mode is a separate
+opt-in and does not establish host-specific certification.
 
 Agent Framework's upstream MCP client still declares an MCP 1.x constraint. Keep
 that client and the existing context-provider bridge in a 1.x environment:
@@ -57,6 +64,186 @@ Run a 2.x server in a separate environment or process when using that client.
 Do not force incompatible framework extras into the server environment. The
 native integrations and context-provider bridge remain available during the
 planned deprecation window.
+
+### Tested Client Matrix
+
+The development checkout was verified with the official Python MCP SDK clients
+and mcpc on 2026-10-06. These are protocol and client checks, not model-host
+activation or production deployment certifications.
+
+| Server mode and SDK | Client SDK and API | Transport | Verified behavior |
+| --- | --- | --- | --- |
+| Legacy 1.29.0 | 1.29.0 `ClientSession` | stdio | Eight tools, three static resources, tool errors |
+| Legacy 2.2.0 | 2.2.0 `ClientSession` | stdio | Same legacy contract |
+| Legacy 2.2.0 | 1.29.0 `ClientSession` | stdio | Same contract across separate environments |
+| Legacy 1.29.0 | 2.2.0 `ClientSession` | stdio | Same contract across separate environments |
+| Native 2.2.0 | 2.2.0 `Client` | In-process, stdio, loopback HTTP | Native discovery, lookup, and original-byte resources |
+| Native 2.2.0 | `@apify/mcpc` 0.7.0 | stdio | Direct lookup before listing, paginated discovery, aliases, exact instructions/reference/binary reads with sizes and SHA-256 digests |
+| Native 2.2.0 | 1.29.0 or 2.2.0 `ClientSession` | stdio | Canonical resources only, native discovery rejected with `-32601` |
+
+SDK 2's `ClientSession` is its legacy-protocol compatibility API. Use `Client`
+for the native protocol. The HTTP checks use a real listener and both values of
+the server's `json_response` option. They verify resource bytes against the source
+and advertised size and digest, plus required result/cache fields. They do not
+certify remote authentication, TLS, reverse proxies, or a host's approval policy.
+
+The modern-SDK CI job creates an isolated 1.29.0 environment and runs both
+mixed-SDK stdio directions. Locally, `AGENTSKILLS_TEST_MCP_SERVER_PYTHON` selects
+the legacy server interpreter for `test_config.py -k stdio`, and
+`AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON` selects a 2.2+ native server interpreter.
+Without overrides, tests use the current interpreter and skip native publication
+when SDK 2.2+ is unavailable. Each interpreter needs this checkout's core, provider,
+and MCP packages. The client also needs pytest and pytest-asyncio.
+
+The same CI job installs pinned `@apify/mcpc@0.7.0` and runs the real-client test.
+To repeat it locally with Node 22.12 or later and MCP SDK 2.2, set
+`AGENTSKILLS_TEST_MCPC` to the installed package's `bin/mcpc` JavaScript entry
+point and run `pytest packages/integrations/agentskills-mcp-server/tests/test_config.py -k mcpc`.
+The test isolates its session state and closes the session in a cleanup block.
+It does not call a model, execute skill scripts, or test remote authentication.
+
+### Discovery and Delivery Benchmarks
+
+The development checkout includes a model-free benchmark for catalogs of 1, 10,
+and 100 skills. It records actual request counts, payload sizes, token estimates,
+and in-process timings for native Skills and the retained legacy API. Native
+publication reads are separated from client delivery, and discovery prefetch is
+rejected. See the [benchmark guide and measured trade-offs](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-benchmarks.md).
+Synthetic ranking scores are not production accuracy or host certification.
+
+## Native Skills (v0.6 Development)
+
+Use this development checkout with `mcp>=2.2,<3`. Released 0.5.0 packages do not
+contain this API. The native server implements the official
+[Skills extension](https://modelcontextprotocol.io/extensions/skills/overview)
+against protocol revision `2026-07-28`:
+
+- `server/discover` declares `io.modelcontextprotocol/skills` and resources.
+- `skills/list` returns complete manifests with opaque, server-scoped pagination.
+- `skills/get` returns the same entry directly by its canonical `SKILL.md` URI.
+- `resources/read` returns captured original bytes, including BOMs and line endings.
+- Results carry the required result type, cache fields, and SDK-generated metadata.
+
+Native mode does not register legacy tools or inject a catalog. It does not
+advertise `directoryRead`. The providers cannot enumerate empty directories, so
+the optional directory method is deliberately unavailable.
+
+### Native CLI
+
+```json
+{
+    "name": "Native Skills",
+    "mode": "native",
+    "skills": [
+        {
+            "id": "incident-response",
+            "provider": "fs",
+            "options": {"root": "./skills"}
+        }
+    ]
+}
+```
+
+Run it with `python -m agentskills_mcp_server --config server.json`. Omitted
+`mode` retains legacy behavior. HTTP providers require `"file_manifest": true`
+and complete per-skill file indexes. The CLI closes its provider clients after
+capture. The programmatic builder does not close caller-owned providers.
+
+Check configured providers and publication without starting a listener:
+
+```bash
+python -m agentskills_mcp_server --config server.json --check
+```
+
+The JSON success report includes the installed MCP SDK version, selected mode,
+provider types, skill count, and native client requirements. It excludes provider
+options, including credential-bearing URLs. Its `localServerConstruction` scope
+does not claim a transport connection, authentication check, or host verification.
+Provider reads do occur during preflight. Native mode reads and verifies every
+file, while legacy mode validates registration. Provider clients opened by a
+preflight are closed before it returns, including when construction fails.
+
+For a filesystem source, the companion tools can inspect canonical manifests and
+run the same native builder without a config file:
+
+```bash
+agentskills inspect ./skills --native --format json
+agentskills serve ./skills --native --check
+```
+
+Those tools default to a 16 MiB per-file bound. To compare a config-driven source
+with that inspection, set its `max_file_bytes` filesystem option or
+`max_response_bytes` HTTP option to the intended bound. HTTP native publication
+also requires `file_manifest: true`. A lower provider limit can reject a skill
+that fits the extension's total limit.
+
+### Native Python API
+
+```python
+import asyncio
+from pathlib import Path
+
+from agentskills_core import Skill
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_mcp_server import create_native_mcp_server
+
+provider = LocalFileSystemSkillProvider(Path("./skills"))
+server = asyncio.run(create_native_mcp_server(
+        [Skill("incident-response", provider)], name="Native Skills"
+))
+server.run()
+```
+
+The builder also accepts an existing `SkillRegistry`. Raw `Skill` handles avoid
+legacy metadata parsing, including its BOM and ASCII-name restrictions. Native
+validation accepts current-spec Unicode lowercase names and preserves every
+JSON-compatible author field. Known optional fields retain their specified types.
+For example, `metadata` values must be strings. SDK-specific list-valued tags in
+that mapping require an authored format change before native publication.
+
+Duplicate YAML keys, non-JSON values such as unquoted dates, non-finite numbers,
+and recursive values fail publication. Valid YAML merges retain their resolved
+values. Expanded frontmatter JSON is bounded at 16 MiB.
+
+### Publication Boundaries
+
+Each skill is limited to 512 files and 16 MiB. By default, the builder retains at
+most 128 skills and 64 MiB of captured file bytes. `max_skills` and
+`max_total_bytes` control those aggregate limits. Provider per-file limits apply
+as well. Publication fails without returning a server when a capture, manifest,
+limit, or URI conflict is invalid. Use trusted, immutable sources during capture
+and restart the server to publish changes.
+
+`skill_paths` maps handle IDs to unescaped paths ending in the declared skill
+name, such as `{"refunds": "billing/refunds"}`. Without an override, a differing
+handle ID becomes a prefix, so an alias cannot replace the final name segment.
+Names may repeat at distinct canonical URIs. Register nested skills explicitly
+and map their paths under the parent, such as `{"child": "parent/child"}`.
+Their files remain in the parent manifest too. Overlapping captures must agree
+on both directory membership and every shared file's bytes.
+
+`page_size` defaults to 100 complete entries. `listed_skill_ids` can select a
+partial or empty listing, but never restricts direct lookup or resource access.
+It is not an authorization control. All supplied skills must be appropriate for
+the server's audience.
+
+Canonical reads use standard base64 blob resources, including for `SKILL.md`.
+Decode the blob before checking byte size, SHA-256 digest, and frontmatter.
+There are no SDK envelopes, truncation, image conversion, or script execution.
+Cache hints are `ttlMs: 0` and `cacheScope: "private"`. Captured bytes remain
+unchanged for the server instance, but cache hints are not an integrity guarantee.
+
+Hosts remain responsible for origin-scoped identity and reads, lazy retrieval,
+digest and frontmatter verification, and explicit per-skill consent. Reading is
+not activation. Parent approval does not approve nested skills, and
+`allowed-tools` grants no host permissions automatically. Digests establish
+consistency, not publisher trust. Remote HTTP deployments also need authenticated
+transport, TLS, and audience isolation beyond this builder.
+
+The tested matrix above distinguishes native Skills support from ordinary
+resources access. Native checks now cover in-process, real stdio, and loopback
+Streamable HTTP. Host-specific Skills certification remains a separate release
+gate, including consent, origin isolation, and verification before activation.
 
 ## Quick Start (CLI)
 
@@ -89,9 +276,37 @@ python -m agentskills_mcp_server --config server.json --transport streamable-htt
 
 The server listens on `http://127.0.0.1:8000/mcp`.
 
+### Remote HTTP Deployment Boundaries
+
+Keep the backend listener private. A remote deployment needs a TLS-terminating,
+authenticated endpoint in front of it, or an equivalent secured ASGI deployment.
+The local CLI commands do not configure a public OAuth resource server.
+
+Before exposing `/mcp`, validate these deployment controls:
+
+- Use MCP-compatible authorization discovery and validate issuer, audience, expiry, and required scopes for the public resource identifier
+- Enforce the intended server audience and skill access policy, not `listed_skill_ids`, which only filters enumeration
+- Restrict accepted hosts and browser origins, including forwarded-header trust at the proxy boundary
+- Preserve streaming responses and supported HTTP methods without proxy buffering or unintended timeouts
+- Route stateful sessions consistently when the deployment uses session state
+- Keep bearer tokens out of public MCP URLs, and redact provider credentials from logs and published configuration
+- Test rejected and expired credentials, cross-origin requests, disconnect cleanup, and exact native bytes through the public endpoint
+
+The authentication component must validate credentials before traffic reaches
+the private backend. Forwarding an unchecked `Authorization` header is not
+authentication. Account for the backend's host and origin protections when
+configuring the trusted proxy, rather than disabling them without a replacement.
+
+Real loopback HTTP and stdio interoperability are tested. A production gateway,
+TLS setup, authorization server, and host-specific approval workflow are not
+certified by those tests or by `--check`. A host must still verify manifests and
+obtain per-skill consent before activation. Use legacy mode when its client lacks
+native Skills support.
+
 ### MCP Client Integration
 
-Any MCP-compatible client (Claude Desktop, VS Code, etc.) can connect to the server.
+Use a client that supports the selected MCP transport. Ordinary legacy
+tools/resources connectivity does not establish native Skills support.
 
 Stdio (local):
 
@@ -119,6 +334,12 @@ The `server.json` file supports the following structure:
 | `name` | `str` | Yes | Display name shown to MCP clients |
 | `instructions` | `str` | No | Server-level instructions sent during handshake |
 | `skills` | `list` | Yes | One or more skill definitions (see below) |
+| `mode` | `str` | No | `legacy` by default, or `native` for the official Skills extension |
+| `skill_paths` | `dict` | No | Native handle-ID to canonical skill-path mapping |
+| `listed_skill_ids` | `list` | No | Native listing selection only, not access control |
+| `page_size` | `int` | No | Native entries per page, default 100 |
+| `max_skills` | `int` | No | Native captured skill count, default 128 |
+| `max_total_bytes` | `int` | No | Native aggregate captured byte limit, default 64 MiB |
 
 Each skill entry:
 
@@ -130,8 +351,9 @@ Each skill entry:
 
 **Provider options:**
 
-- **`fs`**: `root` (path to skills directory, default `"."`)
-- **`http`**: `base_url` (required), `headers` (optional), `params` (optional query string parameters)
+- `fs` accepts `root` (default `"."`) and `max_file_bytes`.
+- `http` accepts `base_url`, `headers`, `params`, `resource_manifest`,
+  `file_manifest`, and `max_response_bytes`.
 
 Only `"fs"` and `"http"` are supported as provider types.
 

@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import base64
 import json
+import warnings
 from typing import Any
 
 from langchain_core.tools import StructuredTool
@@ -130,6 +131,13 @@ def get_tools(
         A list of :class:`~langchain_core.tools.StructuredTool`
         instances ready to be passed to a LangChain agent.
     """
+    warnings.warn(
+        "agentskills-langchain is deprecated in v0.6 and receives only critical fixes. "
+        "Use a framework-owned MCP client. Migration: "
+        "https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     async def get_skill_metadata(skill_id: str) -> str:
         """Get structured metadata for a skill."""

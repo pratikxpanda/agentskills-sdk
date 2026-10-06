@@ -135,7 +135,8 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
                 "Install it with:  pip install agentskills-fs"
             ) from exc
         root = Path(options.get("root", "."))
-        return LocalFileSystemSkillProvider(root=root)
+        limits = {key: options[key] for key in ("max_file_bytes",) if key in options}
+        return LocalFileSystemSkillProvider(root=root, **limits)
 
     if provider_type == "http":
         try:
@@ -147,7 +148,14 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
             ) from exc
         # Only pass constructor-safe keys; runtime objects like
         # ``client`` cannot be serialized to a config file.
-        safe_http_keys = {"base_url", "headers", "params", "resource_manifest"}
+        safe_http_keys = {
+            "base_url",
+            "headers",
+            "params",
+            "resource_manifest",
+            "file_manifest",
+            "max_response_bytes",
+        }
         filtered = {k: v for k, v in options.items() if k in safe_http_keys}
         return HTTPStaticFileSkillProvider(**filtered)
 

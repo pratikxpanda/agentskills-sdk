@@ -28,7 +28,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | **Provider** - read skills from a static HTTP server or CDN. | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-http?label=)](https://pepy.tech/project/agentskills-http) |
 | [`agentskills-langchain`](packages/integrations/agentskills-langchain/README.md) | **Integration** - expose skills to a LangChain agent as tools. | [![PyPI](https://img.shields.io/pypi/v/agentskills-langchain?label=)](https://pypi.org/project/agentskills-langchain/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-langchain?label=)](https://pepy.tech/project/agentskills-langchain) |
 | [`agentskills-agentframework`](packages/integrations/agentskills-agentframework/README.md) | **Integration** - expose skills to a Microsoft Agent Framework agent, injected automatically through the agent lifecycle. | [![PyPI](https://img.shields.io/pypi/v/agentskills-agentframework?label=)](https://pypi.org/project/agentskills-agentframework/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-agentframework?label=)](https://pepy.tech/project/agentskills-agentframework) |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve skills over the Model Context Protocol to any MCP client, such as Claude Desktop, VS Code, or Cursor. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
+| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration** - serve legacy MCP tools and resources, or native Skills to compatible hosts. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
 | [`agentskills-retrieval`](packages/retrieval/agentskills-retrieval/README.md) | **Selection** - rank a large registry against a query so the prompt carries the few skills that matter, not all of them. | [![PyPI](https://img.shields.io/pypi/v/agentskills-retrieval?label=)](https://pypi.org/project/agentskills-retrieval/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-retrieval?label=)](https://pepy.tech/project/agentskills-retrieval) |
 | [`agentskills-tools`](packages/tools/agentskills-tools/README.md) | **Tooling** - the `agentskills` command: scaffold, validate, lint, and inspect skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-tools?label=)](https://pypi.org/project/agentskills-tools/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-tools?label=)](https://pepy.tech/project/agentskills-tools) |
 | [`agentskills-testing`](packages/testing/agentskills-testing/README.md) | **Tooling** - the provider conformance suite and an in-memory provider, for anyone writing a provider or testing against one. | [![PyPI](https://img.shields.io/pypi/v/agentskills-testing?label=)](https://pypi.org/project/agentskills-testing/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-testing?label=)](https://pepy.tech/project/agentskills-testing) |
@@ -48,11 +48,23 @@ If you *write* skills rather than consume them, you want `agentskills-tools` ins
 Development toward v0.6 is MCP-first. The lossless provider foundation adds complete
 file enumeration and original-byte reads for filesystem skills and explicitly
 manifested HTTP skills. Core also provides bounded immutable file snapshots with
-byte-accurate SHA-256 digests. The legacy MCP server supports SDK 1.x and 2.2+ in
-the 2.x line. This is not yet native MCP Skills extension support. See
+byte-accurate SHA-256 digests. An opt-in native server now exposes the official
+Skills extension on MCP SDK 2.2+, with complete manifests, canonical raw resources,
+pagination, and direct URI lookup. The legacy server retains SDK 1.x and 2.x support.
+Tests cover mixed-SDK stdio processes and native delivery over loopback HTTP.
+Native framework integrations and the Agent Framework MCP bridge become deprecated
+and maintenance-only in v0.6, without removal. The
+[migration guide](docs/mcp-migration.md) includes verified framework-owned MCP
+examples and explicit feature gaps. Foreign-format adapters remain maintained.
+Development builds also provide `inspect --native`, `serve --native`, and
+publication preflight with `--check`. See the
+[CLI diagnostics](packages/tools/agentskills-tools/README.md) for scope and limits.
+The [MCP benchmark](docs/mcp-benchmarks.md) compares native discovery and progressive
+reads with the retained legacy workflow using bounded synthetic catalogs.
+These additions are development-only until v0.6 ships. See
 the [roadmap](docs/ROADMAP.md#now-v06-mcp-first-skills) for the remaining release gates.
 
-The SDK uses **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
+The legacy integrations use **progressive disclosure** to deliver skill content efficiently - each step only fetches what's needed:
 
 1. **Register** skills from any source (filesystem, HTTP, database, etc.)
 2. **Inject** the skills catalog and tool usage instructions into the system prompt

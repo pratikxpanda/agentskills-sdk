@@ -1,4 +1,7 @@
-# agentskills-tools
+---
+title: agentskills-tools
+description: Command line authoring, inspection, evaluation, and MCP publication diagnostics for Agent Skills.
+---
 
 Command line tools for authoring and validating [Agent Skills](https://agentskills.io).
 
@@ -87,6 +90,30 @@ agentskills inspect ./skills/incident-response
 Prints the metadata, the resource list, the catalog entry the agent sees on
 every turn, and the body it loads on demand — each with an estimated token
 cost, so you can see the price before shipping.
+
+#### Native manifest inspection (v0.6 development)
+
+```bash
+agentskills inspect ./skills --native --format json
+agentskills inspect ./skills --native --max-file-bytes 1048576
+```
+
+Native inspection reads every file into a bounded snapshot and reports canonical
+URIs, original-byte sizes and SHA-256 digests, unchanged frontmatter, and protocol
+requirements. It includes binary, hidden, and nonstandard supporting files.
+It does not require the MCP extra and does not pass canonical content through
+the legacy body parser. `--native` and `--cost` are mutually exclusive.
+
+Each skill is limited to 512 files and 16 MiB. The additional per-file bound
+defaults to 16 MiB and can be lowered with `--max-file-bytes`. Invalid manifests,
+unsafe paths, content drift, and exceeded limits fail before any report is
+written. Like existing inspection failures, they exit with code `2`.
+
+The report scope is `localSkillSnapshot`. This is an offline publication check,
+not metadata-only client discovery, a running-server probe, or a check of an
+entire server's publication namespace. A valid snapshot does not grant permission
+to activate or execute a skill. Use `serve --native --check` for catalog-wide
+publication validation. These options are development-only until v0.6 ships.
 
 #### Token cost
 
@@ -267,6 +294,32 @@ file. For anything beyond a single filesystem root — HTTP providers,
 per-skill options, environment placeholders — use
 [agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server)
 with a `server.json`.
+
+Native Skills publication and preflight are available in the v0.6 checkout:
+
+```bash
+agentskills serve ./skills --native --check
+agentskills serve ./skills --native --transport stdio
+agentskills serve ./skills --native --transport streamable-http
+```
+
+Native serving requires the server extra and `mcp>=2.2,<3`. It keeps the full
+canonical resources and does not register legacy tools. Without `--native`, the
+existing compatibility mode remains the default. Clients without the Skills
+extension should use that legacy mode.
+
+`--check` builds the actual server and exits without starting a listener. Native
+preflight validates all captures together, including publication conflicts and
+aggregate limits. Defaults are 128 skills and 64 MiB of captured bytes, in addition
+to the per-skill limits above. Use `--max-file-bytes` to apply the same per-file
+bound as an earlier inspection. Use the config-driven server for other catalog
+limits, aliases, or HTTP providers. Legacy mode also supports `--check`.
+
+The local HTTP endpoint is `http://127.0.0.1:8000/mcp`. Do not expose that listener
+directly to an untrusted network. Preflight does not exercise the chosen transport,
+authentication, or host behavior. See the
+[MCP deployment boundaries](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/integrations/agentskills-mcp-server/README.md#remote-http-deployment-boundaries)
+before publishing a remote endpoint.
 
 ## Exit codes
 

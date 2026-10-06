@@ -5,7 +5,11 @@ import json
 
 import pytest
 
-from agentskills_agentframework import get_tools, get_tools_usage_instructions
+from agentskills_agentframework import (
+    AgentSkillsContextProvider,
+    get_tools,
+    get_tools_usage_instructions,
+)
 from agentskills_core import SkillRegistry
 from agentskills_core.exceptions import SkillNotFoundError
 from agentskills_testing import InMemorySkillProvider, build_skill
@@ -58,6 +62,17 @@ async def registry() -> SkillRegistry:
 
 
 class TestGetTools:
+    @pytest.mark.parametrize("use_context", [False, True])
+    async def test_deprecation_points_to_caller_without_changing_tools(self, registry, use_context):
+        with pytest.warns(DeprecationWarning, match="agentskills-agentframework.*v0.6") as captured:
+            tools = (
+                AgentSkillsContextProvider(registry)._tools if use_context else get_tools(registry)
+            )
+        assert len(tools) == 8
+        assert len(captured) == 1
+        assert captured[0].filename == __file__
+        assert "mcp-migration.md" in str(captured[0].message)
+
     async def test_returns_8_tools(self, registry):
         tools = get_tools(registry)
         assert len(tools) == 8
