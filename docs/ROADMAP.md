@@ -207,10 +207,13 @@ direct lookup, canonical original-byte reads, aliases, and explicit nested publi
 Directory reads remain unadvertised because empty-directory enumeration is unavailable.
 
 The legacy server now supports MCP SDK 1.x and 2.2+ in the 2.x line, with a
-dedicated modern-SDK CI job and real legacy stdio round trips. Native delivery is
-tested with the official SDK client in-process and over stdio. Streamable HTTP,
-mixed-SDK processes, host compatibility, migration, benchmarks, and diagnostics
-remain release gates. No milestone item is declared complete by transport tests alone.
+dedicated modern-SDK CI job and real legacy stdio round trips across both SDK
+directions in isolated environments. Native delivery is tested with the official
+SDK client in-process, over stdio, and through a real loopback Streamable HTTP
+listener. Older clients can read native resources but cannot invoke native
+discovery. The MCP package publishes the tested client matrix. Host compatibility,
+remote deployment validation, migration, benchmarks, and diagnostics remain
+release gates. No milestone item is declared complete by transport tests alone.
 
 ---
 

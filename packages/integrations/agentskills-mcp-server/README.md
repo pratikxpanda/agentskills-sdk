@@ -59,6 +59,34 @@ Do not force incompatible framework extras into the server environment. The
 native integrations and context-provider bridge remain available during the
 planned deprecation window.
 
+### Tested Client Matrix
+
+The development checkout was verified with the official Python MCP SDK clients
+on 2026-10-06. These are server transport checks, not host Skills certifications.
+
+| Server mode and SDK | Client SDK and API | Transport | Verified behavior |
+| --- | --- | --- | --- |
+| Legacy 1.29.0 | 1.29.0 `ClientSession` | stdio | Eight tools, three static resources, tool errors |
+| Legacy 2.2.0 | 2.2.0 `ClientSession` | stdio | Same legacy contract |
+| Legacy 2.2.0 | 1.29.0 `ClientSession` | stdio | Same contract across separate environments |
+| Legacy 1.29.0 | 2.2.0 `ClientSession` | stdio | Same contract across separate environments |
+| Native 2.2.0 | 2.2.0 `Client` | In-process, stdio, loopback HTTP | Native discovery, lookup, and original-byte resources |
+| Native 2.2.0 | 1.29.0 or 2.2.0 `ClientSession` | stdio | Canonical resources only, native discovery rejected with `-32601` |
+
+SDK 2's `ClientSession` is its legacy-protocol compatibility API. Use `Client`
+for the native protocol. The HTTP checks use a real listener and both values of
+the server's `json_response` option. They verify resource bytes against the source
+and advertised size and digest, plus required result/cache fields. They do not
+certify remote authentication, TLS, reverse proxies, or a host's approval policy.
+
+The modern-SDK CI job creates an isolated 1.29.0 environment and runs both
+mixed-SDK stdio directions. Locally, `AGENTSKILLS_TEST_MCP_SERVER_PYTHON` selects
+the legacy server interpreter for `test_config.py -k stdio`, and
+`AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON` selects a 2.2+ native server interpreter.
+Without overrides, tests use the current interpreter and skip native publication
+when SDK 2.2+ is unavailable. Each interpreter needs this checkout's core, provider,
+and MCP packages. The client also needs pytest and pytest-asyncio.
+
 ## Native Skills (v0.6 Development)
 
 Use this development checkout with `mcp>=2.2,<3`. Released 0.5.0 packages do not
@@ -160,10 +188,10 @@ not activation. Parent approval does not approve nested skills, and
 consistency, not publisher trust. Remote HTTP deployments also need authenticated
 transport, TLS, and audience isolation beyond this builder.
 
-The tests use the official MCP SDK 2.2 client in-process and over real stdio.
-Legacy protocol requests cannot invoke native methods, but can read ordinary
-resources. Mixed-SDK process tests, Streamable HTTP conformance, and host-specific
-Skills certification remain separate release gates.
+The tested matrix above distinguishes native Skills support from ordinary
+resources access. Native checks now cover in-process, real stdio, and loopback
+Streamable HTTP. Host-specific Skills certification remains a separate release
+gate, including consent, origin isolation, and verification before activation.
 
 ## Quick Start (CLI)
 
