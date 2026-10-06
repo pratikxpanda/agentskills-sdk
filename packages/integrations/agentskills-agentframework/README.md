@@ -12,7 +12,7 @@ description: Maintenance-only native Agent Framework integration and migration t
 Generates a set of [Microsoft Agent Framework](https://pypi.org/project/agent-framework/) `FunctionTool` instances from a `SkillRegistry`, ready to be passed to any Agent Framework agent.
 
 > [!WARNING]
-> Deprecated and maintenance-only in the v0.6 development checkout, including
+> Deprecated and maintenance-only starting in v0.6.0, including
 > `AgentSkillsContextProvider`. Existing APIs remain available and receive critical
 > correctness and security fixes. Removal is no earlier than v0.7 after a full
 > minor-release migration window and explicit migration gates. Published 0.5.0

@@ -9,10 +9,10 @@ description: MCP tools and resources for Agent Skills registries.
 
 > MCP server integration for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - expose a skill registry as an MCP server.
 
-Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. v0.6 development builds also provide an opt-in native Skills server backed by immutable file captures.
+Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. v0.6.0 also provides an opt-in native Skills server backed by immutable file captures.
 
 The MCP server remains maintained. Only `AgentSkillsMcpContextProvider` and the
-`[agentframework]` extra become deprecated and maintenance-only in v0.6. Existing
+`[agentframework]` extra are deprecated and maintenance-only in v0.6. Existing
 bridge APIs remain available during the migration window. See the
 [migration guide and feature-gap matrix](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md)
 for framework-owned replacements and removal gates.
@@ -38,9 +38,9 @@ pip install agentskills-mcp-server[agentframework]  # MCP context provider for A
 
 Requires Python 3.12 or newer. Installs `agentskills-core`, `mcp`, and `pydantic` as dependencies.
 
-### MCP SDK Compatibility (v0.6 Development)
+### MCP SDK Compatibility
 
-Development builds accept MCP SDK 1.28.1 or newer in the 1.x line, or 2.2.0 or
+v0.6.0 accepts MCP SDK 1.28.1 or newer in the 1.x line, or 2.2.0 or
 newer in the 2.x line. SDK 2.0 and 2.1 are excluded. The repository lock keeps
 1.29.0, while a separate CI job exercises 2.2.0 and the unlocked job checks the
 latest permitted dependencies. Direct server tests and real legacy stdio sessions
@@ -111,10 +111,10 @@ publication reads are separated from client delivery, and discovery prefetch is
 rejected. See the [benchmark guide and measured trade-offs](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-benchmarks.md).
 Synthetic ranking scores are not production accuracy or host certification.
 
-## Native Skills (v0.6 Development)
+## Native Skills
 
-Use this development checkout with `mcp>=2.2,<3`. Released 0.5.0 packages do not
-contain this API. The native server implements the official
+Install `agentskills-mcp-server>=0.6.0` with `mcp>=2.2,<3`. Released 0.5.0
+packages do not contain this API. The native server implements the official
 [Skills extension](https://modelcontextprotocol.io/extensions/skills/overview)
 against protocol revision `2026-07-28`:
 

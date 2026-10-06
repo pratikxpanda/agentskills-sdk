@@ -30,12 +30,12 @@ explicit design doc arguing the trade-off.
     connect through their own MCP clients, not SDK-owned native adapters. Reusable skill
     behaviour belongs in core or retrieval, not in a framework lifecycle hook.
 
-## Direction After v0.5.0
+## Direction From v0.6.0
 
-v0.5.0 is shipped. The next priority is standards-aligned skill delivery over MCP, followed
-by production trust and operability. Native LangChain and Microsoft Agent Framework
-integrations will be retired through a documented migration window. This roadmap changes
-future priorities, not the support status or behaviour of the already-published v0.5.0 packages.
+v0.6.0 establishes standards-aligned skill delivery over MCP. The next priority is
+production trust and operability. Native LangChain and Microsoft Agent Framework
+integrations are deprecated and will be retired through a documented migration window.
+This does not change the behavior of already-published v0.5.0 packages.
 
 ### Official MCP Skills Support
 
@@ -178,11 +178,11 @@ body fetch — so the table is ordered by dependency rather than by value.
 
 ---
 
-## Now: v0.6 "MCP-First Skills"
+## v0.6 "MCP-First Skills"
 
-Make the official Skills extension the primary integration path. Order the work around the
-wire contract and migration safety. Protocol-required integrity is part of this milestone,
-not postponed to the broader trust work in v0.7.
+v0.6.0 makes the official Skills extension the primary integration path. The work
+centers on the wire contract and migration safety. Protocol-required integrity is
+included, not postponed to the broader trust work in v0.7.
 
 | Item | Theme | Package(s) | Notes |
 | --- | --- | --- | --- |
