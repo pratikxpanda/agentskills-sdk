@@ -91,7 +91,7 @@ Prints the metadata, the resource list, the catalog entry the agent sees on
 every turn, and the body it loads on demand — each with an estimated token
 cost, so you can see the price before shipping.
 
-#### Native manifest inspection (v0.6 development)
+#### Native manifest inspection
 
 ```bash
 agentskills inspect ./skills --native --format json
@@ -113,7 +113,7 @@ The report scope is `localSkillSnapshot`. This is an offline publication check,
 not metadata-only client discovery, a running-server probe, or a check of an
 entire server's publication namespace. A valid snapshot does not grant permission
 to activate or execute a skill. Use `serve --native --check` for catalog-wide
-publication validation. These options are development-only until v0.6 ships.
+publication validation. These options are available starting in v0.6.0.
 
 #### Token cost
 

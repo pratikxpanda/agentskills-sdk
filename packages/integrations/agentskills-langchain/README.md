@@ -12,7 +12,7 @@ description: Maintenance-only native LangChain integration and migration to fram
 Generates a set of [LangChain](https://python.langchain.com/) `StructuredTool` instances from a `SkillRegistry`, ready to be passed to any LangChain agent.
 
 > [!WARNING]
-> Deprecated and maintenance-only in the v0.6 development checkout. Existing APIs
+> Deprecated and maintenance-only starting in v0.6.0. Existing APIs
 > remain available and receive critical correctness and security fixes. Removal
 > is no earlier than v0.7 after a full minor-release migration window and explicit
 > migration gates. Published 0.5.0 wheels are unchanged. Use

@@ -5,7 +5,7 @@ description: Migrate native framework integrations to framework-owned MCP client
 
 ## Deprecation Window
 
-The v0.6 development checkout deprecates `agentskills-langchain`,
+v0.6.0 deprecates `agentskills-langchain`,
 `agentskills-agentframework`, `AgentSkillsMcpContextProvider`, and the
 `agentskills-mcp-server[agentframework]` extra. Published 0.5.0 wheels are unchanged.
 These surfaces receive critical correctness and security fixes only. They remain
@@ -51,7 +51,7 @@ instructions, and invoked `get_skill_body` through the framework-owned client.
 They did not call an LLM or verify model behavior.
 
 Run the commands below from the repository root. In a dedicated server environment,
-install the development checkout:
+install this checkout to reproduce the examples:
 
 ```bash
 python -m pip install "mcp==2.2.0" ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
