@@ -11,6 +11,12 @@ description: MCP tools and resources for Agent Skills registries.
 
 Creates a [Model Context Protocol](https://modelcontextprotocol.io/) server from a `SkillRegistry`, exposing skills through ordinary MCP tools and resources. v0.6 development builds also provide an opt-in native Skills server backed by immutable file captures.
 
+The MCP server remains maintained. Only `AgentSkillsMcpContextProvider` and the
+`[agentframework]` extra become deprecated and maintenance-only in v0.6. Existing
+bridge APIs remain available during the migration window. See the
+[migration guide and feature-gap matrix](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md)
+for framework-owned replacements and removal gates.
+
 ## Installation
 
 ```bash

@@ -42,6 +42,7 @@ This module requires ``agent-framework`` at runtime.  Install via::
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 try:
@@ -151,6 +152,14 @@ class AgentSkillsMcpContextProvider(ContextProvider):
         skills_catalog_format: Literal["xml", "markdown"] = "xml",
         source_id: str | None = None,
     ) -> None:
+        warnings.warn(
+            "AgentSkillsMcpContextProvider and the agentskills-mcp-server[agentframework] "
+            "extra are deprecated in v0.6 and receive only critical fixes. "
+            "Use a framework-owned MCP client. Migration: "
+            "https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(source_id or self.DEFAULT_SOURCE_ID)
         self._session = session
         self._skills_catalog_format = skills_catalog_format

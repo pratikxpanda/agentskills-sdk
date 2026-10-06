@@ -26,6 +26,7 @@ Usage:
     python examples/agent-framework/fs/mcp_tools.py
 """
 
+import argparse
 import asyncio
 import os
 import sys
@@ -35,24 +36,26 @@ from pathlib import Path
 _CONFIG_FILE = Path(__file__).resolve().parent.parent.parent / "server-fs.json"
 
 
-async def main() -> None:
+async def main(*, smoke: bool = False, server_python: str | None = None) -> None:
     # ------------------------------------------------------------------
     # 1. Connect to MCP server via MCPStdioTool
     # ------------------------------------------------------------------
     try:
-        from agent_framework import Agent, MCPStdioTool
-        from agent_framework.azure import AzureOpenAIChatClient
+        from agent_framework import MCPStdioTool
     except ImportError:
+        if smoke:
+            raise
         print("[SKIP] agent-framework not installed")
         print("  pip install agent-framework --pre")
         return
 
-    python = sys.executable
+    python = server_python or sys.executable
 
     mcp_skills = MCPStdioTool(
         name="skills",
         command=python,
         args=["-m", "agentskills_mcp_server", "--config", str(_CONFIG_FILE)],
+        env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         description="Agent Skills MCP server (filesystem provider)",
     )
 
@@ -80,10 +83,30 @@ async def main() -> None:
         print(tools_usage_instructions)
         print()
 
+        if smoke:
+            result = await mcp_skills.call_tool("get_skill_body", skill_id="incident-response")
+            result_text = (
+                result
+                if isinstance(result, str)
+                else "".join(content.text or "" for content in result)
+            )
+            if (
+                len(mcp_skills.functions) != 8
+                or "incident-response" not in skills_catalog
+                or not tools_usage_instructions
+                or "Incident Response" not in result_text
+            ):
+                raise RuntimeError("Agent Framework MCP migration smoke check failed")
+            print("Agent Framework MCP migration smoke check passed")
+            return
+
         # --------------------------------------------------------------
         # 3. Initialize Agent Framework agent
         # --------------------------------------------------------------
         try:
+            from agent_framework import Agent
+            from agent_framework.azure import AzureOpenAIChatClient
+
             client = AzureOpenAIChatClient(
                 deployment_name=os.environ["AZURE_OPENAI_DEPLOYMENT"],
                 api_version=os.environ["AZURE_OPENAI_API_VERSION"],
@@ -158,4 +181,13 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Agent Framework MCP migration example")
+    parser.add_argument("--smoke", action="store_true", help="Verify MCP without an LLM")
+    parser.add_argument("--server-python", default=sys.executable, help="MCP server interpreter")
+    arguments = parser.parse_args()
+    asyncio.run(
+        asyncio.wait_for(
+            main(smoke=arguments.smoke, server_python=arguments.server_python),
+            timeout=30 if arguments.smoke else None,
+        )
+    )

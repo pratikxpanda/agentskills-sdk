@@ -27,6 +27,7 @@ Usage:
     python examples/langchain/fs/mcp_tools.py
 """
 
+import argparse
 import asyncio
 import os
 import sys
@@ -36,18 +37,20 @@ from pathlib import Path
 _CONFIG_FILE = Path(__file__).resolve().parent.parent.parent / "server-fs.json"
 
 
-async def main() -> None:
+async def main(*, smoke: bool = False, server_python: str | None = None) -> None:
     # ------------------------------------------------------------------
     # 1. Connect to MCP server
     # ------------------------------------------------------------------
     try:
         from langchain_mcp_adapters.client import MultiServerMCPClient
     except ImportError:
+        if smoke:
+            raise
         print("[SKIP] langchain-mcp-adapters not installed")
         print("  pip install langchain-mcp-adapters")
         return
 
-    python = sys.executable
+    python = server_python or sys.executable
 
     client = MultiServerMCPClient(
         {
@@ -55,6 +58,7 @@ async def main() -> None:
                 "command": python,
                 "args": ["-m", "agentskills_mcp_server", "--config", str(_CONFIG_FILE)],
                 "transport": "stdio",
+                "env": {"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
             }
         }
     )
@@ -85,6 +89,19 @@ async def main() -> None:
     print("=== Tool Usage Instructions ===")
     print(tools_usage_instructions)
     print()
+
+    if smoke:
+        body_tool = next(tool for tool in tools if tool.name == "get_skill_body")
+        result = await body_tool.ainvoke({"skill_id": "incident-response"})
+        if (
+            len(tools) != 8
+            or "incident-response" not in skills_catalog
+            or not tools_usage_instructions
+            or "Incident Response" not in str(result)
+        ):
+            raise RuntimeError("LangChain MCP migration smoke check failed")
+        print("LangChain MCP migration smoke check passed")
+        return
 
     # ------------------------------------------------------------------
     # 4. Initialize LangChain agent
@@ -148,4 +165,13 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="LangChain MCP migration example")
+    parser.add_argument("--smoke", action="store_true", help="Verify MCP without an LLM")
+    parser.add_argument("--server-python", default=sys.executable, help="MCP server interpreter")
+    arguments = parser.parse_args()
+    asyncio.run(
+        asyncio.wait_for(
+            main(smoke=arguments.smoke, server_python=arguments.server_python),
+            timeout=30 if arguments.smoke else None,
+        )
+    )

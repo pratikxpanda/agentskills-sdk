@@ -177,6 +177,7 @@ jobs:
         run: |
           python -m venv .mcp-legacy
           .mcp-legacy/bin/python -m pip install "mcp==1.29.0" pytest pytest-asyncio \
+            "langchain-mcp-adapters==0.3.2" "agent-framework-core==1.12.1" \
             ./packages/core/agentskills-core \
             ./packages/providers/agentskills-fs \
             ./packages/providers/agentskills-http \
@@ -196,6 +197,13 @@ jobs:
         run: >-
           poetry run pytest
           packages/integrations/agentskills-mcp-server/tests/test_config.py -k stdio -v
+
+      - name: Test framework-owned MCP migration examples
+        run: |
+          .mcp-legacy/bin/python examples/langchain/fs/mcp_tools.py \
+            --smoke --server-python "$(poetry env info --executable)"
+          .mcp-legacy/bin/python examples/agent-framework/fs/mcp_tools.py \
+            --smoke --server-python "$(poetry env info --executable)"
 
   test-unlocked:
     name: Test (latest permitted dependencies)

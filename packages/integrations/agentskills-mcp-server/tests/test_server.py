@@ -5,6 +5,7 @@ import builtins
 import inspect
 import json
 import runpy
+import warnings
 from types import SimpleNamespace
 
 import pytest
@@ -74,6 +75,12 @@ async def server(registry):
 
 
 class TestCreateMCPServer:
+    async def test_mcp_server_is_not_deprecated(self, registry):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            server = create_mcp_server(registry, name="Maintained MCP")
+            assert len(await server.list_tools()) == 8
+
     @pytest.mark.parametrize("missing", ["mcp.server.fastmcp", "broken_dependency"])
     def test_sdk_fallback_does_not_hide_broken_dependencies(self, monkeypatch, missing):
         original_import = builtins.__import__
