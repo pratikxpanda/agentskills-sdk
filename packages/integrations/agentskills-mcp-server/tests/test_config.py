@@ -8,11 +8,13 @@ import pytest
 from pydantic import ValidationError
 
 from agentskills_core import ResourceNotFoundError, SkillProvider, SkillRegistry
-from agentskills_mcp_server.config import ServerConfig, SkillConfig, resolve_env_vars
-from agentskills_mcp_server.server import (
+from agentskills_mcp_server import create_mcp_server
+from agentskills_mcp_server.config import (
     SUPPORTED_PROVIDERS,
+    ServerConfig,
+    SkillConfig,
     _resolve_provider,
-    create_mcp_server,
+    resolve_env_vars,
 )
 
 # ------------------------------------------------------------------
@@ -65,12 +67,11 @@ class TestSkillConfig:
 
 
 class TestServerConfig:
-    def test_native_builder_missing_sdk_error(self, monkeypatch):
-        import agentskills_mcp_server
-
-        monkeypatch.setattr(agentskills_mcp_server, "find_spec", lambda name: None)
-        with pytest.raises(ImportError, match=r"MCP SDK 2\.2"):
-            agentskills_mcp_server.__getattr__("create_native_mcp_server")
+    def test_given_legacy_mode_when_configured_then_rejected(self):
+        with pytest.raises(ValidationError, match="native"):
+            ServerConfig(
+                name="Retired", mode="legacy", skills=[SkillConfig(id="example", provider="fs")]
+            )
 
     def test_native_mode_options(self):
         config = ServerConfig(
@@ -95,6 +96,7 @@ class TestServerConfig:
             skills=[SkillConfig(id="s1", provider="fs")],
         )
         assert cfg.name == "Test"
+        assert cfg.mode == "native"
         assert cfg.instructions is None
         assert len(cfg.skills) == 1
 
@@ -269,7 +271,7 @@ async def _build_server_from_config(config: ServerConfig):
     for skill_cfg in config.skills:
         provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
         await registry.register(skill_cfg.id, provider)
-    return create_mcp_server(registry, name=config.name, instructions=config.instructions)
+    return await create_mcp_server(registry, name=config.name, instructions=config.instructions)
 
 
 class TestConfigDrivenServer:
@@ -362,12 +364,13 @@ class TestConfigDrivenServer:
         finally:
             invoke("close", session)
 
-    async def test_stdio_legacy_roundtrip(self, tmp_path):
+    async def test_stdio_default_native_roundtrip(self, tmp_path):
         import asyncio
+        import base64
         import os
         import sys
 
-        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp import Client, StdioServerParameters
 
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
@@ -377,58 +380,44 @@ class TestConfigDrivenServer:
         config_path = tmp_path / "server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=os.environ.get("AGENTSKILLS_TEST_MCP_SERVER_PYTHON", sys.executable),
+            command=sys.executable,
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
         async with (
             asyncio.timeout(20),
-            stdio_client(parameters) as (read, write),
-            ClientSession(read, write) as session,
+            Client(parameters) as client,
         ):
-            initialized = await session.initialize()
-            assert initialized.capabilities.tools is not None
-            assert initialized.capabilities.resources is not None
-            assert len((await session.list_tools()).tools) == 8
-            resources = await session.list_resources()
-            assert len(resources.resources) == 3
-            catalog = await session.read_resource("skills://catalog/xml")
-            assert "test-skill" in catalog.contents[0].text
-            metadata = await session.call_tool("get_skill_metadata", {"skill_id": "test-skill"})
-            assert json.loads(metadata.content[0].text)["name"] == "test-skill"
-            missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
-            assert missing.model_dump(by_alias=True)["isError"] is True
-            assert "missing" in missing.content[0].text
+            assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+            assert not (await client.list_tools()).tools
+            resources = await client.list_resources()
+            assert len(resources.resources) == 1
+            contents = await client.read_resource("skill://test-skill/SKILL.md")
+            assert (
+                base64.b64decode(contents.contents[0].blob)
+                == (tmp_path / "test-skill" / "SKILL.md").read_bytes()
+            )
 
-    async def test_stdio_native_resources_for_legacy_client(self, tmp_path):
+    async def test_unnegotiated_extension_request_is_rejected(self, tmp_path):
         import asyncio
         import base64
-        import importlib.util
         import os
         import sys
 
-        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp import ClientSession, MCPError, StdioServerParameters, stdio_client
         from mcp.types import Request, Result
 
-        try:
-            from mcp.shared.exceptions import MCPError
-        except ImportError:
-            from mcp.shared.exceptions import McpError as MCPError
-
-        executable = os.environ.get("AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON")
-        if executable is None and importlib.util.find_spec("mcp.server.extension") is None:
-            pytest.skip("A native MCP SDK server interpreter is required")
         _write_skill(tmp_path, "test-skill")
         raw = (tmp_path / "test-skill" / "SKILL.md").read_bytes()
         config = ServerConfig(
-            name="Native resource compatibility",
+            name="Extension negotiation",
             mode="native",
             skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
         )
         config_path = tmp_path / "native-server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=executable or sys.executable,
+            command=sys.executable,
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
@@ -448,7 +437,7 @@ class TestConfigDrivenServer:
                 await session.send_request(Request(method="skills/list", params={}), Result)
             assert unsupported.value.error.code == -32601
 
-    async def test_creates_fastmcp_instance(self, tmp_path):
+    async def test_creates_mcp_server_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test Server",
@@ -461,13 +450,10 @@ class TestConfigDrivenServer:
             ],
         )
 
-        try:
-            from mcp.server.fastmcp import FastMCP
-        except ModuleNotFoundError:
-            from mcp.server import MCPServer as FastMCP
+        from mcp.server import MCPServer
 
         server = await _build_server_from_config(config)
-        assert isinstance(server, FastMCP)
+        assert isinstance(server, MCPServer)
 
     async def test_server_name(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
@@ -500,7 +486,7 @@ class TestConfigDrivenServer:
         server = await _build_server_from_config(config)
         assert server.instructions == "Custom instructions"
 
-    async def test_server_has_8_tools(self, tmp_path):
+    async def test_server_has_no_tools(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test",
@@ -514,9 +500,9 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         tools = await server.list_tools()
-        assert len(tools) == 8
+        assert tools == []
 
-    async def test_server_has_3_resources(self, tmp_path):
+    async def test_server_has_canonical_resource(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test",
@@ -530,7 +516,8 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         resources = await server.list_resources()
-        assert len(resources) == 3
+        assert len(resources) == 1
+        assert str(resources[0].uri) == "skill://test-skill/SKILL.md"
 
     async def test_multiple_skills(self, tmp_path):
         _write_skill(tmp_path, "skill-a")
@@ -552,16 +539,11 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
 
-        # Verify both skills are accessible via tools
-        result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-a"})
-        blocks = result[0] if isinstance(result, tuple) else result.content
-        meta_a = json.loads(blocks[0].text)
-        assert meta_a["name"] == "skill-a"
-
-        result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-b"})
-        blocks = result[0] if isinstance(result, tuple) else result.content
-        meta_b = json.loads(blocks[0].text)
-        assert meta_b["name"] == "skill-b"
+        resources = await server.list_resources()
+        assert {str(resource.uri) for resource in resources} == {
+            "skill://skill-a/SKILL.md",
+            "skill://skill-b/SKILL.md",
+        }
 
     async def test_instructions_default_none(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
@@ -685,7 +667,7 @@ class TestResolveEnvVars:
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
-    @pytest.mark.parametrize("mode", ["legacy", "native"])
+    @pytest.mark.parametrize("mode", ["native"])
     def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys, mode):
         from agentskills_mcp_server.__main__ import main
 
@@ -731,7 +713,7 @@ class TestCLI:
         assert "example.invalid" not in output
 
     @pytest.mark.parametrize("invalid", [False, True])
-    def test_legacy_check_closes_provider(self, tmp_path, capsys, invalid):
+    def test_check_closes_provider(self, tmp_path, capsys, invalid):
         from agentskills_fs import LocalFileSystemSkillProvider
         from agentskills_mcp_server.__main__ import main
 
@@ -759,7 +741,7 @@ class TestCLI:
         with (
             patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
             patch(
-                "agentskills_mcp_server.server._resolve_provider",
+                "agentskills_mcp_server.config._resolve_provider",
                 return_value=ClosingProvider(tmp_path),
             ),
         ):

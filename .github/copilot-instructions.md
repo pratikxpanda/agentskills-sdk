@@ -1,6 +1,6 @@
 # Working in this repository
 
-Poetry monorepo. Ten packages, versioned and released together.
+Poetry monorepo. Eight maintained packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
@@ -8,15 +8,18 @@ Poetry monorepo. Ten packages, versioned and released together.
 | `packages/adapters/agentskills-adapters` | Import common agent instruction formats as native skills |
 | `packages/providers/agentskills-fs` | Local filesystem provider |
 | `packages/providers/agentskills-http` | Static HTTP / CDN provider |
-| `packages/integrations/agentskills-langchain` | LangChain tools |
-| `packages/integrations/agentskills-agentframework` | Microsoft Agent Framework context provider |
-| `packages/integrations/agentskills-mcp-server` | MCP server + Agent Framework MCP bridge |
+| `packages/integrations/agentskills-mcp-server` | Native MCP Skills server, MCP SDK 2.2+ |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers |
 | `packages/tools/agentskills-tools` | `agentskills` command: init, validate, lint, inspect, serve |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, pytest fixtures |
 
 Planning lives in `docs/ROADMAP.md`, per-milestone specs in `docs/issues/`, settled
 decisions in `docs/adr/`.
+
+The v0.7 development line is native-Skills-only. Retired framework packages, the
+Agent Framework bridge, and legacy MCP tools/resources remain only in the v0.6.0
+tag and published artifacts, not an in-tree archive. Do not reintroduce them as
+fallbacks. `create_mcp_server` is async. See `docs/mcp-migration.md` for host gaps.
 
 ## Branch workflow
 
@@ -62,7 +65,7 @@ repository silently matches nothing.
 ```bash
 poetry install                                    # local install/check loop
 # this laptop cannot reach PyPI file hosting directly; run poetry lock on a networked machine
-python -m pytest packages -q --no-header          # baseline: 1403 passed, 7 skipped
+python -m pytest packages -q --no-header
 python -m ruff check packages/ examples/       # CI lints these two paths only
 python -m ruff format --check packages/ examples/
 python scripts/check_declared_dependencies.py     # a package must declare what it imports

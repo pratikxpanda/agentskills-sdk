@@ -34,8 +34,9 @@ explicit design doc arguing the trade-off.
 
 v0.6.0 establishes standards-aligned skill delivery over MCP. The next priority is
 production trust and operability. Native LangChain and Microsoft Agent Framework
-integrations are deprecated and will be retired through a documented migration window.
-This does not change the behavior of already-published v0.5.0 packages.
+integrations were deprecated in v0.6.0. The v0.7 development line retires them and
+legacy MCP delivery following the explicit native-only decision below. Previously
+published wheels are unchanged.
 
 ### Official MCP Skills Support
 
@@ -66,12 +67,20 @@ discovery and transport binding. Alignment means:
    Hosts own selection, approval, context injection, and execution permissions. Skills are
    identified by originating server plus URI, not by name alone.
 
-The existing `get_skill_*` tools and `skills://catalog/*` resources are a legacy compatibility
-surface, not this extension. MCP prompts may provide user-invoked shortcuts, but do not
+The v0.6 `get_skill_*` tools and `skills://catalog/*` resources were a legacy compatibility
+surface, not this extension, and are removed in v0.7. MCP prompts may provide user-invoked shortcuts, but do not
 substitute for native skill discovery. Section disclosure and retrieval remain useful SDK
 features, without becoming proprietary requirements for reading a standards-compliant skill.
 
 ### Native Integration Retirement
+
+Decision on 2026-10-06: v0.7 is native-Skills-only. The maintainer explicitly
+accepted removal of the legacy framework-client migration paths rather than
+waiting for native framework parity. The table records the original staged
+plan. Its parity gate is superseded by this decision, not claimed as passed.
+See the [breaking-change guide](mcp-migration.md) for explicit gaps and pinning
+guidance. Retired source is removed from the active tree, not copied into an
+`archived/` directory. The v0.6.0 tag, wheels, and versioned docs preserve history.
 
 | Stage | Planned change | Exit condition |
 | --- | --- | --- |
@@ -180,6 +189,9 @@ body fetch — so the table is ordered by dependency rather than by value.
 
 ## v0.6 "MCP-First Skills"
 
+Shipped as v0.6.0. The descriptions below record that release, including
+compatibility surfaces subsequently removed in v0.7 development.
+
 v0.6.0 makes the official Skills extension the primary integration path. The work
 centers on the wire contract and migration safety. Protocol-required integrity is
 included, not postponed to the broader trust work in v0.7.
@@ -248,12 +260,14 @@ checks do not certify those behaviors.
 
 ## Next: v0.7 "Trust & Operability"
 
-Build production controls on the MCP contract, and complete adapter retirement only when the
-migration gates above pass. Server-provided hashes establish consistency, not publisher trust.
+Build production controls on the native-only MCP contract. Retirement is the
+first implementation cluster and follows the explicit decision above.
+Server-provided hashes establish consistency, not publisher trust. v0.7 is not
+released and the trust and operability features below remain planned.
 
 | Item | Theme | Package(s) | Notes |
 | --- | --- | --- | --- |
-| Complete native adapter retirement | Project health | integrations, release tooling | Remove the deprecated native packages and Agent Framework bridge from maintained releases once the v0.6 migration window and replacement checks pass. Otherwise defer removal, not the rest of this milestone. |
+| Native-only retirement | Project health | integrations, release tooling, docs | Implemented in the development tree: remove the two native packages, Agent Framework bridge/extra, legacy MCP server, and MCP 1.x support. Eight maintained distributions remain. Preserve v0.6.0 artifacts and document the accepted loss of verified framework-client migration paths. No in-tree source archive. |
 | Provenance and verified-content policy | Trust | core, providers | Build on v0.6 manifests with detached signature verification, trusted-publisher policy, and immutable content/version pinning. Keep unsigned, dynamically generated, and verified content distinguishable. Do not imply that a matching server-supplied digest establishes authorship or safety. |
 | Content policy and host approval contract | Trust | core, MCP, docs | Add pluggable reject/redact/annotate hooks and token limits. Treat injection heuristics as advisory, not a security boundary. Server-side transformations must precede manifest generation. Document host duties for origin visibility, content-bound approvals, nested-skill consent, and permission grants. An MCP server cannot enforce another host's `allowed-tools` or sandbox. |
 | Remote access hardening and secret redaction | Trust | HTTP, MCP, core | Cover outbound SSRF controls, redirect and DNS-rebinding checks, configurable private-network access, timeouts, and size limits. Cover inbound HTTP origin/host validation and integration with MCP authorization supplied by the deployment. Never pass client bearer tokens through to upstream providers. Redact credentials consistently from failures and diagnostics. |

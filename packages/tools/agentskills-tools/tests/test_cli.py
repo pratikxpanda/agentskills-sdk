@@ -444,20 +444,14 @@ class TestEval:
 
 
 class TestServe:
-    @pytest.mark.parametrize("native", [False, True])
-    def test_check_does_not_start_transport(
-        self, write_skill, skills_root, monkeypatch, capsys, native
-    ):
+    def test_check_does_not_start_transport(self, write_skill, skills_root, monkeypatch, capsys):
         write_skill("alpha")
 
         async def build(root, locations, *, name, max_file_bytes):
             return object()
 
         monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
-        monkeypatch.setattr("agentskills_tools.cli.create_server", lambda registry, name: object())
         arguments = ["serve", str(skills_root), "--check"]
-        if native:
-            arguments.append("--native")
 
         assert main(arguments) == 0
         output = capsys.readouterr()
@@ -487,7 +481,6 @@ class TestServe:
                 [
                     "serve",
                     str(skills_root),
-                    "--native",
                     "--name",
                     "Native test",
                     "--max-file-bytes",
@@ -509,9 +502,10 @@ class TestServe:
             def run(self, transport: str) -> None:
                 started["transport"] = transport
 
-        monkeypatch.setattr(
-            "agentskills_tools.cli.create_server", lambda registry, name: _FakeServer()
-        )
+        async def build(root, locations, *, name, max_file_bytes):
+            return _FakeServer()
+
+        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
 
         assert main(["serve", str(skills_root), "--transport", "streamable-http"]) == 0
         assert started == {"transport": "streamable-http"}
@@ -521,7 +515,7 @@ class TestServe:
         write_skill("alpha", "---\nname: alpha\n---\n\nbody")
 
         assert main(["serve", str(skills_root)]) == 2
-        assert "cannot serve" in capsys.readouterr().err
+        assert "cannot publish native skills" in capsys.readouterr().err
 
 
 class TestVerbose:

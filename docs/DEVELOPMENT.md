@@ -30,8 +30,6 @@ poetry run pytest packages/core/agentskills-core -v
 poetry run pytest packages/adapters/agentskills-adapters -v
 poetry run pytest packages/providers/agentskills-fs -v
 poetry run pytest packages/providers/agentskills-http -v
-poetry run pytest packages/integrations/agentskills-langchain -v
-poetry run pytest packages/integrations/agentskills-agentframework -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
 poetry run pytest packages/tools/agentskills-tools -v
 poetry run pytest packages/testing/agentskills-testing -v
@@ -325,9 +323,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/adapters/agentskills-adapters` | Import AGENTS.md, Copilot instructions, Cursor rules, and Claude skills as native `Skill` objects |
 | `packages/providers/agentskills-fs` | Load skills from the local filesystem |
 | `packages/providers/agentskills-http` | Load skills from a static HTTP server |
-| `packages/integrations/agentskills-langchain` | Integrate skills with LangChain agents |
-| `packages/integrations/agentskills-agentframework` | Integrate skills with Microsoft Agent Framework agents |
-| `packages/integrations/agentskills-mcp-server` | MCP server for exposing skills as MCP tools and resources (`agentskills-mcp-server` on PyPI) |
+| `packages/integrations/agentskills-mcp-server` | Native MCP Skills server with complete manifests and lossless resources |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers (`agentskills-retrieval` on PyPI) |
 | `packages/tools/agentskills-tools` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, and pytest fixtures |

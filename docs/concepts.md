@@ -1,8 +1,22 @@
-# Concepts
+---
+title: Concepts
+description: Native Skills delivery and framework-neutral progressive disclosure APIs.
+---
+
+## Native Delivery
+
+v0.7 publishes metadata and complete manifests through `skills/list` and
+`skills/get`, then original files through `resources/read` at `skill://` URIs.
+The host owns selection, verification, consent, and context injection. Discovery
+does not activate a skill or eagerly fetch its files.
+
+The core catalog, section, and retrieval helpers below remain available for
+custom hosts. They are not server tools, and using them does not establish
+native Skills verification or approval.
 
 ## Progressive disclosure
 
-Agent Skills are delivered in layers:
+Custom hosts can implement layered disclosure using core APIs:
 
 1. Catalog entry (name/description) in the system prompt
 2. Body outline — section keys and their token cost — when a skill is large
@@ -41,8 +55,8 @@ Three properties of that design are load-bearing:
   says the same. Shipping the split without that guidance would make the common case worse in
   order to improve the rare one.
 
-The rendering lives in `SkillOutline.render()` in core rather than in each integration, so the
-three integrations cannot drift into quoting different costs for the same skill.
+Rendering lives in `SkillOutline.render()` in core so custom hosts can share
+the same estimates. The native MCP server preserves full canonical files instead.
 
 ## Selection metadata
 

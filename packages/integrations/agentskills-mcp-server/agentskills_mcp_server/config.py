@@ -33,13 +33,54 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from agentskills_core import get_logger
+from agentskills_core import SkillProvider, get_logger
 
 _logger = get_logger(__name__)
+
+SUPPORTED_PROVIDERS: frozenset[str] = frozenset({"fs", "http"})
+
+
+def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvider:
+    if provider_type == "fs":
+        try:
+            from agentskills_fs import LocalFileSystemSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'fs' requires the agentskills-fs package. "
+                "Install it with:  pip install agentskills-fs"
+            ) from exc
+        root = Path(options.get("root", "."))
+        limits = {key: options[key] for key in ("max_file_bytes",) if key in options}
+        return LocalFileSystemSkillProvider(root=root, **limits)
+
+    if provider_type == "http":
+        try:
+            from agentskills_http import HTTPStaticFileSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'http' requires the agentskills-http package. "
+                "Install it with:  pip install agentskills-http"
+            ) from exc
+        safe_http_keys = {
+            "base_url",
+            "headers",
+            "params",
+            "resource_manifest",
+            "file_manifest",
+            "max_response_bytes",
+        }
+        filtered = {key: value for key, value in options.items() if key in safe_http_keys}
+        return HTTPStaticFileSkillProvider(**filtered)
+
+    raise ValueError(
+        f"Unknown provider type: {provider_type!r}. "
+        f"Supported types: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
+    )
 
 
 class SkillConfig(BaseModel):
@@ -66,7 +107,7 @@ class ServerConfig(BaseModel):
     name: str = Field(..., description="Display name for the MCP server")
     instructions: str | None = Field(None, description="Optional server-level instructions")
     skills: list[SkillConfig] = Field(..., description="Skills to register", min_length=1)
-    mode: Literal["legacy", "native"] = "legacy"
+    mode: Literal["native"] = "native"
     skill_paths: dict[str, str] = Field(default_factory=dict)
     listed_skill_ids: list[str] | None = None
     page_size: int = Field(100, gt=0)

@@ -1,7 +1,6 @@
 """Native Skills requests through the official modern MCP client."""
 
 import base64
-import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -9,11 +8,6 @@ import pytest
 
 from agentskills_core import FileAccessNotSupportedError, Skill, SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
-
-pytestmark = pytest.mark.skipif(
-    importlib.util.find_spec("mcp.server.extension") is None,
-    reason="Native Skills requires MCP SDK 2.2+",
-)
 
 
 async def _request(client, method: str, **params):
@@ -23,6 +17,19 @@ async def _request(client, method: str, **params):
     return await client.session.send_request(
         Request[dict[str, Any], str](method=method, params=params), TypeAdapter(dict[str, Any])
     )
+
+
+async def test_given_public_factory_when_connected_then_only_native_skills_are_served():
+    from mcp import Client
+
+    import agentskills_mcp_server
+
+    assert not hasattr(agentskills_mcp_server, "AgentSkillsMcpContextProvider")
+    server = await agentskills_mcp_server.create_mcp_server([])
+    async with Client(server) as client:
+        assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+        assert not (await client.list_tools()).tools
+        assert (await _request(client, "skills/list"))["skills"] == []
 
 
 async def test_native_discovery_lookup_and_original_bytes(tmp_path):
@@ -331,7 +338,7 @@ async def test_native_cli_stdio_roundtrip(tmp_path, entrypoint):
         encoding="utf-8",
     )
     if entrypoint == "tools":
-        arguments = ["-m", "agentskills_tools", "serve", str(tmp_path), "--native"]
+        arguments = ["-m", "agentskills_tools", "serve", str(tmp_path)]
         expected_uri = "skill://example/SKILL.md"
     else:
         arguments = ["-m", "agentskills_mcp_server", "--config", str(config_path)]
@@ -498,12 +505,12 @@ def test_native_cli_closes_owned_providers(tmp_path, monkeypatch, fails):
     provider = LocalFileSystemSkillProvider(tmp_path)
     close = AsyncMock()
     monkeypatch.setattr(provider, "aclose", close, raising=False)
-    monkeypatch.setattr("agentskills_mcp_server.server._resolve_provider", lambda *args: provider)
+    monkeypatch.setattr("agentskills_mcp_server.config._resolve_provider", lambda *args: provider)
     server = MagicMock()
     builder = AsyncMock(
         return_value=server, side_effect=ValueError("capture failed") if fails else None
     )
-    monkeypatch.setattr(agentskills_mcp_server, "create_native_mcp_server", builder)
+    monkeypatch.setattr(agentskills_mcp_server, "create_mcp_server", builder)
     config_path = tmp_path / "config.json"
     config_path.write_text(
         json.dumps(

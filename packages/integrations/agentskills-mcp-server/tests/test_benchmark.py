@@ -61,21 +61,6 @@ async def test_native_measurements_observe_requests_and_no_prefetch(benchmark, t
 @pytest.mark.skipif(
     importlib.util.find_spec("mcp.server.extension") is None, reason="Requires MCP 2.2"
 )
-async def test_legacy_measurements_observe_catalog_and_tool_delivery(benchmark, tmp_path):
-    identifiers = benchmark["write_corpus"](tmp_path, 1)
-
-    result = await benchmark["measure_legacy"](tmp_path, identifiers)
-
-    assert result["advertisedTools"] == 8
-    assert result["phases"]["discovery"]["methods"] == {"tools/list": 1, "resources/read": 2}
-    assert result["phases"]["delivery"]["methods"] == {"tools/call": 3}
-    assert result["phases"]["delivery"]["toolTextBytes"] > 0
-    assert result["catalogEstimatedTokens"] > 0
-
-
-@pytest.mark.skipif(
-    importlib.util.find_spec("mcp.server.extension") is None, reason="Requires MCP 2.2"
-)
 async def test_native_prefetch_guard_detects_an_extra_read(benchmark, tmp_path, monkeypatch):
     identifiers = benchmark["write_corpus"](tmp_path, 1)
     original_request = benchmark["native_request"]
@@ -129,7 +114,7 @@ def test_benchmark_cli_emits_json_or_actionable_sdk_error():
     else:
         assert result.returncode == 0, result.stderr
         report = json.loads(result.stdout)
-        assert report["schemaVersion"] == 1
+        assert report["schemaVersion"] == 2
         assert report["measurement"]["modelCalls"] == 0
         assert len(report["samples"]) == 1
         assert report["samples"][0]["native"]["discoveryResourcePrefetches"] == 0

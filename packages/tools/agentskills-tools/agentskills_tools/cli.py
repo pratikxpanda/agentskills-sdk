@@ -63,7 +63,7 @@ from agentskills_tools.render import (
     render_text,
 )
 from agentskills_tools.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
-from agentskills_tools.serve import build_native_server, build_registry, create_server
+from agentskills_tools.serve import build_native_server
 from agentskills_tools.validate import validate_locations
 
 EXIT_OK = 0
@@ -246,11 +246,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
     serve.add_argument(
-        "--native",
-        action="store_true",
-        help="Publish the native Skills extension instead of legacy tools (requires MCP 2.2+).",
-    )
-    serve.add_argument(
         "--check",
         action="store_true",
         help="Validate server construction and publication, then exit without listening.",
@@ -260,7 +255,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_SNAPSHOT_MAX_BYTES,
         metavar="N",
-        help="With --native, bound each source file (default: 16 MiB).",
+        help="Bound each source file (default: 16 MiB).",
     )
     serve.add_argument(
         "--transport",
@@ -458,25 +453,16 @@ def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
 
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
-    if args.native:
-        server = asyncio.run(
-            build_native_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
-        )
-    else:
-        registry = asyncio.run(build_registry(root, locations))
-        server = create_server(registry, name=args.name)
+    server = asyncio.run(
+        build_native_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
+    )
     if args.check:
-        mode = "native" if args.native else "legacy"
-        print(f"Publication ready: {len(locations)} skills in {mode} mode.", file=out)
+        print(f"Publication ready: {len(locations)} skills in native mode.", file=out)
         print(
             "Local construction checked. Transport, authentication, and host behavior not tested.",
             file=out,
         )
-        if args.native:
-            print(
-                "Requires a Skills client on protocol 2026-07-28. Use legacy mode otherwise.",
-                file=out,
-            )
+        print("Requires a Skills client on protocol 2026-07-28.", file=out)
         return EXIT_OK
     print(f"Serving {plural(len(locations), 'skill')} over {args.transport}", file=sys.stderr)
     server.run(transport=args.transport)

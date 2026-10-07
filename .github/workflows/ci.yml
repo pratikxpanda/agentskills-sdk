@@ -117,9 +117,6 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
-      - name: Install MCP SDK for native extension coverage
-        run: poetry run python -m pip install "mcp==2.2.0"
-
       - name: Check coverage dependency consistency
         run: poetry run python -m pip check
 
@@ -147,8 +144,8 @@ jobs:
             htmlcov/
           retention-days: 14
 
-  test-mcp-modern:
-    name: Test (MCP 2.2)
+  test-mcp-floor:
+    name: Test (MCP 2.2 floor)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -182,38 +179,6 @@ jobs:
 
       - name: Run tests
         run: poetry run pytest packages/ -v
-
-      - name: Create an isolated MCP 1.29 client and server environment
-        run: |
-          python -m venv .mcp-legacy
-          .mcp-legacy/bin/python -m pip install "mcp==1.29.0" pytest pytest-asyncio \
-            "langchain-mcp-adapters==0.3.2" "agent-framework-core==1.12.1" \
-            ./packages/core/agentskills-core \
-            ./packages/providers/agentskills-fs \
-            ./packages/providers/agentskills-http \
-            ./packages/integrations/agentskills-mcp-server
-          .mcp-legacy/bin/python -m pip check
-
-      - name: Test MCP 1.29 clients against MCP 2.2 servers
-        run: |
-          export AGENTSKILLS_TEST_MCP_SERVER_PYTHON="$(poetry env info --executable)"
-          export AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON="$AGENTSKILLS_TEST_MCP_SERVER_PYTHON"
-          .mcp-legacy/bin/python -m pytest \
-            packages/integrations/agentskills-mcp-server/tests/test_config.py -k stdio -v
-
-      - name: Test MCP 2.2 clients against MCP 1.29 legacy servers
-        env:
-          AGENTSKILLS_TEST_MCP_SERVER_PYTHON: ${{ github.workspace }}/.mcp-legacy/bin/python
-        run: >-
-          poetry run pytest
-          packages/integrations/agentskills-mcp-server/tests/test_config.py -k stdio -v
-
-      - name: Test framework-owned MCP migration examples
-        run: |
-          .mcp-legacy/bin/python examples/langchain/fs/mcp_tools.py \
-            --smoke --server-python "$(poetry env info --executable)"
-          .mcp-legacy/bin/python examples/agent-framework/fs/mcp_tools.py \
-            --smoke --server-python "$(poetry env info --executable)"
 
       - name: Measure synthetic MCP discovery and delivery
         run: poetry run python examples/mcp/benchmark.py --sizes 1 10 100 --repeats 3 > mcp-benchmark.json

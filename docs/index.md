@@ -1,21 +1,26 @@
-# Agent Skills SDK
+---
+title: Agent Skills SDK
+description: Native MCP Skills publication and framework-neutral Python packages.
+---
 
 A Python SDK for discovering, retrieving, and serving
 [Agent Skills](https://agentskills.io) to LLM agents.
 
 ## What this site covers
 
-- How to integrate skills into agent frameworks
+- Native Skills publication for compatible MCP hosts
 - Provider and registry concepts behind progressive disclosure
 - Per-package API reference generated from docstrings
 - Project roadmap and architecture decisions (ADRs)
 
 ## Install
 
-Pick one provider plus one integration:
+v0.6.0 is released. The v0.7 development line is native-only and retires the
+framework packages and legacy MCP delivery. Review the
+[breaking changes](mcp-migration.md). Install the checkout until v0.7 is published:
 
 ```bash
-pip install agentskills-fs agentskills-langchain
+pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
 ```
 
 Or install the authoring CLI:
@@ -25,6 +30,10 @@ pip install agentskills-tools
 ```
 
 ## Quick start
+
+Publish the sample skills with `python -m agentskills_mcp_server --config
+examples/server-fs.json`. A conforming Skills host is required for activation.
+The following framework-neutral APIs remain available for custom hosts:
 
 ```python
 import asyncio

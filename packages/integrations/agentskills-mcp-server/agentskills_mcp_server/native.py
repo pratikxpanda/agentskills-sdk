@@ -1,4 +1,4 @@
-"""Opt-in official Skills extension for the modern MCP SDK."""
+"""Official Skills extension for MCP SDK 2.2 and later in the 2.x line."""
 
 from __future__ import annotations
 
