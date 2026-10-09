@@ -15,8 +15,6 @@ PACKAGES=(
     "packages/core/agentskills-core"
     "packages/providers/agentskills-fs"
     "packages/providers/agentskills-http"
-    "packages/integrations/agentskills-langchain"
-    "packages/integrations/agentskills-agentframework"
     "packages/integrations/agentskills-mcp-server"
 )
 

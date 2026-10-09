@@ -1,6 +1,6 @@
 # ADR 0001 — MCP context provider lives in `agentskills-mcp-server` behind an extra
 
-**Status:** Accepted
+**Status:** Superseded in v0.7. The bridge, the `[agentframework]` extra, and `agentskills-agentframework` were removed.
 **Date:** 2026-02
 **Packages:** `agentskills-mcp-server`, `agentskills-agentframework`
 

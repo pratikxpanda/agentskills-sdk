@@ -10,13 +10,12 @@ nav:
   - Concepts: concepts.md
   - MCP Migration: mcp-migration.md
   - MCP Benchmarks: mcp-benchmarks.md
+  - Trust and Operability: trust-and-operability.md
   - Packages:
       - Core: packages/core.md
       - Format adapters: packages/adapters.md
       - Filesystem provider: packages/fs.md
       - HTTP provider: packages/http.md
-      - LangChain integration: packages/langchain.md
-      - Agent Framework integration: packages/agentframework.md
       - MCP server integration: packages/mcp-server.md
       - Skill selection: packages/retrieval.md
       - CLI tooling: packages/tools.md

@@ -37,9 +37,11 @@ import json
 import random
 import re
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from time import monotonic
 from typing import Any
 from urllib.parse import quote, urlparse
 
@@ -59,6 +61,9 @@ from agentskills_core import (
     redact_url,
     split_frontmatter,
 )
+from agentskills_core.exceptions import ProviderUnavailableError
+from agentskills_core.telemetry import DisclosureEvent, emit_event
+from agentskills_http.network import GuardedTransport
 
 _logger = get_logger(__name__)
 
@@ -144,9 +149,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             slash is stripped automatically.
         client: Optional pre-configured :class:`httpx.AsyncClient`.
             When provided, the caller is responsible for closing it.
-            The provider will still enforce *max_response_bytes* but
-            will **not** override the client's timeout or redirect
-            settings.
+            Requires explicit ``allow_private_network=True`` because the
+            caller owns DNS, TLS, timeout, and network policy. Redirects remain disabled.
         headers: Optional extra headers sent with every request (e.g.
             ``Authorization``).
         params: Optional query parameters appended to every request
@@ -195,6 +199,9 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             immediately with ``retry_after`` attached, because blocking
             a request path for minutes is worse than failing fast and
             letting the caller decide.
+        allow_private_network: Explicitly allow internal destinations. Default
+            owned transports pin validated public DNS addresses at connection time.
+        observer: Optional content-free operation observer. Never receives credentials.
 
     ``SKILL.md`` responses are cached per provider instance, because a
     single skill is otherwise re-fetched up to five times in one agent
@@ -229,6 +236,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         max_retries: int = DEFAULT_MAX_RETRIES,
         retry_backoff: float = DEFAULT_RETRY_BACKOFF_SECONDS,
         max_retry_delay: float = DEFAULT_MAX_RETRY_DELAY_SECONDS,
+        allow_private_network: bool = False,
+        observer: Callable[[DisclosureEvent], None] | None = None,
     ) -> None:
         if client is not None and (headers is not None or params is not None):
             raise ValueError(
@@ -245,9 +254,24 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             raise ValueError("retry_backoff must be positive")
         if max_retry_delay <= 0:
             raise ValueError("max_retry_delay must be positive")
+        if type(allow_private_network) is not bool:
+            raise ValueError("allow_private_network must be an explicit boolean")
+        if client is not None and not allow_private_network:
+            raise ValueError("A custom client requires explicit allow_private_network=True")
 
         # TLS enforcement
         parsed = urlparse(base_url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "base_url must be an HTTP(S) URL without credentials, query, or fragment"
+            )
         if parsed.scheme == "http":
             if require_tls:
                 raise ValueError(
@@ -263,6 +287,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             )
 
         self._base_url = base_url.rstrip("/")
+        self._observer = observer
         self._max_response_bytes = max_response_bytes
         self._revalidate = revalidate
         self._skill_md_cache: dict[str, _CachedSkillMd] = {}
@@ -278,6 +303,8 @@ class HTTPStaticFileSkillProvider(SkillProvider):
             params=params,
             timeout=httpx.Timeout(timeout),
             follow_redirects=False,
+            trust_env=False,
+            transport=GuardedTransport(allow_private_network=allow_private_network),
         )
 
     async def aclose(self) -> None:
@@ -537,7 +564,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         """Return the complete, sorted file list without fetching file contents.
 
         The host must publish ``{"files": ["SKILL.md", "data/nested.bin"]}``
-        in the skill's ``index.json``. This is separate from legacy grouped
+        in the skill's ``index.json``. This is separate from grouped
         resource listing and must include every supporting file.
         """
         if not self.supports_file_access:
@@ -639,6 +666,37 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         *,
         extra_headers: dict[str, str] | None = None,
     ) -> tuple[bytes | None, httpx.Headers]:
+        started = monotonic()
+        try:
+            data, headers = await self._stream_with_retries(
+                url, not_found_error, extra_headers=extra_headers
+            )
+        except Exception:
+            emit_event(
+                self._observer,
+                "fetch",
+                origin=self._base_url,
+                status="error",
+                duration_seconds=monotonic() - started,
+            )
+            raise
+        emit_event(
+            self._observer,
+            "fetch",
+            origin=self._base_url,
+            byte_count=0 if data is None else len(data),
+            cache_hit=data is None,
+            duration_seconds=monotonic() - started,
+        )
+        return data, headers
+
+    async def _stream_with_retries(
+        self,
+        url: str,
+        not_found_error: type[Exception],
+        *,
+        extra_headers: dict[str, str] | None = None,
+    ) -> tuple[bytes | None, httpx.Headers]:
         """Fetch *url*, retrying retryable failures with jittered backoff.
 
         Args:
@@ -707,17 +765,19 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 "GET",
                 url,
                 headers=extra_headers,
-                follow_redirects=False if self.supports_file_access else httpx.USE_CLIENT_DEFAULT,
+                follow_redirects=False,
             ) as resp:
                 status = resp.status_code
                 if status in _NOT_FOUND_STATUS_CODES:
                     raise not_found_error(f"Skill content not found at {safe_url}")
                 if status == 304:
                     return None, resp.headers
+                if 300 <= status < 400:
+                    raise AgentSkillsError(f"HTTP {status} redirect is disabled by network policy")
                 if self.supports_file_access and status != 200 and status < 400:
                     raise AgentSkillsError(f"HTTP {status} is not a complete file response")
                 if status in _RETRYABLE_STATUS_CODES or status >= 500:
-                    raise SkillUnavailableError(
+                    raise ProviderUnavailableError(
                         f"HTTP {status} from {safe_url}",
                         retry_after=_parse_retry_after(resp.headers.get("retry-after")),
                     )
@@ -734,7 +794,13 @@ class HTTPStaticFileSkillProvider(SkillProvider):
                 # Check Content-Length header for an early reject when
                 # the server advertises the size up-front.
                 cl = resp.headers.get("content-length")
-                if cl is not None and int(cl) > self._max_response_bytes:
+                try:
+                    content_length = None if cl is None else int(cl)
+                except ValueError:
+                    raise AgentSkillsError("Invalid Content-Length header") from None
+                if content_length is not None and content_length < 0:
+                    raise AgentSkillsError("Invalid Content-Length header")
+                if content_length is not None and content_length > self._max_response_bytes:
                     raise AgentSkillsError(
                         f"Response exceeds maximum size ({self._max_response_bytes} bytes)"
                     )
@@ -755,7 +821,9 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         except (SkillNotFoundError, ResourceNotFoundError, AgentSkillsError):
             raise
         except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as exc:
-            raise SkillUnavailableError(f"{type(exc).__name__} while fetching {safe_url}") from None
+            raise ProviderUnavailableError(
+                f"{type(exc).__name__} while fetching {safe_url}"
+            ) from None
         except httpx.HTTPError as exc:
             raise AgentSkillsError(f"{type(exc).__name__} while fetching {safe_url}") from None
 
@@ -781,6 +849,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         cached = self._skill_md_cache.get(skill_id)
         if cached is not None and not self._revalidate:
             _logger.debug("Cache hit for SKILL.md of %r", skill_id)
+            emit_event(self._observer, "cache", origin=self._base_url, cache_hit=True)
             return cached.text
 
         conditional: dict[str, str] = {}

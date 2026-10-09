@@ -173,3 +173,10 @@ class SkillUnavailableError(AgentSkillsError):
     def __init__(self, message: str, *, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
+
+
+class ProviderUnavailableError(SkillUnavailableError):
+    """A transient provider outage, eligible for an explicit verified-stale policy.
+
+    Not for access denial, removal, integrity failures, or concurrent source drift.
+    """

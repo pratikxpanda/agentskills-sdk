@@ -1,18 +1,16 @@
 [tool.poetry]
 name = "agentskills-sdk"
-version = "0.6.0"
+version = "0.7.0"
 description = "Python SDK for the Agent Skills open format (https://agentskills.io)"
 license = "MIT"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
-agentskills-core = { path = "packages/core/agentskills-core", develop = true }
+agentskills-core = { path = "packages/core/agentskills-core", develop = true, extras = ["verification", "telemetry"] }
 agentskills-adapters = { path = "packages/adapters/agentskills-adapters", develop = true }
 agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
-agentskills-langchain = { path = "packages/integrations/agentskills-langchain", develop = true }
-agentskills-agentframework = { path = "packages/integrations/agentskills-agentframework", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
 agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
 agentskills-tools = { path = "packages/tools/agentskills-tools", develop = true }
@@ -45,8 +43,6 @@ source_pkgs = [
     "agentskills_adapters",
     "agentskills_fs",
     "agentskills_http",
-    "agentskills_langchain",
-    "agentskills_agentframework",
     "agentskills_mcp_server",
     "agentskills_retrieval",
     "agentskills_tools",
@@ -83,4 +79,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_langchain", "agentskills_agentframework", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]

@@ -32,8 +32,6 @@ COVERAGE_FLOORS: dict[str, int] = {
     "agentskills_adapters": 99,
     "agentskills_fs": 97,
     "agentskills_http": 96,
-    "agentskills_langchain": 100,
-    "agentskills_agentframework": 100,
     "agentskills_mcp_server": 91,
     "agentskills_tools": 99,
     "agentskills_testing": 100,

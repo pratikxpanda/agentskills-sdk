@@ -1,11 +1,11 @@
 """MCP server integration for Agent Skills.
 
 This package bridges :mod:`agentskills_core` and the `Model Context
-Protocol <https://modelcontextprotocol.io>`_, providing:
+Protocol <https://modelcontextprotocol.io>`_ Skills extension, providing:
 
-* :func:`create_mcp_server` -- builds an MCP server from a
+* :func:`create_mcp_server` -- asynchronously builds a native Skills server from a
   :class:`~agentskills_core.SkillRegistry`.  Useful when you have
-  custom providers or need full control over registration.
+  registry or raw skill handles. No tools or catalog resources are served.
 * CLI entry-point (``python -m agentskills_mcp_server --config server.json``)
   for zero-code server startup.
 
@@ -16,7 +16,7 @@ Quick start (programmatic)::
 
     registry = SkillRegistry()
     await registry.register("incident-response", my_custom_provider)
-    server = create_mcp_server(registry, name="My Agent")
+    server = await create_mcp_server(registry, name="My Agent")
     server.run()  # stdio by default
 
 CLI::
@@ -28,33 +28,6 @@ Install::
     pip install agentskills-mcp-server
 """
 
-from importlib.util import find_spec
-from typing import TYPE_CHECKING
+from agentskills_mcp_server.native import create_mcp_server
 
-from agentskills_mcp_server.server import create_mcp_server
-
-if TYPE_CHECKING:
-    from agentskills_mcp_server.native import create_native_mcp_server as create_native_mcp_server
-
-__all__ = [
-    "create_mcp_server",
-]
-
-
-def __getattr__(name: str) -> object:
-    """Lazy-load optional extras to avoid hard dependencies at import time."""
-    if name == "create_native_mcp_server":
-        if find_spec("mcp.server.extension") is None:
-            raise ImportError("Native Skills requires MCP SDK 2.2+. Install 'mcp>=2.2,<3'.")
-        from agentskills_mcp_server.native import create_native_mcp_server
-
-        globals()[name] = create_native_mcp_server
-        __all__.append(name)
-        return create_native_mcp_server
-    if name == "AgentSkillsMcpContextProvider":
-        from agentskills_mcp_server.context_provider import AgentSkillsMcpContextProvider
-
-        globals()["AgentSkillsMcpContextProvider"] = AgentSkillsMcpContextProvider
-        __all__.append("AgentSkillsMcpContextProvider")  # type: ignore[attr-defined]
-        return AgentSkillsMcpContextProvider
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__all__ = ["create_mcp_server"]

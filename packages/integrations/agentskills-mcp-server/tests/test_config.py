@@ -8,11 +8,13 @@ import pytest
 from pydantic import ValidationError
 
 from agentskills_core import ResourceNotFoundError, SkillProvider, SkillRegistry
-from agentskills_mcp_server.config import ServerConfig, SkillConfig, resolve_env_vars
-from agentskills_mcp_server.server import (
+from agentskills_mcp_server import create_mcp_server
+from agentskills_mcp_server.config import (
     SUPPORTED_PROVIDERS,
+    ServerConfig,
+    SkillConfig,
     _resolve_provider,
-    create_mcp_server,
+    resolve_env_vars,
 )
 
 # ------------------------------------------------------------------
@@ -65,29 +67,25 @@ class TestSkillConfig:
 
 
 class TestServerConfig:
-    def test_native_builder_missing_sdk_error(self, monkeypatch):
-        import agentskills_mcp_server
+    @pytest.mark.parametrize("mode", ["legacy", "native", "other"])
+    def test_given_removed_mode_key_when_configured_then_rejected(self, mode):
+        with pytest.raises(ValidationError, match="mode"):
+            ServerConfig(
+                name="Retired",
+                mode=mode,
+                skills=[SkillConfig(id="example", provider="fs")],
+            )
 
-        monkeypatch.setattr(agentskills_mcp_server, "find_spec", lambda name: None)
-        with pytest.raises(ImportError, match=r"MCP SDK 2\.2"):
-            agentskills_mcp_server.__getattr__("create_native_mcp_server")
-
-    def test_native_mode_options(self):
+    def test_publication_options(self):
         config = ServerConfig(
             name="Native",
-            mode="native",
             skills=[SkillConfig(id="example", provider="fs")],
             skill_paths={"example": "team/example"},
             listed_skill_ids=[],
             page_size=1,
         )
-        assert config.mode == "native"
         assert config.listed_skill_ids == []
         assert config.max_skills == 128
-        with pytest.raises(ValidationError):
-            ServerConfig(
-                name="Invalid", mode="other", skills=[SkillConfig(id="example", provider="fs")]
-            )
 
     def test_minimal(self):
         cfg = ServerConfig(
@@ -254,6 +252,16 @@ class TestResolveProvider:
 # ------------------------------------------------------------------
 
 
+def _raw_content(content) -> bytes:
+    import base64
+
+    text = content.get("text") if isinstance(content, dict) else getattr(content, "text", None)
+    if text is not None:
+        return text.encode("utf-8")
+    blob = content["blob"] if isinstance(content, dict) else content.blob
+    return base64.b64decode(blob)
+
+
 def _write_skill(tmp_path: Path, skill_id: str) -> None:
     """Create a minimal valid skill directory."""
     skill_dir = tmp_path / skill_id
@@ -269,12 +277,11 @@ async def _build_server_from_config(config: ServerConfig):
     for skill_cfg in config.skills:
         provider = _resolve_provider(skill_cfg.provider, skill_cfg.options)
         await registry.register(skill_cfg.id, provider)
-    return create_mcp_server(registry, name=config.name, instructions=config.instructions)
+    return await create_mcp_server(registry, name=config.name, instructions=config.instructions)
 
 
 class TestConfigDrivenServer:
     def test_mcpc_native_discovery_and_verified_reads(self, tmp_path):
-        import base64
         import os
         import subprocess
         import sys
@@ -296,7 +303,6 @@ class TestConfigDrivenServer:
             target.write_bytes(data)
         config = ServerConfig(
             name="mcpc compatibility",
-            mode="native",
             page_size=1,
             skill_paths={"skill-a": "team/skill-a"},
             skills=[
@@ -342,7 +348,7 @@ class TestConfigDrivenServer:
         try:
             invoke("connect", f"{client_path}:native", session)
             direct = invoke(session, "skills-get", uri)
-            assert base64.b64decode(direct["contents"][0]["blob"]) == files["SKILL.md"]
+            assert _raw_content(direct["contents"][0]) == files["SKILL.md"]
             listing = invoke(session, "skills-list")
             assert {skill["uri"] for skill in listing} == {uri, "skill://skill-b/SKILL.md"}
             assert all("contents" not in skill for skill in listing)
@@ -350,7 +356,7 @@ class TestConfigDrivenServer:
             assert len(manifest) == len(files)
             for relative_path, expected in files.items():
                 result = invoke(session, "skills-get", uri, relative_path)
-                actual = base64.b64decode(result["contents"][0]["blob"])
+                actual = _raw_content(result["contents"][0])
                 resource = next(
                     entry
                     for entry in manifest
@@ -362,12 +368,12 @@ class TestConfigDrivenServer:
         finally:
             invoke("close", session)
 
-    async def test_stdio_legacy_roundtrip(self, tmp_path):
+    async def test_stdio_default_native_roundtrip(self, tmp_path):
         import asyncio
         import os
         import sys
 
-        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp import Client, StdioServerParameters
 
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
@@ -377,58 +383,42 @@ class TestConfigDrivenServer:
         config_path = tmp_path / "server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=os.environ.get("AGENTSKILLS_TEST_MCP_SERVER_PYTHON", sys.executable),
+            command=sys.executable,
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
         async with (
             asyncio.timeout(20),
-            stdio_client(parameters) as (read, write),
-            ClientSession(read, write) as session,
+            Client(parameters) as client,
         ):
-            initialized = await session.initialize()
-            assert initialized.capabilities.tools is not None
-            assert initialized.capabilities.resources is not None
-            assert len((await session.list_tools()).tools) == 8
-            resources = await session.list_resources()
-            assert len(resources.resources) == 3
-            catalog = await session.read_resource("skills://catalog/xml")
-            assert "test-skill" in catalog.contents[0].text
-            metadata = await session.call_tool("get_skill_metadata", {"skill_id": "test-skill"})
-            assert json.loads(metadata.content[0].text)["name"] == "test-skill"
-            missing = await session.call_tool("get_skill_metadata", {"skill_id": "missing"})
-            assert missing.model_dump(by_alias=True)["isError"] is True
-            assert "missing" in missing.content[0].text
+            assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
+            assert not (await client.list_tools()).tools
+            resources = await client.list_resources()
+            assert len(resources.resources) == 1
+            contents = await client.read_resource("skill://test-skill/SKILL.md")
+            assert (
+                _raw_content(contents.contents[0])
+                == (tmp_path / "test-skill" / "SKILL.md").read_bytes()
+            )
 
-    async def test_stdio_native_resources_for_legacy_client(self, tmp_path):
+    async def test_unnegotiated_extension_request_is_rejected(self, tmp_path):
         import asyncio
-        import base64
-        import importlib.util
         import os
         import sys
 
-        from mcp import ClientSession, StdioServerParameters, stdio_client
+        from mcp import ClientSession, MCPError, StdioServerParameters, stdio_client
         from mcp.types import Request, Result
 
-        try:
-            from mcp.shared.exceptions import MCPError
-        except ImportError:
-            from mcp.shared.exceptions import McpError as MCPError
-
-        executable = os.environ.get("AGENTSKILLS_TEST_NATIVE_MCP_SERVER_PYTHON")
-        if executable is None and importlib.util.find_spec("mcp.server.extension") is None:
-            pytest.skip("A native MCP SDK server interpreter is required")
         _write_skill(tmp_path, "test-skill")
         raw = (tmp_path / "test-skill" / "SKILL.md").read_bytes()
         config = ServerConfig(
-            name="Native resource compatibility",
-            mode="native",
+            name="Extension negotiation",
             skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
         )
         config_path = tmp_path / "native-server.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
-            command=executable or sys.executable,
+            command=sys.executable,
             args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
@@ -443,12 +433,12 @@ class TestConfigDrivenServer:
             resources = (await session.list_resources()).resources
             assert [str(resource.uri) for resource in resources] == ["skill://test-skill/SKILL.md"]
             contents = await session.read_resource("skill://test-skill/SKILL.md")
-            assert base64.b64decode(contents.contents[0].blob) == raw
+            assert _raw_content(contents.contents[0]) == raw
             with pytest.raises(MCPError) as unsupported:
                 await session.send_request(Request(method="skills/list", params={}), Result)
             assert unsupported.value.error.code == -32601
 
-    async def test_creates_fastmcp_instance(self, tmp_path):
+    async def test_creates_mcp_server_instance(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test Server",
@@ -461,13 +451,10 @@ class TestConfigDrivenServer:
             ],
         )
 
-        try:
-            from mcp.server.fastmcp import FastMCP
-        except ModuleNotFoundError:
-            from mcp.server import MCPServer as FastMCP
+        from mcp.server import MCPServer
 
         server = await _build_server_from_config(config)
-        assert isinstance(server, FastMCP)
+        assert isinstance(server, MCPServer)
 
     async def test_server_name(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
@@ -500,7 +487,7 @@ class TestConfigDrivenServer:
         server = await _build_server_from_config(config)
         assert server.instructions == "Custom instructions"
 
-    async def test_server_has_8_tools(self, tmp_path):
+    async def test_server_has_no_tools(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test",
@@ -514,9 +501,9 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         tools = await server.list_tools()
-        assert len(tools) == 8
+        assert tools == []
 
-    async def test_server_has_3_resources(self, tmp_path):
+    async def test_server_has_canonical_resource(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
         config = ServerConfig(
             name="Test",
@@ -530,7 +517,8 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
         resources = await server.list_resources()
-        assert len(resources) == 3
+        assert len(resources) == 1
+        assert str(resources[0].uri) == "skill://test-skill/SKILL.md"
 
     async def test_multiple_skills(self, tmp_path):
         _write_skill(tmp_path, "skill-a")
@@ -552,16 +540,11 @@ class TestConfigDrivenServer:
         )
         server = await _build_server_from_config(config)
 
-        # Verify both skills are accessible via tools
-        result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-a"})
-        blocks = result[0] if isinstance(result, tuple) else result.content
-        meta_a = json.loads(blocks[0].text)
-        assert meta_a["name"] == "skill-a"
-
-        result = await server.call_tool("get_skill_metadata", {"skill_id": "skill-b"})
-        blocks = result[0] if isinstance(result, tuple) else result.content
-        meta_b = json.loads(blocks[0].text)
-        assert meta_b["name"] == "skill-b"
+        resources = await server.list_resources()
+        assert {str(resource.uri) for resource in resources} == {
+            "skill://skill-a/SKILL.md",
+            "skill://skill-b/SKILL.md",
+        }
 
     async def test_instructions_default_none(self, tmp_path):
         _write_skill(tmp_path, "test-skill")
@@ -682,11 +665,47 @@ class TestResolveEnvVars:
 # ------------------------------------------------------------------
 
 
+def test_given_detached_proof_config_when_published_then_verified():
+    import base64
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from agentskills_core.snapshots import SkillFile, SkillSnapshot
+    from agentskills_core.trust import signature_payload
+    from agentskills_mcp_server.config import TrustConfig
+
+    snapshot = SkillSnapshot(
+        "alpha", (SkillFile("SKILL.md", b"---\nname: alpha\ndescription: Test\n---\nBody"),)
+    )
+    key = Ed25519PrivateKey.generate()
+    trust = TrustConfig(
+        origin="publisher",
+        trusted_keys={"release": base64.b64encode(key.public_key().public_bytes_raw()).decode()},
+        key_id="release",
+        signature=base64.b64encode(
+            key.sign(signature_payload(snapshot, origin="publisher"))
+        ).decode(),
+    )
+    config = ServerConfig(name="test", skills=[SkillConfig(id="alpha", provider="fs", trust=trust)])
+
+    assert config.build_publication_policy()(snapshot).source_identity.status == "verified"
+    assert (
+        TrustConfig(origin="local", require_signature=False)
+        .verify_and_publish(snapshot)
+        .source_identity.status
+        == "unsigned"
+    )
+    with pytest.raises(ValueError, match="base64"):
+        trust.model_copy(update={"signature": "invalid!!"}).verify_and_publish(snapshot)
+    config.skills.append(SkillConfig(id="other", provider="fs"))
+    with pytest.raises(ValueError, match="every skill"):
+        config.build_publication_policy()
+
+
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
-    @pytest.mark.parametrize("mode", ["legacy", "native"])
-    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys, mode):
+    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys):
         from agentskills_mcp_server.__main__ import main
 
         config_file = tmp_path / "check.json"
@@ -694,7 +713,6 @@ class TestCLI:
             json.dumps(
                 {
                     "name": "Check",
-                    "mode": mode,
                     "skills": [
                         {
                             "id": "example",
@@ -722,16 +740,15 @@ class TestCLI:
         report = json.loads(output)
         assert report["status"] == "ready"
         assert report["scope"] == "localServerConstruction"
-        assert report["mode"] == mode
         assert report["providerTypes"] == ["http"]
         assert report["mcpSdkVersion"]
-        assert report["requiresProtocol"] == ("2026-07-28" if mode == "native" else None)
+        assert report["requiresProtocol"] == "2026-07-28"
         assert report["transportTested"] is False
         assert "private-value" not in output
         assert "example.invalid" not in output
 
     @pytest.mark.parametrize("invalid", [False, True])
-    def test_legacy_check_closes_provider(self, tmp_path, capsys, invalid):
+    def test_check_closes_provider(self, tmp_path, capsys, invalid):
         from agentskills_fs import LocalFileSystemSkillProvider
         from agentskills_mcp_server.__main__ import main
 
@@ -759,7 +776,7 @@ class TestCLI:
         with (
             patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
             patch(
-                "agentskills_mcp_server.server._resolve_provider",
+                "agentskills_mcp_server.config._resolve_provider",
                 return_value=ClosingProvider(tmp_path),
             ),
         ):

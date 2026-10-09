@@ -5,7 +5,8 @@
             "id": "incident-response",
             "provider": "http",
             "options": {
-                "base_url": "http://localhost:8000"
+                "base_url": "http://localhost:8000",
+                "file_manifest": true
             }
         }
     ]

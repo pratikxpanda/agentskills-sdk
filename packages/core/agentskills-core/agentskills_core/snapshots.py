@@ -7,6 +7,7 @@ from hashlib import sha256
 
 from agentskills_core.exceptions import (
     FileAccessNotSupportedError,
+    ProviderUnavailableError,
     ResourceNotFoundError,
     SkillUnavailableError,
 )
@@ -25,6 +26,8 @@ class SkillFile:
     digest: str = field(init=False)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.data, bytes):
+            raise ValueError("Snapshot file data must be immutable bytes")
         object.__setattr__(self, "digest", "sha256:" + sha256(self.data).hexdigest())
 
     @property
@@ -45,6 +48,9 @@ class SkillSnapshot:
 
     skill_id: str
     files: tuple[SkillFile, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "files", tuple(self.files))
 
     @property
     def total_bytes(self) -> int:
@@ -79,6 +85,7 @@ async def capture_skill(
     *,
     max_files: int = DEFAULT_SNAPSHOT_MAX_FILES,
     max_total_bytes: int = DEFAULT_SNAPSHOT_MAX_BYTES,
+    previous_snapshot: SkillSnapshot | None = None,
 ) -> SkillSnapshot:
     """Capture and verify a complete file set, failing without a partial result.
 
@@ -95,22 +102,45 @@ async def capture_skill(
         raise ValueError("Snapshot limits require max_files >= 1 and max_total_bytes >= 0")
     if not skill.supports_file_access:
         raise FileAccessNotSupportedError(f"Skill '{skill.get_id()}' lacks lossless file access")
-    paths = _paths(await skill.list_files(), max_files)
-    files: list[SkillFile] = []
-    total = 0
-    for path in paths:
-        data = await skill.read_file(path)
-        if not isinstance(data, bytes):
-            raise ValueError("Lossless file reads must return bytes")
-        total += len(data)
-        if total > max_total_bytes:
-            raise ValueError(f"Skill exceeds the {max_total_bytes}-byte snapshot limit")
-        files.append(SkillFile(path, data))
-    if _paths(await skill.list_files(), max_files) != paths:
-        raise SkillUnavailableError(f"Skill '{skill.get_id()}' file listing changed during capture")
-    for file in files:
-        if await skill.read_file(file.path) != file.data:
+    changed: set[str] = set()
+    previous = (
+        None
+        if previous_snapshot is None
+        else {file.path: file.data for file in previous_snapshot.files}
+    )
+
+    async def collect() -> SkillSnapshot:
+        paths = _paths(await skill.list_files(), max_files)
+        if previous is not None and set(paths) != previous.keys():
+            changed.add("listing")
+        files: list[SkillFile] = []
+        total = 0
+        for path in paths:
+            data = await skill.read_file(path)
+            if not isinstance(data, bytes):
+                raise ValueError("Lossless file reads must return bytes")
+            if previous is not None and previous.get(path) != data:
+                changed.add(path)
+            total += len(data)
+            if total > max_total_bytes:
+                raise ValueError(f"Skill exceeds the {max_total_bytes}-byte snapshot limit")
+            files.append(SkillFile(path, data))
+        if _paths(await skill.list_files(), max_files) != paths:
             raise SkillUnavailableError(
-                f"Skill '{skill.get_id()}' file content changed during capture"
+                f"Skill '{skill.get_id()}' file listing changed during capture"
             )
-    return SkillSnapshot(skill.get_id(), tuple(files))
+        for file in files:
+            if await skill.read_file(file.path) != file.data:
+                raise SkillUnavailableError(
+                    f"Skill '{skill.get_id()}' file content changed during capture"
+                )
+        return SkillSnapshot(skill.get_id(), tuple(files))
+
+    try:
+        return await collect()
+    except ProviderUnavailableError:
+        if changed:
+            raise SkillUnavailableError(
+                "Source changed before an outage interrupted capture"
+            ) from None
+        raise
