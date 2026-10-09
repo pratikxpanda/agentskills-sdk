@@ -1,7 +1,4 @@
----
-title: agentskills-fs
-description: Local filesystem provider for Agent Skills.
----
+# agentskills-fs
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-fs)](https://pypi.org/project/agentskills-fs/)

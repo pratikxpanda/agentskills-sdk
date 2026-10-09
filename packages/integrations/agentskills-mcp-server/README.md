@@ -1,7 +1,6 @@
----
-title: Agent Skills MCP Server
-description: Serve the official MCP Skills extension with immutable, lossless resources.
----
+# agentskills-mcp-server
+
+Serve the official MCP Skills extension with immutable, lossless resources.
 
 ## Native Skills Only
 

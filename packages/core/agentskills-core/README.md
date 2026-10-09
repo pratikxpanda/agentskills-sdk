@@ -1,7 +1,4 @@
----
-title: agentskills-core
-description: Provider contracts, skill handles, registry, and validation for Agent Skills.
----
+# agentskills-core
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)

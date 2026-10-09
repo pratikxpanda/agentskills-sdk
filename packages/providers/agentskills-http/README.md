@@ -1,7 +1,4 @@
----
-title: agentskills-http
-description: Static HTTP file provider for Agent Skills.
----
+# agentskills-http
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-http)](https://pypi.org/project/agentskills-http/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-http)](https://pypi.org/project/agentskills-http/)

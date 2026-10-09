@@ -1,7 +1,4 @@
----
-title: agentskills-tools
-description: Command line authoring, inspection, evaluation, and MCP publication diagnostics for Agent Skills.
----
+# agentskills-tools
 
 Command line tools for authoring and validating [Agent Skills](https://agentskills.io).
 
