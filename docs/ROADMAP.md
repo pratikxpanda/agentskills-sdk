@@ -10,7 +10,7 @@ detailed scoping, discussion, and progress tracking live in
 [GitHub Issues](https://github.com/pratikxpanda/agentskills-sdk/issues), grouped by milestone.
 
 Written-up specifications for the items below — problem, approach, open questions, acceptance
-criteria — live in [docs/issues/](./issues/), one file per milestone.
+criteria — live in [docs/issues/](issues/README.md), one file per milestone.
 
 ## Product Principles
 
@@ -87,7 +87,7 @@ framework adapters are planned.
 ## Themes
 
 | Theme | Why it matters |
-|---|---|
+| --- | --- |
 | **Correctness & spec coverage** | Close the gaps between the SDK and the full skill format so real-world skills work unmodified. |
 | **Performance & resilience** | Skills are fetched on the hot path of an agent turn. Redundant I/O is latency and cost. |
 | **Agent effectiveness** | Retrieval is table stakes. The product question is whether an agent holding a skill actually performs better — and whether anyone can prove it. |
@@ -112,7 +112,7 @@ skill carrying an invalid `version` in its frontmatter now fails registration in
 registered with a warning.
 
 | Item | Theme | Package(s) | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Provider content caching | Performance | `agentskills-fs`, `agentskills-http` | A single skill's `SKILL.md` was fetched up to 5x per session — twice during registration (`validate_skill()` calls `get_body()` and `get_metadata()` independently), once per catalog build, and again on each tool call. Now cached per provider instance with an explicit `invalidate()`. HTTP revalidation via `ETag` / `Last-Modified` is opt-in (`revalidate=True`) rather than default, since a conditional request per access defeats the point for the common static-host case. |
 | Concurrent catalog build | Performance | `agentskills-core` | `get_skills_catalog()` fetched metadata serially. Now fans out with `asyncio.gather` under a bounded semaphore (`SkillRegistry(catalog_concurrency=8)`); output ordering is unchanged. |
 | Non-blocking filesystem I/O | Performance | `agentskills-fs` | The provider was `async` but read synchronously, blocking the event loop. Path resolution, stat and read now run in a worker thread via `asyncio.to_thread`. |
@@ -139,7 +139,7 @@ Three new distributions ship with this milestone — `agentskills-tools`, `agent
 existing users.
 
 | Item | Theme | Package(s) | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `agentskills` CLI | DX | new `agentskills-tools` | `init` (scaffold a skill), `validate <path>` (spec check, exit non-zero on failure), `lint` (style/token-budget warnings), `inspect` (render catalog/metadata), `serve` (run the MCP server without writing config by hand). Separate package and stdlib `argparse` so the validation Action inherits no dependencies; `serve` is an optional extra. |
 | Skill validation GitHub Action | DX | repo | Composite action at `actions/validate` wrapping `agentskills validate` and `lint`. Findings land on the pull request diff via the CLI's own `--format github`, so the annotation logic is unit-tested in the package rather than in a script beside the workflow. Highest-leverage adoption lever — it puts the SDK in other people's CI. |
 | Provider conformance test kit | Correctness | new `agentskills-testing` | `ProviderConformanceSuite` — subclass it, supply a `provider` fixture, and pytest runs the whole contract against your implementation: error types, traversal rejection, `bytes` not `str`, metadata that is neither shared nor carrying the body, and a `list_resources()` that agrees with the flag callers branch on. Size limits sit in an opt-in `ContentLimitConformanceSuite`, since an in-memory provider has no external source to bound. Its first run found that `agentskills-http` raised a plain `ValueError` for traversal where `agentskills-fs` raised `SkillNotFoundError` — an ABC cannot catch that, which is the argument for the kit. |
@@ -169,7 +169,7 @@ The first two items changed contracts the rest build on — the frontmatter sche
 body fetch — so the table is ordered by dependency rather than by value.
 
 | Item | Theme | Package(s) | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Selection metadata | Correctness | `agentskills-core` | Optional `when_to_use` / `when_not_to_use` frontmatter, each a list of at most five 200-character entries. False activation is as damaging as non-activation, and a description alone carries no negative signal. Rendered in both catalog formats and omitted when absent; `get_skills_catalog(selection_hints=False)` trades the accuracy back for tokens. Optional and backward-compatible per principle 1; still to be pushed upstream. |
 | Section-level disclosure | Agent effectiveness | `agentskills-core` + integrations | `get_skill_body()` is all-or-nothing, so a thorough 4k-token skill is charged in full to use one section. Split the body by heading, return an outline plus `get_skill_section(skill_id, heading)`. Extends progressive disclosure one level inward rather than adding a new idea, and stops penalising well-written skills. |
 | Semantic skill selection | Agent effectiveness | new `agentskills-retrieval` | The catalog is injected on every turn, so prompt cost is linear in registered skills. Embed descriptions once, select top-k against the current turn, inject a handful. Descriptions are already written to be discriminative, so the corpus exists for free. Ships with a zero-dependency lexical default; embeddings are pluggable. Opt-in, and it must log its selection — this trades a deterministic prompt for a better one. |
@@ -181,8 +181,9 @@ body fetch — so the table is ordered by dependency rather than by value.
 
 ## v0.6 "MCP-First Skills"
 
-Shipped as v0.6.0. The descriptions below record that release, including
-compatibility surfaces subsequently removed in v0.7 development.
+Shipped as v0.6.0. The descriptions below record that release as shipped. Several
+surfaces they mention, including the native framework integrations and the legacy
+MCP tools and catalogs, were removed in v0.7.
 
 v0.6.0 makes the official Skills extension the primary integration path. The work
 centers on the wire contract and migration safety. Protocol-required integrity is
@@ -250,25 +251,33 @@ checks do not certify those behaviors.
 
 ---
 
-## Next: v0.7 "Trust & Operability"
+## v0.7 "Trust & Operability"
 
-Build production controls on the native-only MCP contract. Retirement is the
-first implementation cluster and follows the explicit decision above.
-Server-provided hashes establish consistency, not publisher trust. v0.7 is not
-released. The controls below are implemented in the development tree. See the
-[trust and operability guide](trust-and-operability.md) for contracts, tested
-failure cases, and deployment responsibilities. Local tests do not certify
-production identity infrastructure, TLS gateways, or host approval behavior.
+Merged to `main` and unreleased. v0.7 is native-only and adds production trust and
+operability controls on the Skills extension contract. Contracts, tested failure
+cases, and deployment responsibilities are in the
+[trust and operability guide](trust-and-operability.md), and removals are in the
+[breaking-change guide](mcp-migration.md). Server-provided hashes establish
+consistency, not publisher trust. Local tests do not certify production identity
+infrastructure, TLS gateways, or host approval behavior.
+
+Eight lockstep distributions ship with this milestone, down from ten. Two are removed
+and nothing is added.
 
 | Item | Theme | Package(s) | Notes |
 | --- | --- | --- | --- |
-| Native-only retirement | Project health | integrations, release tooling, docs | Implemented in the development tree: remove the two native packages, Agent Framework bridge/extra, legacy MCP server, and MCP 1.x support. Eight maintained distributions remain. Preserve v0.6.0 artifacts and document the accepted loss of verified framework-client migration paths. No in-tree source archive. |
-| Provenance and verified-content policy | Trust | core, providers | Build on v0.6 manifests with detached signature verification, trusted-publisher policy, and immutable content/version pinning. Keep unsigned, dynamically generated, and verified content distinguishable. Do not imply that a matching server-supplied digest establishes authorship or safety. |
-| Content policy and host approval contract | Trust | core, MCP, docs | Add pluggable reject/redact/annotate hooks and token limits. Treat injection heuristics as advisory, not a security boundary. Server-side transformations must precede manifest generation. Document host duties for origin visibility, content-bound approvals, nested-skill consent, and permission grants. An MCP server cannot enforce another host's `allowed-tools` or sandbox. |
-| Remote access hardening and secret redaction | Trust | HTTP, MCP, core | Cover outbound SSRF controls, redirect and DNS-rebinding checks, configurable private-network access, timeouts, and size limits. Cover inbound HTTP origin/host validation and integration with MCP authorization supplied by the deployment. Never pass client bearer tokens through to upstream providers. Redact credentials consistently from failures and diagnostics. |
-| OpenTelemetry and disclosure events | Operability | core, providers, MCP | Optional spans and metrics for discovery, lookup, fetch, verification, cache hit rate, bytes, and latency. Emit privacy-preserving disclosure hooks with origin and content revision, not bodies or secrets. Distinguish server reads from actual host activation or task success. |
-| Health checks and controlled refresh | Resilience | core, providers, MCP | Validate readiness before serving. Refresh registry metadata and manifests atomically, with cache scopes and TTLs appropriate to the negotiated protocol. Keep authorization-sensitive catalogs isolated and make changed or removed content observable. |
-| Verified stale-cache policy | Resilience / Trust | providers, MCP | Opt-in, bounded-age stale serving for provider outages only. Serve a coherent previously verified snapshot with its matching manifest. Never downgrade on verification failure, revoked access, or known content removal. Make stale status observable without weakening host approval rules. |
+| Native-only retirement | Project health | integrations, release tooling, docs | Removed `agentskills-langchain`, `agentskills-agentframework`, the Agent Framework bridge and its extra, the legacy MCP server with its tools and `skills://` catalogs, and MCP 1.x support. The server requires `mcp>=2.2,<3`. The v0.6.0 tag, wheels, and versioned docs preserve the removed code. There is no in-tree archive. |
+| Provenance and verified-content policy | Trust | core, MCP | `TrustPolicy` verifies detached Ed25519 signatures bound to a configured key, an origin, the skill ID, its version, and every file. Content and version pins are exact. Unsigned and verified content stay distinguishable, and a supplied invalid proof is never downgraded to unsigned. Install with `agentskills-core[verification]`. |
+| Content policy and host approval contract | Trust | core, MCP, docs | `publish_snapshot` runs trusted reject, redact, and annotate hooks and an explicit token limit before manifests are built, so a transformed file gets its own revision and the original evidence is kept separately. The guide documents the host duties for origin visibility, content-bound approval, nested-skill consent, and permission grants. |
+| Remote access hardening and secret redaction | Trust | HTTP, MCP | The HTTP provider is public-network-only by default: DNS answers are validated per connection and the connection is pinned to the approved IP. Redirects are rejected, environment proxies are ignored, and `base_url` rejects embedded credentials. `allow_private_network=True` is the explicit opt-out. `NativeSkillsServer.secure_http_app` requires deployment-supplied MCP authorization and explicit host and origin allowlists. |
+| OpenTelemetry and disclosure events | Operability | core, HTTP, MCP | Content-free events for discovery, lookup, fetch, verification, refresh, and cache, with hashed origin and delivered revision. `OpenTelemetryObserver` exports spans and low-cardinality metrics through `agentskills-core[telemetry]`. Events record server operations, not host activation. |
+| Health checks and controlled refresh | Resilience | core, MCP | `SnapshotCatalog` stages a complete catalog and swaps it atomically. `NativeSkillsServer.refresh()` and `health()` expose it. Readers see the previous generation until the swap, removed skills disappear, and old pagination cursors are invalidated. Each catalog serves one audience. |
+| Verified stale-cache policy | Resilience / Trust | core, HTTP, MCP | Off by default. `max_stale_age` allows a previously verified snapshot to be served only through a `ProviderUnavailableError`. Signatures and policy are checked again, and an observed change, removal, revoked key, or unsigned source never falls back. Stale status appears in health, metadata, and events. |
+
+The same work aligned native delivery with the final Skills specification: files with
+lossless UTF-8 content are read as `text` and all others as `blob`, skill entries carry
+only specified fields, and `skills/list` and `skills/get` stay limited to protocol
+2026-07-28 and later.
 
 ---
 
@@ -294,7 +303,7 @@ removed from the roadmap. Examples using those frameworks' MCP clients remain in
 ## v1.0 — Stability
 
 | Item | Notes |
-|---|---|
+| --- | --- |
 | API freeze | Public surface documented and frozen. Anything not documented is explicitly private. |
 | Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated version guarantees for maintained packages. Publish supported MCP protocol/extension revisions. |
 | Release automation end-to-end | Preserve existing Trusted Publishing and attestations. Complete changelog automation and validate the reduced package inventory and reproducible release process. |
@@ -324,13 +333,13 @@ Stating these prevents recurring proposals and scope creep.
 ## How We Plan Work
 
 | Artifact | Purpose |
-|---|---|
+| --- | --- |
 | **This roadmap** | Direction and sequencing. Reviewed at the start of each minor version. No dates. |
 | **GitHub Milestones** | One per minor version (`v0.3`, `v0.4`, …). An item is committed when it has an issue in a milestone. |
 | **GitHub Issues** | The single unit of work. Status, assignment, discussion, and linked PRs. Labelled by `theme:*`, `package:*`, `type:*`, and `good-first-issue`. |
-| **[docs/issues/](./issues/)** | The durable specification behind each roadmap item, one file per milestone. Filed issues link back here instead of duplicating the text; shipped items stay for the record. |
+| **[docs/issues/](issues/README.md)** | The durable specification behind each roadmap item, one file per milestone. Filed issues link back here instead of duplicating the text; shipped items stay for the record. |
 | **GitHub Project board** | Now / Next / Later / Done view across issues, linked from the README. |
-| **[docs/adr/](./adr/)** | Short, immutable records of decisions already made and their trade-offs. Written when a decision is hard to reverse or likely to be questioned later. |
+| **[docs/adr/](adr/README.md)** | Short, immutable records of decisions already made and their trade-offs. Written when a decision is hard to reverse or likely to be questioned later. |
 
 **Contributing to the roadmap:** open a GitHub Discussion for an idea, or an issue for
 something concrete. Changes to a public contract should be agreed on the issue before a PR

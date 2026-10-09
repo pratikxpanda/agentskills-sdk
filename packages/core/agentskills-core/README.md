@@ -17,7 +17,12 @@ This package provides the foundational building blocks for working with the [Age
 pip install agentskills-core
 ```
 
-Requires Python 3.12 or newer.
+Requires Python 3.12 or newer. Two optional extras enable `agentskills_core.trust` and `agentskills_core.telemetry`:
+
+```bash
+pip install "agentskills-core[verification]"   # Ed25519 signature verification (cryptography)
+pip install "agentskills-core[telemetry]"      # OpenTelemetry export (opentelemetry-api)
+```
 
 ## What's Included
 
@@ -26,6 +31,9 @@ Requires Python 3.12 or newer.
 | `SkillProvider` | Abstract base class that every skill backend must implement |
 | `Skill` | Lightweight runtime handle to a single registered skill |
 | `SkillRegistry` | Unified index with explicit registration and catalog builder |
+| `capture_skill` | Captures a bounded, immutable `SkillSnapshot` of a skill's original files |
+| `SkillSnapshot` / `SkillFile` | The captured file set, with a SHA-256 digest and size per file |
+| `build_skill_manifest` | Builds the MCP Skills entry (`uri`, `frontmatter`, `resources`) from a snapshot |
 | `validate_skill` | Validates a skill against the Agent Skills specification |
 | `validate_version` | Validates an optional semver `version` frontmatter value |
 | `get_logger` | Returns a logger in the shared `agentskills.*` namespace |
@@ -45,6 +53,16 @@ Requires Python 3.12 or newer.
 | `DiscoveryNotSupportedError` | Raised when a provider cannot enumerate the skills it holds |
 | `FileAccessNotSupportedError` | Raised when a provider cannot enumerate and read original skill files |
 | `SkillUnavailableError` | Raised when a backend is unreachable or fails transiently |
+| `ProviderUnavailableError` | A `SkillUnavailableError` subclass for a genuine provider outage, the only failure verified stale serving may cover |
+
+Optional submodules, imported by path rather than from the package root:
+
+| Module | Description |
+| --- | --- |
+| `agentskills_core.trust` | `TrustPolicy`, `DetachedSignature`, `signature_payload`, and `content_revision` for publisher verification |
+| `agentskills_core.policy` | `publish_snapshot` and `ContentDecision` for reject, redact, and annotate hooks and token limits |
+| `agentskills_core.refresh` | `SnapshotCatalog` for atomic, audience-scoped refresh and bounded stale serving |
+| `agentskills_core.telemetry` | `DisclosureEvent`, `emit_event`, and `OpenTelemetryObserver` |
 
 ## Usage
 
@@ -187,8 +205,41 @@ builder also enforces the native 512-file and 16 MiB file-set limits.
 
 This helper does not start a protocol server or establish host approval. Use
 `create_mcp_server` from
-[agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server#native-skills)
+[agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server#native-skills-only)
 for protocol delivery.
+
+### Verifying, Transforming, and Refreshing Publications
+
+These optional modules sit between capture and delivery. They are what `create_mcp_server` uses, and they are available to any host that publishes skills.
+
+```python
+from agentskills_core import Skill, capture_skill
+from agentskills_core.policy import ContentDecision, publish_snapshot
+from agentskills_core.refresh import SnapshotCatalog
+from agentskills_core.trust import DetachedSignature, TrustPolicy
+
+trust = TrustPolicy("publisher:operations", {"release-key": public_key_bytes})
+proof = DetachedSignature("release-key", signature_bytes)
+
+def policy(snapshot):
+    return publish_snapshot(
+        snapshot,
+        trust=trust,
+        proof=proof,
+        hooks=[lambda file: ContentDecision()],  # reject, redact, or annotate here
+    )
+
+async def load():
+    return [await capture_skill(Skill("incident-response", provider))]
+
+catalog = SnapshotCatalog(load, policy, max_stale_age=0)
+await catalog.refresh()      # stage everything, then swap atomically
+catalog.current.publications  # each has a delivered revision and source identity
+```
+
+`TrustPolicy.verify` checks a detached Ed25519 signature over the origin, skill ID, version, and a revision that covers every path and byte, so a renamed, added, removed, or changed file fails. It needs the `verification` extra. Hooks run after verification and before the manifest is built, so a redacted file gets a new revision while the source evidence is kept on `Publication.source_identity`. `SnapshotCatalog` replaces the whole catalog at once and never serves a stale snapshot unless `max_stale_age` is set and the failure is a `ProviderUnavailableError`.
+
+A matching digest shows consistency, not authorship, and a signature shows that a configured key signed those bytes, not that they are safe. See the [trust and operability guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/trust-and-operability.md) for the signed payload, content policy, stale rules, and telemetry.
 
 ### Building a Catalog
 
@@ -278,7 +329,7 @@ There is no catalog cache today. If one is added, its key must cover the format 
 
 ### Single-Skill Fast Path
 
-A catalog exists to let a model choose. With one skill there is nothing to choose, so the whole discovery apparatus — a catalog listing one entry, eight tool definitions, a block of usage instructions, and a model round trip while the agent calls `get_skill_body` and waits — is spent reaching content there was never a choice about.
+A catalog exists to let a model choose. With one skill there is nothing to choose, so the whole discovery apparatus, a catalog listing one entry, tool definitions, a block of usage instructions, and a model round trip while the agent fetches the body, is spent reaching content there was never a choice about.
 
 ```python
 from agentskills_core import resolve_fast_path
@@ -290,9 +341,9 @@ if fast_path is not None:
     print(fast_path.tokens)      # what it costs, by the counter the outline uses
 ```
 
-Pass the result to any integration's `fast_path=` argument. It returns `None` — meaning "use the normal catalog path" — unless the effective skill set is exactly one and its body fits under the ceiling.
+Use the prompt in place of a catalog in your own host. It returns `None` — meaning "use the normal catalog path" — unless the effective skill set is exactly one and its body fits under the ceiling.
 
-Resolution lives here rather than in each integration because the decision is identical everywhere, and because the ceiling is the part that has to be tuned: one knob is tunable, three that must be kept in step are not.
+Resolution lives here rather than in each host because the decision is identical everywhere, and because the ceiling is the part that has to be tuned.
 
 **Narrowing counts.** `include=` applies an effective set, so a registry of fifty narrowed to one by a selector takes the same path as a registry that only ever held one:
 
@@ -311,9 +362,9 @@ fast_path = await resolve_fast_path(registry, include=selection.skill_ids)
 | 10 turns | < 340 tokens |
 | 100 turns | < 309 tokens |
 
-An integration knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300 — the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
+A host knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300 — the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
 
-**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` covers only the four that would re-fetch inlined content (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`). References, scripts and assets are still genuinely progressive — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
+**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` names the four section and body accessors (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`) that would re-fetch inlined content. A host that exposes tools by those names should drop them. References, scripts and assets are still genuinely progressive — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
 
 ### Skill Versions (optional, non-spec)
 
@@ -476,6 +527,9 @@ _logger.debug("GET %s", redact_url(url, relative_to=base_url))
 - **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`, `version`) and logs warnings for unknown top-level metadata keys.
 - **Safe XML generation** - `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
 - **Credential-safe logging** - the SDK never logs request headers, and URLs pass through `redact_url()` before reaching a log record or an exception message.
+- **Bounded snapshots** - `capture_skill()` enforces the 512-file and 16 MiB limits and detects ordinary source drift.
+- **Optional publisher verification** - `TrustPolicy` fails closed on unknown keys, invalid signatures, and pin mismatches, and never downgrades a supplied invalid proof to unsigned.
+- **Content-free telemetry** - `DisclosureEvent` carries a hashed origin, revision, byte count, and timing, never paths, bodies, headers, or error text.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 

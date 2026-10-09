@@ -90,12 +90,12 @@ and response-size limits are still enforced by the provider.
 
 ## API
 
-### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None, params=None, require_tls=False, max_response_bytes=10_485_760, revalidate=False)`
+### `HTTPStaticFileSkillProvider(base_url, *, client=None, headers=None, params=None, require_tls=False, max_response_bytes=10_485_760, revalidate=False, resource_manifest=False, skill_manifest=False, file_manifest=False, timeout=30.0, max_retries=2, retry_backoff=0.5, max_retry_delay=30.0, allow_private_network=False, observer=None)`
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `base_url` | `str` | - | Root URL where the skill tree is hosted |
-| `client` | `AsyncClient \| None` | `None` | Pre-configured httpx client (caller manages lifecycle) |
+| `base_url` | `str` | - | Root URL where the skill tree is hosted. Must be HTTP(S) without credentials, query string, or fragment |
+| `client` | `AsyncClient \| None` | `None` | Pre-configured httpx client (caller manages lifecycle). Requires `allow_private_network=True` |
 | `headers` | `dict \| None` | `None` | Extra headers sent with every request |
 | `params` | `dict \| None` | `None` | Query parameters appended to every request |
 | `require_tls` | `bool` | `False` | Reject `http://` URLs with `ValueError` |
@@ -154,7 +154,7 @@ Missing categories default to empty lists. A manifest is host-supplied data whos
 
 ## Lossless File Access
 
-For v0.6 byte-preserving delivery, publish a complete `files` list in each skill's
+For byte-preserving delivery, publish a complete `files` list in each skill's
 `index.json`. This can coexist with the grouped resource keys:
 
 ```json
@@ -177,7 +177,7 @@ Enabling `resource_manifest` alone does not enable lossless file access.
 
 Reads preserve bytes and bypass the parsed `SKILL.md` cache. Size limits apply,
 and redirects, partial responses, and unsolicited `304` responses are refused.
-An injected client must have `follow_redirects=False`. Publish immutable content
+An injected client must have `follow_redirects=False` and needs `allow_private_network=True`. Publish immutable content
 when building verified manifests. Listing and reading do not form an atomic snapshot.
 
 ## Skill Discovery
@@ -219,12 +219,14 @@ That sends `If-None-Match` / `If-Modified-Since` on every access and reuses the 
 | --- | --- | --- |
 | `404` / `410` on `SKILL.md` | `SkillNotFoundError` | No |
 | `404` / `410` on a resource | `ResourceNotFoundError` | No |
-| `5xx`, `408`, `425`, `429` | `SkillUnavailableError` | Yes |
-| Timeouts, connection and protocol errors | `SkillUnavailableError` | Yes |
+| `5xx`, `408`, `425`, `429` | `ProviderUnavailableError` | Yes |
+| Timeouts, connection and protocol errors | `ProviderUnavailableError` | Yes |
+| Redirects (`3xx`) | `AgentSkillsError` | No |
+| Destination not allowed by network policy | `NetworkPolicyError` (from `agentskills_http`) | No |
 | `401` / `403` | `AgentSkillsError` | No |
-| Other `4xx`, oversized responses | `AgentSkillsError` | No |
+| Other `4xx`, oversized responses, invalid `Content-Length` | `AgentSkillsError` | No |
 
-All exceptions inherit from `AgentSkillsError`.
+All exceptions inherit from `AgentSkillsError`. `ProviderUnavailableError` is a subclass of `SkillUnavailableError`, so existing handlers keep working. It is the only failure that verified stale serving in `agentskills-mcp-server` may cover.
 
 The split between `SkillNotFoundError` and `SkillUnavailableError` is the point of the taxonomy: a `503` means the skill may well exist and the same request could succeed in a moment, whereas a `404` means it is gone. Collapsing both into "not found" turns a retryable blip into a permanent-looking failure, and nothing downstream can tell the difference.
 
@@ -249,7 +251,9 @@ Jitter matters because a registry builds its catalog concurrently — without it
 
 - **Input validation** - Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
 - **TLS warnings** - A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
-- **Redirect protection** - The internally-created HTTP client does not follow redirects by default, preventing open-redirect SSRF.
+- **Public-network-only by default** - DNS is resolved at connection time, every answer must be a public address, and the connection goes to the validated IP, so a rebinding answer cannot reach an internal host. Loopback, private, link-local, multicast, and reserved addresses are refused. `allow_private_network=True` opts out.
+- **Redirects rejected** - Redirects are never followed, in every mode, so credentials cannot be forwarded to another origin. Environment proxies are not inherited.
+- **Credential-free `base_url`** - Userinfo, query strings, and fragments are refused. Pass credentials through `headers` or `params`.
 - **Timeouts** - Default 30-second timeout on all HTTP requests. Configure via `timeout`.
 - **Response size limits** - Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
 - **Error-message sanitization** - Messages carry the status code and the path *relative to `base_url`* — never the host, never a query string. The underlying `httpx` exception is deliberately **not** chained (`from None`), because `httpx.HTTPStatusError` renders the full request URL including its query string, which is exactly where SAS tokens and signed-URL signatures live. Chaining it leaked credentials into every traceback.
@@ -258,9 +262,9 @@ For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/
 
 ## Deployment Considerations
 
-- **Rate limiting** - The SDK does not enforce rate limits on MCP tool
-  calls or HTTP requests. Deploy behind a reverse proxy or API gateway
-  that provides rate limiting in production environments.
+- **Rate limiting** - The SDK does not enforce rate limits on HTTP requests or
+  MCP requests. Deploy behind a reverse proxy or API gateway that provides rate
+  limiting in production environments.
 - **Credential management** - Do not store secrets (API keys, SAS
   tokens, Authorization headers) in config files committed to version
   control. Use environment variables or a secret manager instead.

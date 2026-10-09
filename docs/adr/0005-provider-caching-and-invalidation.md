@@ -24,13 +24,13 @@ Cache `SKILL.md` per provider instance and expose explicit invalidation.
 
 ## Consequences
 
-**Good**
+### Good
 
 - Fast default path for common static-host workflows.
 - Correctness for mutable hosts remains available explicitly.
 - Caller-visible cache control is simple and predictable.
 
-**Costs**
+### Costs
 
 - Revalidation mode and default mode differ by round-trip behavior.
 - Resource reads remain uncached by design.

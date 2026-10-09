@@ -28,6 +28,8 @@ The server requires MCP SDK 2.2+ and protocol 2026-07-28. A host must support th
 Skills extension, verify manifests and content, and obtain approval before
 activation. Ordinary MCP tools connectivity is insufficient. See the
 [migration guide](mcp-migration.md) before upgrading a framework integration.
+For signed publication, content policy, and refresh, see
+[Trust and Operability](trust-and-operability.md).
 
 ## Use Local Core APIs
 

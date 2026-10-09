@@ -12,7 +12,7 @@ description: Python packages for discovering, retrieving, and serving Agent Skil
 
 **Agent Skills** is an [open format](https://agentskills.io/specification) for giving AI agents new capabilities and expertise. Originally developed by Anthropic, the format is now supported by Claude Code, Cursor, GitHub, VS Code, Gemini CLI, and many others.
 
-This project helps you **integrate skills into your own agents**. Retrieve skills from any source - filesystem, database, API - validate them against the spec, and expose them to LLM agents through a progressive-disclosure API.
+This project helps you **integrate skills into your own agents**. Retrieve skills from the filesystem, a static HTTP host, or your own provider, validate them against the spec, and publish them to MCP hosts through the official Skills extension.
 
 > **Note:** Requires Python 3.12 or newer. Tested against 3.12, 3.13, and 3.14.
 
@@ -191,8 +191,9 @@ Full guides and API docs are published at:
 The site includes package-by-package API reference generated from docstrings,
 plus roadmap and ADR pages.
 
-## Integrations
+## More Guides
 
+- Trust and operability: [publisher verification, content policy, refresh, and network controls](docs/trust-and-operability.md)
 - Breaking changes in v0.7: [migration guide](docs/mcp-migration.md)
 - MCP server: [packages/integrations/agentskills-mcp-server/README.md](packages/integrations/agentskills-mcp-server/README.md)
 - Skill selection: [packages/retrieval/agentskills-retrieval/README.md](packages/retrieval/agentskills-retrieval/README.md)
@@ -239,8 +240,10 @@ jobs:
 ## Security
 
 Agent Skills are equivalent to executable prompt instructions. Only load skills
-from sources you trust. See [SECURITY.md](SECURITY.md) for vulnerability
-reporting and threat-model notes.
+from sources you trust. Optional publisher verification, content policy, and
+public-network-only HTTP defaults are described in the
+[trust and operability guide](docs/trust-and-operability.md). See
+[SECURITY.md](SECURITY.md) for vulnerability reporting and threat-model notes.
 
 ## Contributing
 

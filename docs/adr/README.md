@@ -14,6 +14,7 @@ release process, or public behavior.
 
 - `Accepted` for current decisions
 - `Superseded by ADR XXXX` when replaced
+- `Superseded in part` when a later release replaced one aspect and the rest still applies
 - `Proposed` for an in-flight decision
 
 ## Template
@@ -35,11 +36,11 @@ What we chose and the concrete rule.
 
 ## Consequences
 
-**Good**
+### Good
 
 - Benefits and why this is worth the trade.
 
-**Costs**
+### Costs
 
 - Ongoing costs, coupling, or limitations.
 
@@ -54,12 +55,14 @@ What we chose and the concrete rule.
 
 ## Index
 
-- [ADR 0001](0001-mcp-context-provider-packaging.md) — MCP context provider packaging
+- [ADR 0001](0001-mcp-context-provider-packaging.md) — MCP context provider packaging (superseded in v0.7)
 - [ADR 0002](0002-optional-provider-capabilities.md) — Optional provider capabilities
 - [ADR 0003](0003-fully-async-provider-interface.md) — Fully async provider interface
 - [ADR 0004](0004-multi-package-lockstep-versioning.md) — Multi-package lockstep versioning
 - [ADR 0005](0005-provider-caching-and-invalidation.md) — Provider caching and invalidation
 - [ADR 0006](0006-exception-taxonomy-not-found-vs-unavailable.md) — Exception taxonomy
-- [ADR 0007](0007-binary-resource-json-envelope.md) — Binary resource envelope
+- [ADR 0007](0007-binary-resource-json-envelope.md) — Binary resource envelope (superseded in part)
 - [ADR 0008](0008-logging-namespace-and-severity.md) — Logging conventions
-- [ADR 0009](0009-native-image-content.md) — Native image content, opt-in
+- [ADR 0009](0009-native-image-content.md) — Native image content, opt-in (superseded in part)
+- [ADR 0010](0010-native-skills-only.md) — Native Skills only, no legacy compatibility mode
+- [ADR 0011](0011-publication-trust-pipeline.md) — Publication pipeline: verify, transform, refresh atomically

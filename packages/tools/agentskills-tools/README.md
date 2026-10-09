@@ -148,7 +148,7 @@ any level — so the parts sum to the body exactly. Depth shows in the indent
 instead. A `#` inside a fenced code block is a shell comment, not a heading.
 
 The splitter itself lives in `agentskills-core` (`split_sections`), which also
-serves the runtime `get_skill_outline` / `get_skill_section` tools.
+backs `SkillRegistry.get_skill_outline` and `get_skill_section`.
 `agentskills_tools.cost` re-exports `Section`, `split_sections` and
 `PREAMBLE_TITLE` so this report and what an agent sees at runtime cannot
 disagree about where a section begins.

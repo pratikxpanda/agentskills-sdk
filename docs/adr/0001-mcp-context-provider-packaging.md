@@ -1,6 +1,6 @@
 # ADR 0001 — MCP context provider lives in `agentskills-mcp-server` behind an extra
 
-**Status:** Superseded in v0.7. The bridge, the `[agentframework]` extra, and `agentskills-agentframework` were removed.
+**Status:** Superseded by [ADR 0010](0010-native-skills-only.md). The bridge, the `[agentframework]` extra, and `agentskills-agentframework` were removed in v0.7.
 **Date:** 2026-02
 **Packages:** `agentskills-mcp-server`, `agentskills-agentframework`
 
@@ -33,14 +33,14 @@ It also does not start or manage server processes, and does not import from `age
 
 ## Consequences
 
-**Good**
+### Good
 
 - The base MCP package stays framework-agnostic; `agent-framework` is only pulled in when someone opts into the extra.
 - Discoverable — MCP users find the adapter in the package they already installed, not a separate one they have to know exists.
 - No tool duplication or fragile tool filtering.
 - Works with any MCP transport, since only the session is required.
 
-**Costs**
+### Costs
 
 - `agentskills-mcp-server` now has framework-specific code in its tree, even though the dependency is optional. If a second framework adapter is ever needed, this pattern does not scale and the adapters should move to their own packages.
 - Prompt-template validation is duplicated between the two context providers. Acceptable for two call sites; extract to a shared helper if a third appears.

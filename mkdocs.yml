@@ -21,7 +21,20 @@ nav:
       - CLI tooling: packages/tools.md
       - Testing toolkit: packages/testing.md
   - Roadmap: ROADMAP.md
-  - ADRs: adr/README.md
+  - ADRs:
+      - Overview: adr/README.md
+      - 0001 MCP context provider packaging: adr/0001-mcp-context-provider-packaging.md
+      - 0002 Optional provider capabilities: adr/0002-optional-provider-capabilities.md
+      - 0003 Fully async provider interface: adr/0003-fully-async-provider-interface.md
+      - 0004 Lockstep versioning: adr/0004-multi-package-lockstep-versioning.md
+      - 0005 Provider caching: adr/0005-provider-caching-and-invalidation.md
+      - 0006 Exception taxonomy: adr/0006-exception-taxonomy-not-found-vs-unavailable.md
+      - 0007 Binary resource envelope: adr/0007-binary-resource-json-envelope.md
+      - 0008 Logging conventions: adr/0008-logging-namespace-and-severity.md
+      - 0009 Native image content: adr/0009-native-image-content.md
+      - 0010 Native Skills only: adr/0010-native-skills-only.md
+      - 0011 Publication trust pipeline: adr/0011-publication-trust-pipeline.md
+  - Skills Directory: SKILLS-DIRECTORY.md
   - Issue plans:
       - Overview: issues/README.md
       - v0.6 MCP-First Skills: issues/v0.6.md

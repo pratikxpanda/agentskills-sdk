@@ -14,6 +14,14 @@ The core catalog, section, and retrieval helpers below remain available for
 custom hosts. They are not server tools, and using them does not establish
 native Skills verification or approval.
 
+## Trust model
+
+Native delivery captures an immutable snapshot of every skill, then publishes it
+through an optional pipeline: verify a detached publisher signature, apply content
+policy, build the manifest, and swap the whole catalog atomically on refresh. A
+matching digest shows consistency, not authorship, so verification is explicit and
+opt-in. See [Trust and Operability](trust-and-operability.md).
+
 ## Progressive disclosure
 
 Custom hosts can implement layered disclosure using core APIs:
@@ -120,7 +128,8 @@ falls back to the full catalog rather than leaving the agent with no skills at a
 ## Providers
 
 A provider answers five content calls (`get_metadata`, `get_body`, `get_reference`,
-`get_script`, `get_asset`) and can optionally support resource listing and skill discovery.
+`get_script`, `get_asset`) and can optionally support resource listing, skill discovery,
+and lossless file access (`list_files`, `read_file`). Native MCP delivery needs the last.
 
 ## Registry
 
@@ -133,7 +142,9 @@ Errors are typed so callers can branch correctly:
 
 - `SkillNotFoundError` for stable absence
 - `SkillUnavailableError` for transient/backend failures
-- Optional-capability errors for unsupported listing/discovery
+- `ProviderUnavailableError`, a subclass for genuine provider outages, the only failure
+  that a verified stale snapshot may cover
+- Optional-capability errors for unsupported listing/discovery/file access
 
 ## Cost model
 

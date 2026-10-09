@@ -1,8 +1,8 @@
 # ADR 0007 — Binary resources use a JSON envelope
 
-**Status:** Accepted
+**Status:** Superseded in part in v0.7. Native MCP delivery returns original bytes as `text` (strict UTF-8 without NUL) or `blob`. The envelope remains the contract of `encode_resource_content()` for custom hosts.
 **Date:** 2026-08
-**Packages:** `agentskills-core`, all integrations
+**Packages:** `agentskills-core`
 
 ## Context
 
@@ -23,13 +23,13 @@ payload.
 
 ## Consequences
 
-**Good**
+### Good
 
 - One representation across integrations.
 - No lossy decode attempts for binary content.
 - Callers can branch on a stable envelope shape.
 
-**Costs**
+### Costs
 
 - Consumers must unwrap one extra layer.
 - MCP-native binary features are not used directly yet.
@@ -43,5 +43,5 @@ payload.
 
 ## Decision history
 
-- [v0.3 issue 5: Return binary resources without corrupting bytes](../issues/v0.3.md#5-return-binary-resources-without-corrupting-bytes)
-- [v0.4 follow-up note requesting a future reversal toward MCP-native blocks](../issues/v0.4.md#mcp-native-binary-content-blocks)
+- [v0.3 issue 5: Stop corrupting binary skill resources](../issues/v0.3.md#5-stop-corrupting-binary-skill-resources)
+- [v0.4 follow-up note requesting a future reversal toward MCP-native blocks](../issues/v0.4.md)

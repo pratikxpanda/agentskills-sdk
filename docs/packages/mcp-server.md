@@ -16,3 +16,19 @@ The command above applies once v0.7 is published. Until then, install the checko
 ::: agentskills_mcp_server.native.create_mcp_server
     options:
       show_root_heading: true
+
+## Server
+
+::: agentskills_mcp_server.native.NativeSkillsServer
+    options:
+      show_root_heading: true
+
+## Configuration
+
+::: agentskills_mcp_server.config.ServerConfig
+    options:
+      show_root_heading: true
+
+::: agentskills_mcp_server.config.TrustConfig
+    options:
+      show_root_heading: true

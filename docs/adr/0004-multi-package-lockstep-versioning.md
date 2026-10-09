@@ -24,13 +24,13 @@ Keep the multi-package architecture and enforce lockstep versioning.
 
 ## Consequences
 
-**Good**
+### Good
 
 - Consumers install only what they need.
 - Core stays dependency-light and reusable.
 - Packaging boundaries match responsibility boundaries.
 
-**Costs**
+### Costs
 
 - Release process is more complex than a monolith.
 - New packages must be wired into multiple scripts/workflows.

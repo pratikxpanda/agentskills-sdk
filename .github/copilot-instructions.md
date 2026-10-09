@@ -4,7 +4,7 @@ Poetry monorepo. Eight maintained packages, versioned and released together.
 
 | Path | Package |
 | --- | --- |
-| `packages/core/agentskills-core` | Registry, `SkillProvider` ABC, spec validation. Only dependency is `pyyaml`. |
+| `packages/core/agentskills-core` | Registry, `SkillProvider` ABC, spec validation, snapshots, trust, policy, refresh. Only required dependency is `pyyaml`. |
 | `packages/adapters/agentskills-adapters` | Import common agent instruction formats as native skills |
 | `packages/providers/agentskills-fs` | Local filesystem provider |
 | `packages/providers/agentskills-http` | Static HTTP / CDN provider |

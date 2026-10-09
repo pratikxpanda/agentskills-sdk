@@ -9,6 +9,7 @@ A Python SDK for discovering, retrieving, and serving
 ## What this site covers
 
 - Native Skills publication for compatible MCP hosts
+- Publisher verification, content policy, refresh, and network controls
 - Provider and registry concepts behind progressive disclosure
 - Per-package API reference generated from docstrings
 - Project roadmap and architecture decisions (ADRs)

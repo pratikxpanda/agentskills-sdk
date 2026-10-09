@@ -13,7 +13,7 @@
 poetry install
 ```
 
-This creates a `.venv` in the project root and installs all packages in editable mode along with dev dependencies (pytest, ruff).
+This creates a `.venv` in the project root and installs all packages in editable mode along with dev dependencies (pytest, ruff). The root install also enables the optional `verification` and `telemetry` extras of `agentskills-core`, so their tests run.
 
 ## Testing
 
@@ -31,6 +31,7 @@ poetry run pytest packages/adapters/agentskills-adapters -v
 poetry run pytest packages/providers/agentskills-fs -v
 poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
+poetry run pytest packages/retrieval/agentskills-retrieval -v
 poetry run pytest packages/tools/agentskills-tools -v
 poetry run pytest packages/testing/agentskills-testing -v
 ```
@@ -52,7 +53,7 @@ is trivially covered by the act of running it.
 Floors are enforced at two levels:
 
 | Scope | Where | Why |
-|---|---|---|
+| --- | --- | --- |
 | Aggregate | `[tool.coverage.report] fail_under` | Enforced by `coverage report` itself, so a bare run is gated too |
 | Per package | `COVERAGE_FLOORS` in `scripts/dev.py` | An aggregate floor alone lets one package rot behind the others |
 
@@ -109,10 +110,14 @@ python scripts/dev.py all           # Format + lint + test
 
 GitHub Actions runs automatically on every push and pull request to `main`. The pipeline is defined in `.github/workflows/ci.yml` and includes these jobs:
 
-- **Lint**: checks formatting (`ruff format --check`), linting (`ruff check`), and that every package declares the third-party modules it imports
+- **Lint**: checks formatting (`ruff format --check`), linting (`ruff check`), that every package declares the third-party modules it imports, and audits dependencies with `pip-audit`
+- **Validate example skills**: runs the validation action against `examples/skills`
 - **Test**: runs `pytest` across Python 3.12, 3.13, and 3.14
 - **Coverage**: runs the coverage gate and publishes the report to the job summary
+- **Test (MCP 2.2 floor)**: installs the minimum supported MCP SDK, runs the suite, checks native Skills with the pinned `mcpc` client, and records the synthetic benchmark
 - **Test (latest permitted dependencies)**: resolves without `poetry.lock` to surface upstream breakage; advisory only
+
+A separate docs workflow (`.github/workflows/docs.yml`) builds the site with `mkdocs build --strict` on every change to the docs and publishes versioned docs after a release.
 
 All checks must pass before a PR can be merged. The CI status badge is shown on the root README.
 
@@ -176,7 +181,7 @@ logging.getLogger("agentskills").setLevel(logging.DEBUG)
 ### Levels
 
 | Level | Use for | Volume |
-|---|---|---|
+| --- | --- | --- |
 | `DEBUG` | Fetch, parse and cache events | Per request |
 | `INFO` | Registration outcomes | Once per skill |
 | `WARNING` | Degraded but recovered behaviour — a retried request, an unrecognised metadata key | Rare |
@@ -319,10 +324,10 @@ This is worth knowing before adding a package, or publishing to any new index.
 
 | Package | Description |
 | --- | --- |
-| `packages/core/agentskills-core` | Storage-agnostic abstractions (`SkillProvider`, `Skill`, `SkillRegistry`, `validate_skill`) |
+| `packages/core/agentskills-core` | Storage-agnostic abstractions (`SkillProvider`, `Skill`, `SkillRegistry`, `validate_skill`), immutable snapshots and manifests, and the optional trust, policy, refresh, and telemetry modules |
 | `packages/adapters/agentskills-adapters` | Import AGENTS.md, Copilot instructions, Cursor rules, and Claude skills as native `Skill` objects |
 | `packages/providers/agentskills-fs` | Load skills from the local filesystem |
-| `packages/providers/agentskills-http` | Load skills from a static HTTP server |
+| `packages/providers/agentskills-http` | Load skills from a static HTTP server, with public-network-only defaults |
 | `packages/integrations/agentskills-mcp-server` | Native MCP Skills server with complete manifests and lossless resources |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers (`agentskills-retrieval` on PyPI) |
 | `packages/tools/agentskills-tools` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
