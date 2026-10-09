@@ -1,4 +1,4 @@
-# ADR 0001 — MCP context provider lives in `agentskills-mcp-server` behind an extra
+# ADR 0001: MCP context provider lives in `agentskills-mcp-server` behind an extra
 
 **Status:** Superseded by [ADR 0010](0010-native-skills-only.md). The bridge, the `[agentframework]` extra, and `agentskills-agentframework` were removed in v0.7.
 **Date:** 2026-02
@@ -8,12 +8,12 @@
 
 There are two ways to connect a Microsoft Agent Framework agent to skills:
 
-- **In-process** — `AgentSkillsContextProvider(registry)` in `agentskills-agentframework`, wrapping a `SkillRegistry` directly.
-- **Out-of-process** — `agentskills-mcp-server` exposes skills as MCP tools and resources over stdio or HTTP.
+- **In-process**: `AgentSkillsContextProvider(registry)` in `agentskills-agentframework`, wrapping a `SkillRegistry` directly.
+- **Out-of-process**: `agentskills-mcp-server` exposes skills as MCP tools and resources over stdio or HTTP.
 
 The MCP path required manual wiring: connect via one of Agent Framework's MCP tool classes, read the catalog resources, assemble the system prompt, pass the tools. Agent Framework's MCP tool classes register the tools automatically but do nothing about instructions, so the catalog had to be injected by hand on every agent.
 
-We needed a bridge, and had to decide where it lived. `agentskills-mcp-server` is deliberately framework-agnostic — it serves LangChain, custom agents, CLI clients, and anything else that speaks MCP. Adding a hard `agent-framework` dependency to it was not acceptable.
+We needed a bridge, and had to decide where it lived. `agentskills-mcp-server` is deliberately framework-agnostic: it serves LangChain, custom agents, CLI clients, and anything else that speaks MCP. Adding a hard `agent-framework` dependency to it was not acceptable.
 
 ## Decision
 
@@ -27,7 +27,7 @@ We needed a bridge, and had to decide where it lived. `agentskills-mcp-server` i
 
 The adapter injects **instructions only**. It reads `skills://catalog/{format}` and `skills://tools-usage-instructions` from the MCP session and calls `context.extend_instructions()`.
 
-It deliberately does **not** inject or filter tools. Agent Framework's MCP tool classes already register MCP tools natively, and a given MCP server may expose tools beyond skills — the adapter has no reliable way to tell which tools are skill tools, so attempting to filter them would be guesswork.
+It deliberately does **not** inject or filter tools. Agent Framework's MCP tool classes already register MCP tools natively, and a given MCP server may expose tools beyond skills: the adapter has no reliable way to tell which tools are skill tools, so attempting to filter them would be guesswork.
 
 It also does not start or manage server processes, and does not import from `agentskills_mcp_server`'s server module. It only needs a generic MCP session, which makes it transport-agnostic across `MCPStdioTool`, `MCPSseTool`, and `MCPStreamableHttpTool`.
 
@@ -36,7 +36,7 @@ It also does not start or manage server processes, and does not import from `age
 ### Good
 
 - The base MCP package stays framework-agnostic; `agent-framework` is only pulled in when someone opts into the extra.
-- Discoverable — MCP users find the adapter in the package they already installed, not a separate one they have to know exists.
+- Discoverable: MCP users find the adapter in the package they already installed, not a separate one they have to know exists.
 - No tool duplication or fragile tool filtering.
 - Works with any MCP transport, since only the session is required.
 

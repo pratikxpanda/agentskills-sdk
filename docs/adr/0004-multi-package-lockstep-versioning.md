@@ -1,4 +1,4 @@
-# ADR 0004 — Multi-package architecture with lockstep versions
+# ADR 0004: Multi-package architecture with lockstep versions
 
 **Status:** Accepted
 **Date:** 2026-08

@@ -1,4 +1,4 @@
-# ADR 0006 — Distinguish not found from unavailable
+# ADR 0006: Distinguish not found from unavailable
 
 **Status:** Accepted
 **Date:** 2026-08

@@ -13,13 +13,13 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 
 | Milestone | Items | State |
 | --- | --- | --- |
-| [v0.3 — Foundations](./v0.3.md) | 12 | Shipped |
-| [v0.4 — Developer Experience](./v0.4.md) | 12 | Shipped |
-| [v0.5 — Agent Effectiveness](./v0.5.md) | 6 | Shipped |
+| [v0.3: Foundations](./v0.3.md) | 12 | Shipped |
+| [v0.4: Developer Experience](./v0.4.md) | 12 | Shipped |
+| [v0.5: Agent Effectiveness](./v0.5.md) | 6 | Shipped |
 | [v0.6: MCP-First Skills](./v0.6.md) | 7 | Included in v0.6.0. Deployment validation remains explicitly deferred. |
 | v0.7: Trust & Operability | 7 | Included in v0.7.0. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#v07-trust-operability). |
 | v0.8: Portable Distribution | 5 | Candidate priorities. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
-| v1.0 — Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
+| v1.0: Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
 A milestone only gets a file once its items are concrete enough to have acceptance criteria.
 The later ones are deliberately still one-liners on the roadmap. The v0.3 to v0.6 files are
@@ -39,7 +39,7 @@ When an item is filed, add its number to the heading so the two stay connected:
 ## 3. Stop blocking the event loop in the filesystem provider ([#42](https://github.com/pratikxpanda/agentskills-sdk/issues/42))
 ```
 
-The issue body should link back to its section here rather than duplicating it — duplicated
+The issue body should link back to its section here rather than duplicating it: duplicated
 text is what drifts. If the design changes during implementation, **update the spec here**: the
 issue thread records the discussion, this file records the conclusion.
 

@@ -1,4 +1,4 @@
-# ADR 0005 — Provider caching is per instance with explicit invalidation
+# ADR 0005: Provider caching is per instance with explicit invalidation
 
 **Status:** Accepted
 **Date:** 2026-08

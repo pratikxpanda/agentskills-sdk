@@ -1,4 +1,4 @@
-# ADR 0010 — Native Skills only, with no legacy compatibility mode
+# ADR 0010: Native Skills only, with no legacy compatibility mode
 
 **Status:** Accepted
 **Date:** 2026-10

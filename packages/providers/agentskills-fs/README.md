@@ -1,7 +1,4 @@
----
-title: agentskills-fs
-description: Local filesystem provider for Agent Skills.
----
+# agentskills-fs
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
@@ -54,7 +51,7 @@ the rest of the folder.
 
 Blocking file I/O runs in a worker thread, so a slow or networked filesystem does not stall other coroutines.
 
-`SKILL.md` content is cached per provider instance after the first read — a single skill is otherwise re-read up to five times in one agent session. Call `invalidate()` when skills change on disk.
+`SKILL.md` content is cached per provider instance after the first read: a single skill is otherwise re-read up to five times in one agent session. Call `invalidate()` when skills change on disk.
 
 ```python
 provider.invalidate("incident-response")  # forget one skill
@@ -84,9 +81,9 @@ trusted, immutable publication directory when constructing verified manifests.
 
 ## Security
 
-- **Path-traversal protection** - Skill IDs and resource names are validated to stay within the root directory. Attempts to escape (e.g. `../../etc/passwd`) raise `SkillNotFoundError` or `ResourceNotFoundError`.
-- **File size limits** - Files exceeding 10 MB (default) are rejected before reading into memory. Configure via the `max_file_bytes` parameter.
-- **Error-message sanitization** - Error messages reference the `skill_id` rather than full filesystem paths, preventing internal path leakage.
+- **Path-traversal protection**: Skill IDs and resource names are validated to stay within the root directory. Attempts to escape (e.g. `../../etc/passwd`) raise `SkillNotFoundError` or `ResourceNotFoundError`.
+- **File size limits**: Files exceeding 10 MB (default) are rejected before reading into memory. Configure via the `max_file_bytes` parameter.
+- **Error-message sanitization**: Error messages reference the `skill_id` rather than full filesystem paths, preventing internal path leakage.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
@@ -120,7 +117,7 @@ listing = await provider.list_resources("incident-response")
 # {"references": ["severity-levels.md"], "scripts": ["page-oncall.sh"], "assets": []}
 ```
 
-All three keys are always present; unused categories are empty lists. Only regular files directly inside `references/`, `scripts/` and `assets/` are reported. Dotfiles, subdirectories, and symlinks resolving outside the skill root are skipped rather than raising, so one stray entry cannot make a whole skill unlistable — and listing can never offer a name that a subsequent read would reject.
+All three keys are always present; unused categories are empty lists. Only regular files directly inside `references/`, `scripts/` and `assets/` are reported. Dotfiles, subdirectories, and symlinks resolving outside the skill root are skipped rather than raising, so one stray entry cannot make a whole skill unlistable, and listing can never offer a name that a subsequent read would reject.
 
 ## License
 

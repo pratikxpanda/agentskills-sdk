@@ -1,7 +1,4 @@
----
-title: agentskills-http
-description: Static HTTP file provider for Agent Skills.
----
+# agentskills-http
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-http)](https://pypi.org/project/agentskills-http/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-http)](https://pypi.org/project/agentskills-http/)
@@ -9,7 +6,7 @@ description: Static HTTP file provider for Agent Skills.
 
 > HTTP static-file skill provider for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).
 
-Serves [Agent Skills](https://agentskills.io) from any static HTTP file host - S3, Azure Blob, CDN, GitHub Pages, Nginx, etc. Expects the same directory-tree layout as the filesystem provider, served over HTTP.
+Serves [Agent Skills](https://agentskills.io) from any static HTTP file host, such as S3, Azure Blob, CDN, GitHub Pages, or Nginx. Expects the same directory-tree layout as the filesystem provider, served over HTTP.
 
 ## Installation
 
@@ -131,7 +128,7 @@ Supports `async with` for automatic cleanup.
 
 ## Resource Discovery
 
-A static file host cannot be enumerated: there is no portable directory listing over plain HTTP. By default this provider therefore reports that it *cannot* list resources — `list_resources()` raises `ResourceListingNotSupportedError` — rather than returning an empty mapping that would look like a skill with no resources.
+A static file host cannot be enumerated: there is no portable directory listing over plain HTTP. By default this provider therefore reports that it *cannot* list resources (`list_resources()` raises `ResourceListingNotSupportedError`) rather than returning an empty mapping that would look like a skill with no resources.
 
 If you control the host, publish a small manifest at `{base_url}/{skill_id}/index.json`:
 
@@ -150,7 +147,7 @@ provider = HTTPStaticFileSkillProvider(BASE, resource_manifest=True)
 listing = await provider.list_resources("incident-response")
 ```
 
-Missing categories default to empty lists. A manifest is host-supplied data whose entries are later interpolated into URLs, so names failing the identifier-safety check are dropped. If a given skill has no `index.json`, `list_resources()` raises `ResourceListingNotSupportedError` for that skill — again, not an empty result.
+Missing categories default to empty lists. A manifest is host-supplied data whose entries are later interpolated into URLs, so names failing the identifier-safety check are dropped. If a given skill has no `index.json`, `list_resources()` raises `ResourceListingNotSupportedError` for that skill, again, not an empty result.
 
 ## Lossless File Access
 
@@ -196,14 +193,14 @@ async with HTTPStaticFileSkillProvider(BASE, skill_manifest=True) as provider:
     await registry.register_all(provider)
 ```
 
-One filename and one shape — an object mapping a category to a list of names — at two depths,
+One filename and one shape (an object mapping a category to a list of names) at two depths,
 rather than two manifest formats to keep in step. Unsafe and duplicate IDs are dropped as above.
 Without `skill_manifest=True`, or when the root publishes no manifest, `discover()` raises
 `DiscoveryNotSupportedError`.
 
 ## Caching
 
-`SKILL.md` responses are cached per provider instance. Without it a single skill costs up to five round-trips per agent session — twice during registration, once per catalog build, and again on each tool call. Scripts, assets and references are not cached.
+`SKILL.md` responses are cached per provider instance. Without it a single skill costs up to five round-trips per agent session: twice during registration, once per catalog build, and again on each tool call. Scripts, assets and references are not cached.
 
 By default the cache is served until you call `invalidate()`. If your host serves mutable skills and the process is long-lived, opt into conditional revalidation instead:
 
@@ -243,29 +240,29 @@ provider = HTTPStaticFileSkillProvider(
 )
 ```
 
-Jitter matters because a registry builds its catalog concurrently — without it, every skill fetch would retry in lockstep and hit the recovering server as one wave.
+Jitter matters because a registry builds its catalog concurrently: without it, every skill fetch would retry in lockstep and hit the recovering server as one wave.
 
 `Retry-After` is honoured in both the delay-seconds and HTTP-date forms. If the server asks for longer than `max_retry_delay`, the request is **not** retried: blocking a request path for minutes is worse than failing fast. The advised delay is still available to the caller as `SkillUnavailableError.retry_after`, so a scheduler can act on it.
 
 ## Security
 
-- **Input validation** - Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
-- **TLS warnings** - A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
-- **Public-network-only by default** - DNS is resolved at connection time, every answer must be a public address, and the connection goes to the validated IP, so a rebinding answer cannot reach an internal host. Loopback, private, link-local, multicast, and reserved addresses are refused. `allow_private_network=True` opts out.
-- **Redirects rejected** - Redirects are never followed, in every mode, so credentials cannot be forwarded to another origin. Environment proxies are not inherited.
-- **Credential-free `base_url`** - Userinfo, query strings, and fragments are refused. Pass credentials through `headers` or `params`.
-- **Timeouts** - Default 30-second timeout on all HTTP requests. Configure via `timeout`.
-- **Response size limits** - Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
-- **Error-message sanitization** - Messages carry the status code and the path *relative to `base_url`* — never the host, never a query string. The underlying `httpx` exception is deliberately **not** chained (`from None`), because `httpx.HTTPStatusError` renders the full request URL including its query string, which is exactly where SAS tokens and signed-URL signatures live. Chaining it leaked credentials into every traceback.
+- **Input validation**: Skill IDs and resource names are validated against a safe-character pattern (`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`) to prevent path-traversal and injection attacks.
+- **TLS warnings**: A `UserWarning` is emitted when `base_url` uses unencrypted HTTP. Set `require_tls=True` to reject HTTP URLs entirely.
+- **Public-network-only by default**: DNS is resolved at connection time, every answer must be a public address, and the connection goes to the validated IP, so a rebinding answer cannot reach an internal host. Loopback, private, link-local, multicast, and reserved addresses are refused. `allow_private_network=True` opts out.
+- **Redirects rejected**: Redirects are never followed, in every mode, so credentials cannot be forwarded to another origin. Environment proxies are not inherited.
+- **Credential-free `base_url`**: Userinfo, query strings, and fragments are refused. Pass credentials through `headers` or `params`.
+- **Timeouts**: Default 30-second timeout on all HTTP requests. Configure via `timeout`.
+- **Response size limits**: Responses exceeding 10 MB (default) are rejected before processing. Configure via `max_response_bytes`.
+- **Error-message sanitization**: Messages carry the status code and the path *relative to `base_url`*, never the host, never a query string. The underlying `httpx` exception is deliberately **not** chained (`from None`), because `httpx.HTTPStatusError` renders the full request URL including its query string, which is exactly where SAS tokens and signed-URL signatures live. Chaining it leaked credentials into every traceback.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 
 ## Deployment Considerations
 
-- **Rate limiting** - The SDK does not enforce rate limits on HTTP requests or
+- **Rate limiting**: The SDK does not enforce rate limits on HTTP requests or
   MCP requests. Deploy behind a reverse proxy or API gateway that provides rate
   limiting in production environments.
-- **Credential management** - Do not store secrets (API keys, SAS
+- **Credential management**: Do not store secrets (API keys, SAS
   tokens, Authorization headers) in config files committed to version
   control. Use environment variables or a secret manager instead.
 

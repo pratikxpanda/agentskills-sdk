@@ -1,7 +1,6 @@
----
-title: Examples
-description: Native MCP Skills publication and model-free discovery benchmarks.
----
+# Examples
+
+Native MCP Skills publication and model-free discovery benchmarks.
 
 ## Native Publication
 

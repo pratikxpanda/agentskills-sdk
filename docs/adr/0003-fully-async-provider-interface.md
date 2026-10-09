@@ -1,4 +1,4 @@
-# ADR 0003 — Provider interface stays fully async
+# ADR 0003: Provider interface stays fully async
 
 **Status:** Accepted
 **Date:** 2026-08

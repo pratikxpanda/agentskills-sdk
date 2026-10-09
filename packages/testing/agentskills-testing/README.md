@@ -56,7 +56,7 @@ a string, and is what the default fixture prints when you forget to override it.
 ### What it checks
 
 - Metadata carries `name` and a non-empty `description`, and does **not** carry
-  the body — a metadata call that includes the body has already spent the tokens
+  the body: a metadata call that includes the body has already spent the tokens
   progressive disclosure exists to save.
 - Metadata is not shared mutable state: one caller mutating the returned dict
   must not affect the next.
@@ -72,7 +72,7 @@ a string, and is what the default fixture prints when you forget to override it.
 - `discover()` agrees with `supports_discovery`, and everything it reports can
   actually be read. `register_all()` validates the whole list, so one phantom ID
   fails the entire registration.
-- **Traversal identifiers are refused** — parent traversal, absolute paths,
+- **Traversal identifiers are refused**: parent traversal, absolute paths,
   Windows separators, percent-encoded traversal, and embedded NUL bytes, as both
   skill IDs and resource names. These are not opt-out.
 - Concurrent reads through a single instance return consistent content, which
@@ -81,7 +81,7 @@ a string, and is what the default fixture prints when you forget to override it.
 ### Size limits
 
 `ContentLimitConformanceSuite` is separate and opt-in. A size limit is not part
-of the universal contract — an in-memory provider has no external source to
+of the universal contract: an in-memory provider has no external source to
 bound, and demanding one would assert a filesystem's constraints against a dict.
 It **is** required of any provider that reads bytes it did not author: from
 disk, from a network, from anywhere a caller can grow without asking.
@@ -101,7 +101,7 @@ exceeds it.
 
 ## Test doubles
 
-`InMemorySkillProvider` is a real, spec-compliant provider backed by a dict — it
+`InMemorySkillProvider` is a real, spec-compliant provider backed by a dict. It
 passes the conformance suite above. Prefer it to an `AsyncMock`: a mock agrees
 with whatever the test asserts, including the assertions that are wrong.
 
@@ -137,8 +137,8 @@ that does not care about metadata does not have to invent any.
 `render_skill_md(skill)` renders one back to `SKILL.md` text, which is how you
 populate a temporary directory for the filesystem provider.
 
-To emulate a backend that cannot enumerate — a static HTTP host without a
-manifest, for instance — pass `supports_resource_listing=False`, or
+To emulate a backend that cannot enumerate (a static HTTP host without a
+manifest, for instance), pass `supports_resource_listing=False`, or
 `supports_discovery=False`, or both.
 
 ## Fixtures
@@ -160,6 +160,6 @@ async def test_my_agent(skill_registry):
 
 ## License
 
-MIT — see [LICENSE](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE).
+MIT. See [LICENSE](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE).
 
 Part of the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).

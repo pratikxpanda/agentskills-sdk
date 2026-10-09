@@ -1,4 +1,4 @@
-# ADR 0007 — Binary resources use a JSON envelope
+# ADR 0007: Binary resources use a JSON envelope
 
 **Status:** Superseded in part in v0.7. Native MCP delivery returns original bytes as `text` (strict UTF-8 without NUL) or `blob`. The envelope remains the contract of `encode_resource_content()` for custom hosts.
 **Date:** 2026-08

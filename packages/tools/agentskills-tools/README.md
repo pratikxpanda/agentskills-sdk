@@ -1,7 +1,4 @@
----
-title: agentskills-tools
-description: Command line authoring, inspection, evaluation, and MCP publication diagnostics for Agent Skills.
----
+# agentskills-tools
 
 Command line tools for authoring and validating [Agent Skills](https://agentskills.io).
 
@@ -22,7 +19,7 @@ pip install "agentskills-tools[serve]"
 
 ## Commands
 
-Every command takes either one skill folder or a folder of skill folders — the
+Every command takes either one skill folder or a folder of skill folders: the
 one containing `SKILL.md`, or the one containing directories that do.
 
 | Command | What it does |
@@ -61,8 +58,8 @@ skills/broken-skill
 ```
 
 Frontmatter is parsed by the CLI before the skill reaches the SDK's validator.
-The SDK's parser is deliberately forgiving — malformed YAML yields an empty
-mapping — which downstream reads as "no name, no description" and tells you
+The SDK's parser is deliberately forgiving (malformed YAML yields an empty
+mapping) which downstream reads as "no name, no description" and tells you
 nothing about the colon you missed.
 
 ### `lint`
@@ -88,7 +85,7 @@ agentskills inspect ./skills/incident-response
 ```
 
 Prints the metadata, the resource list, the catalog entry the agent sees on
-every turn, and the body it loads on demand — each with an estimated token
+every turn, and the body it loads on demand, each with an estimated token
 cost, so you can see the price before shipping.
 
 #### Native manifest inspection
@@ -143,8 +140,8 @@ load**; a reference is charged **only if the agent goes and reads it**. Authors
 reliably get this backwards, trimming a body while ignoring a description that
 costs a hundred tokens a turn forever.
 
-Sections do not nest — a heading owns its own text up to the next heading of
-any level — so the parts sum to the body exactly. Depth shows in the indent
+Sections do not nest (a heading owns its own text up to the next heading of
+any level) so the parts sum to the body exactly. Depth shows in the indent
 instead. A `#` inside a fenced code block is a shell comment, not a heading.
 
 The splitter itself lives in `agentskills-core` (`split_sections`), which also
@@ -173,7 +170,7 @@ network on first use, which is a poor trade for a tool whose main job is
 reading YAML in CI. Install it yourself if you want exact numbers.
 
 Whichever counter ran is named in every report, and `--tokenizer tiktoken`
-refuses to fall back — a budget gate that quietly changes its arithmetic
+refuses to fall back: a budget gate that quietly changes its arithmetic
 depending on what happens to be installed is worse than no gate. Pin it in CI
 and leave `auto` for the terminal.
 
@@ -232,7 +229,7 @@ without it is not earning its tokens.
 
 #### Bringing your own model
 
-`--model` takes `module:factory` — a dotted path to a zero-argument callable
+`--model` takes `module:factory`, a dotted path to a zero-argument callable
 returning a client. Nothing in this project depends on a provider SDK, and a
 ten-line adapter is a smaller ask than an opinion about which vendor you should
 install:
@@ -269,7 +266,7 @@ without the model that produced it is not a measurement. Set temperature to
 zero if your provider allows it; this side has no opinion it could enforce.
 
 `--judge` names a second client for `judge` expectations and defaults to the
-model under test — the cheapest judge and the least independent one. When
+model under test, the cheapest judge and the least independent one. When
 `repeat` is above `1`, the report flags cases whose repeats disagreed, because
 a case that passes three times in five has measured sampling noise rather than
 a skill.
@@ -279,7 +276,7 @@ a skill.
 These calls hit real APIs and cost real money. `eval` is never part of
 `pytest`: it runs only when you invoke it, with credentials you supply.
 Completions are cached under `.agentskills/eval-cache` by model, system prompt,
-user prompt, and repeat index — so editing a skill re-buys its runs, while
+user prompt, and repeat index, so editing a skill re-buys its runs, while
 tightening an expectation re-grades the answers already bought. `--no-cache`
 turns that off; `--cache-dir` moves it.
 
@@ -290,8 +287,8 @@ agentskills serve ./skills --transport stdio
 ```
 
 Runs the MCP server over a folder of skills without hand-writing a config
-file. For anything beyond a single filesystem root — HTTP providers,
-per-skill options, environment placeholders — use
+file. For anything beyond a single filesystem root (HTTP providers,
+per-skill options, environment placeholders) use
 [agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server)
 with a `server.json`.
 
@@ -325,7 +322,7 @@ before publishing a remote endpoint.
 | Code | Meaning |
 | --- | --- |
 | `0` | Ran, found nothing wrong. |
-| `1` | Ran, found errors — or warnings under `--strict`, or a cost over budget. |
+| `1` | Ran, found errors, or warnings under `--strict`, or a cost over budget. |
 | `2` | Could not run: bad path, missing extra, unwritable directory. |
 
 The distinction matters in CI: `1` means a skill is broken, `2` means the
@@ -369,7 +366,7 @@ in the folder, such as an eval case file.
 
 `inspect --cost --format json` reports each skill's `perTurn`, `perLoad` and
 `onDemand` totals, the `sections` and `resources` they were summed from, the
-`overBudget` messages, and the `counter` that produced the numbers — including
+`overBudget` messages, and the `counter` that produced the numbers, including
 whether it was `exact`. A consumer that charts these over time needs to know
 when the unit changed underneath it.
 
@@ -414,7 +411,7 @@ agentskills validate ./skills --format json -v > report.json
 
 ## Security
 
-Agent Skills are **equivalent to executable code** — skill content is injected
+Agent Skills are **equivalent to executable code**: skill content is injected
 into an LLM agent's context verbatim. Validating a skill does not make it safe
 to run. **Only load skills from sources you trust.**
 

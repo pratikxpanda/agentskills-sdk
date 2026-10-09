@@ -1,4 +1,4 @@
-# ADR 0011 — Publication pipeline: verify, transform, then refresh atomically
+# ADR 0011: Publication pipeline: verify, transform, then refresh atomically
 
 **Status:** Accepted
 **Date:** 2026-10

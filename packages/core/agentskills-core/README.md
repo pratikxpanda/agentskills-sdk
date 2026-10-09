@@ -1,15 +1,12 @@
----
-title: agentskills-core
-description: Provider contracts, skill handles, registry, and validation for Agent Skills.
----
+# agentskills-core
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
-> Core abstractions for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk) - provider interface, registry, validation, and skill model.
+> Core abstractions for the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk): provider interface, registry, validation, and skill model.
 
-This package provides the foundational building blocks for working with the [Agent Skills](https://agentskills.io) format. It is **storage-agnostic** - concrete providers (filesystem, HTTP, database, etc.) live in separate packages.
+This package provides the foundational building blocks for working with the [Agent Skills](https://agentskills.io) format. It is **storage-agnostic**: concrete providers (filesystem, HTTP, database, etc.) live in separate packages.
 
 ## Installation
 
@@ -94,7 +91,7 @@ skill_ids = await registry.register_all(fs_provider)
 `register_all()` raises `DiscoveryNotSupportedError` for backends that cannot be enumerated;
 check `provider.supports_discovery` first if you do not know which kind you have.
 
-All three are atomic - if any skill fails validation, none are registered, and the error names
+All three are atomic: if any skill fails validation, none are registered, and the error names
 every skill that failed rather than only the first.
 
 ### Accessing Skills
@@ -317,7 +314,7 @@ metadata:
 ---
 ```
 
-`max_chars` drops whole entries from the end until the result fits, so the output stays well-formed and the same arguments always produce the same catalog. Truncation is never silent — the XML root gains `truncated`, `shown` and `total` attributes, and the Markdown gains a closing note:
+`max_chars` drops whole entries from the end until the result fits, so the output stays well-formed and the same arguments always produce the same catalog. Truncation is never silent: the XML root gains `truncated`, `shown` and `total` attributes, and the Markdown gains a closing note:
 
 ```xml
 <available_skills truncated="true" shown="12" total="40">
@@ -341,7 +338,7 @@ if fast_path is not None:
     print(fast_path.tokens)      # what it costs, by the counter the outline uses
 ```
 
-Use the prompt in place of a catalog in your own host. It returns `None` — meaning "use the normal catalog path" — unless the effective skill set is exactly one and its body fits under the ceiling.
+Use the prompt in place of a catalog in your own host. It returns `None` (meaning "use the normal catalog path") unless the effective skill set is exactly one and its body fits under the ceiling.
 
 Resolution lives here rather than in each host because the decision is identical everywhere, and because the ceiling is the part that has to be tuned.
 
@@ -362,13 +359,13 @@ fast_path = await resolve_fast_path(registry, include=selection.skill_ids)
 | 10 turns | < 340 tokens |
 | 100 turns | < 309 tokens |
 
-A host knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300 — the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
+A host knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300, the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
 
-**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` names the four section and body accessors (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`) that would re-fetch inlined content. A host that exposes tools by those names should drop them. References, scripts and assets are still genuinely progressive — a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
+**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` names the four section and body accessors (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`) that would re-fetch inlined content. A host that exposes tools by those names should drop them. References, scripts and assets are still genuinely progressive: a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
 
 ### Skill Versions (optional, non-spec)
 
-A skill may declare a `version` in its frontmatter. It is optional — skills without one remain
+A skill may declare a `version` in its frontmatter. It is optional: skills without one remain
 valid and behave exactly as before:
 
 ```yaml
@@ -394,7 +391,7 @@ The quoting requirement is not pedantry: YAML parses an unquoted `1.0` as a floa
 as a date, so the three most likely authoring mistakes never reach the validator as strings. The
 error message names the cause rather than reporting a bare type mismatch.
 
-Versions appear in both catalog formats when set, and are omitted entirely when not — unversioned
+Versions appear in both catalog formats when set, and are omitted entirely when not: unversioned
 skills cost no extra prompt tokens.
 
 > `version` is **not** part of the upstream Agent Skills specification. It is supported here
@@ -441,7 +438,7 @@ except ResourceListingNotSupportedError:
     listing = None   # fall back to names mentioned in the skill body
 ```
 
-Providers that support listing always return all three keys — `references`, `scripts`, `assets` — with empty lists for unused categories, so callers need no key checks.
+Providers that support listing always return all three keys (`references`, `scripts`, `assets`) with empty lists for unused categories, so callers need no key checks.
 
 ### Skill Discovery (optional capability)
 
@@ -455,7 +452,7 @@ class DatabaseSkillProvider(SkillProvider):
         return [row.skill_id for row in ...]
 ```
 
-The default raises `DiscoveryNotSupportedError`, for the same reason as above — a caller told the backend is empty stops looking, while a caller told it cannot be enumerated falls back to explicit registration:
+The default raises `DiscoveryNotSupportedError`, for the same reason as above: a caller told the backend is empty stops looking, while a caller told it cannot be enumerated falls back to explicit registration:
 
 ```python
 if provider.supports_discovery:
@@ -480,7 +477,7 @@ Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carr
 
 ### Classifying Resources for Native Delivery
 
-An envelope is the right answer for an opaque binary and the wrong one for a diagram — the model gets a wall of base64 where a picture was. `classify_resource()` decides which is which, once, so custom hosts cannot drift on what counts as an image:
+An envelope is the right answer for an opaque binary and the wrong one for a diagram: the model gets a wall of base64 where a picture was. `classify_resource()` decides which is which, once, so custom hosts cannot drift on what counts as an image:
 
 ```python
 from agentskills_core import classify_resource
@@ -500,7 +497,7 @@ Custom hosts can use this behind an opt-in flag of their own, because the SDK ca
 
 ### Logging
 
-Every package in the SDK logs under one `agentskills.*` namespace, and the library attaches only a `NullHandler` — output is entirely the host's decision:
+Every package in the SDK logs under one `agentskills.*` namespace, and the library attaches only a `NullHandler`: output is entirely the host's decision:
 
 ```python
 import logging
@@ -510,7 +507,7 @@ logging.getLogger("agentskills").setLevel(logging.DEBUG)
 
 `DEBUG` covers fetch, parse and cache events; `INFO` covers registration outcomes; `WARNING` covers degraded-but-recovered behaviour such as a retried HTTP request. There is no `ERROR` level: anything that fails raises instead, so failures are never reported twice.
 
-Custom providers should join the namespace rather than creating their own. Pass `__name__` — the distribution prefix is rewritten, so `agentskills_http.static` logs as `agentskills.http.static`:
+Custom providers should join the namespace rather than creating their own. Pass `__name__`: the distribution prefix is rewritten, so `agentskills_http.static` logs as `agentskills.http.static`:
 
 ```python
 from agentskills_core import get_logger, redact_url
@@ -519,17 +516,17 @@ _logger = get_logger(__name__)
 _logger.debug("GET %s", redact_url(url, relative_to=base_url))
 ```
 
-`redact_url()` drops the query string, fragment and userinfo, which is where credentials actually live — SAS tokens, signed-URL signatures, basic-auth passwords. With `relative_to` it drops the scheme and host as well, leaving only the path beneath that base.
+`redact_url()` drops the query string, fragment and userinfo, which is where credentials actually live: SAS tokens, signed-URL signatures, basic-auth passwords. With `relative_to` it drops the scheme and host as well, leaving only the path beneath that base.
 
 ## Security
 
-- **Frontmatter size limits** - `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
-- **Metadata validation** - `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`, `version`) and logs warnings for unknown top-level metadata keys.
-- **Safe XML generation** - `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
-- **Credential-safe logging** - the SDK never logs request headers, and URLs pass through `redact_url()` before reaching a log record or an exception message.
-- **Bounded snapshots** - `capture_skill()` enforces the 512-file and 16 MiB limits and detects ordinary source drift.
-- **Optional publisher verification** - `TrustPolicy` fails closed on unknown keys, invalid signatures, and pin mismatches, and never downgrades a supplied invalid proof to unsigned.
-- **Content-free telemetry** - `DisclosureEvent` carries a hashed origin, revision, byte count, and timing, never paths, bodies, headers, or error text.
+- **Frontmatter size limits**: `split_frontmatter()` rejects YAML frontmatter blocks exceeding 256 KB (`MAX_FRONTMATTER_BYTES`) to prevent memory-exhaustion attacks.
+- **Metadata validation**: `validate_skill()` checks types of known optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`, `version`) and logs warnings for unknown top-level metadata keys.
+- **Safe XML generation**: `get_skills_catalog(format="xml")` uses `xml.etree.ElementTree` for catalog generation, avoiding XML injection via string concatenation.
+- **Credential-safe logging**: the SDK never logs request headers, and URLs pass through `redact_url()` before reaching a log record or an exception message.
+- **Bounded snapshots**: `capture_skill()` enforces the 512-file and 16 MiB limits and detects ordinary source drift.
+- **Optional publisher verification**: `TrustPolicy` fails closed on unknown keys, invalid signatures, and pin mismatches, and never downgrades a supplied invalid proof to unsigned.
+- **Content-free telemetry**: `DisclosureEvent` carries a hashed origin, revision, byte count, and timing, never paths, bodies, headers, or error text.
 
 For the full security policy, see [SECURITY.md](https://github.com/pratikxpanda/agentskills-sdk/blob/main/SECURITY.md).
 

@@ -1,4 +1,4 @@
-# ADR 0009 — Images are returned natively, behind an opt-in flag
+# ADR 0009: Images are returned natively, behind an opt-in flag
 
 **Status:** Superseded in part by [ADR 0010](0010-native-skills-only.md). The framework integrations were removed in v0.7. The `classify_resource()` helper and its opt-in guidance still apply to custom hosts.
 **Date:** 2026-10
@@ -14,7 +14,7 @@ sending one through a text field is strictly worse for both cost and accuracy.
 
 Fixing this changes what a tool returns, from `str` to a union, in all three
 integrations. That is the kind of change that breaks callers quietly, and the
-three integrations do not even agree on what "native" means — MCP has
+three integrations do not even agree on what "native" means: MCP has
 `ImageContent`, LangChain has standard content blocks, Agent Framework has
 `Content(type="data")`.
 
@@ -34,7 +34,7 @@ evidence. A `.png` holding a ZIP is not renderable, and a real PNG called
 
 **Only PNG, JPEG, GIF and WebP qualify.** PDF is read by some models and
 rejected by others, and guessing wrong is an API error. SVG is text that
-already arrives readable — rasterising it would replace something the model can
+already arrives readable: rasterising it would replace something the model can
 reason about with something it can only look at.
 
 **Native delivery is opt-in, per integration, via `vision=False`.** With the
@@ -94,4 +94,4 @@ nothing.
 ## Decision history
 
 - [v0.5 issue 6: Vision-native assets](../issues/v0.5.md)
-- [ADR 0007 — Binary resources use a JSON envelope](0007-binary-resource-json-envelope.md)
+- [ADR 0007: Binary resources use a JSON envelope](0007-binary-resource-json-envelope.md)
