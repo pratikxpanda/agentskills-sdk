@@ -1,6 +1,6 @@
 # ADR 0009 — Images are returned natively, behind an opt-in flag
 
-**Status:** Accepted
+**Status:** Superseded in part in v0.7. The framework integrations were removed. Only MCP `ImageContent` guidance still applies to core helpers.
 **Date:** 2026-10
 **Packages:** `agentskills-core`, `agentskills-langchain`, `agentskills-agentframework`, `agentskills-mcp-server`
 

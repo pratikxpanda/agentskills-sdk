@@ -42,13 +42,12 @@ If you *write* skills rather than consume them, you want `agentskills-tools` ins
 
 ## How It Works
 
-v0.6.0 is released. This checkout starts v0.7 development with native-only MCP
-delivery on SDK 2.2+ and protocol 2026-07-28. The deprecated native framework
-packages, Agent Framework bridge, legacy tools/catalog resources, and MCP 1.x
-support have been removed. Eight packages remain maintained. Review the
-[breaking changes and framework gaps](docs/mcp-migration.md) before upgrading.
-v0.7 has not been published, and its remaining trust and operability work is
-tracked in the [roadmap](docs/ROADMAP.md#next-v07-trust-operability).
+v0.6.0 is released. This checkout is the v0.7 development line: native-only MCP
+delivery on SDK 2.2+ and protocol 2026-07-28, with eight maintained packages.
+Review the [breaking changes](docs/mcp-migration.md) before upgrading. v0.7 has
+not been published. Publisher verification, content policy, controlled refresh,
+and network hardening are described in the
+[trust and operability guide](docs/trust-and-operability.md).
 
 1. Capture complete immutable file sets from filesystem or manifested HTTP sources.
 2. Discover metadata and manifests with `skills/list`, or look up a URI with `skills/get`.
@@ -194,7 +193,7 @@ plus roadmap and ADR pages.
 
 ## Integrations
 
-- Retired framework integrations: [migration guide](docs/mcp-migration.md)
+- Breaking changes in v0.7: [migration guide](docs/mcp-migration.md)
 - MCP server: [packages/integrations/agentskills-mcp-server/README.md](packages/integrations/agentskills-mcp-server/README.md)
 - Skill selection: [packages/retrieval/agentskills-retrieval/README.md](packages/retrieval/agentskills-retrieval/README.md)
 

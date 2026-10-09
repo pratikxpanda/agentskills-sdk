@@ -127,10 +127,11 @@ files. Binary resources retain byte limits. No implicit tokenizer download or
 heuristic decides a security limit.
 
 Redaction changes the delivered revision. `Publication.source_identity` retains
-the original evidence separately. Native `_meta["io.agentskills/publication"]`
+the original evidence separately. Resource `_meta["io.agentskills/publication"]`
 reports origin, delivered revision, source revision/status, publisher key ID,
-transformed status, and annotation codes. This metadata is an optional SDK
-annotation, not proof a client should trust without verifying its server.
+transformed status, and annotation codes. Skill entries from `skills/list` and
+`skills/get` carry only the fields the extension defines. This metadata is an
+optional SDK annotation, not proof a client should trust without verifying its server.
 
 Hosts must display originating server plus canonical URI, verify file bytes,
 and bind approval to the delivered revision. Redaction, updates, nested skills,

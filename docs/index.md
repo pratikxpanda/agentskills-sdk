@@ -15,8 +15,7 @@ A Python SDK for discovering, retrieving, and serving
 
 ## Install
 
-v0.6.0 is released. The v0.7 development line is native-only and retires the
-framework packages and legacy MCP delivery. Review the
+v0.6.0 is released. The v0.7 development line is native-only. Review the
 [breaking changes](mcp-migration.md). Install the checkout until v0.7 is published:
 
 ```bash

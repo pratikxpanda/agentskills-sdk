@@ -148,7 +148,7 @@ python scripts/check_declared_dependencies.py
 
 It compares the module-level imports in each package's source against its declared dependencies.
 Imports nested in a function or guarded by `except ImportError` are ignored, because that is the
-pattern for an optional capability — `tiktoken` in the CLI, `agent_framework` in the MCP server —
+pattern for an optional capability, such as `tiktoken` in the CLI or `cryptography` in core,
 and declaring those would defeat the point of making them optional.
 
 ## Logging Conventions

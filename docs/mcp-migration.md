@@ -18,11 +18,10 @@ configuration contract and host/deployment boundaries.
 
 ## v0.7 Breaking Changes
 
-v0.6.0 shipped the native integration deprecations. The v0.7 development line
-retires those integrations and removes legacy MCP delivery. v0.7 is not yet
-released. The maintainer explicitly selected native-only delivery on 2026-10-06,
-accepting the loss of the previous framework-client migration paths. This replaces
-the earlier plan to retain legacy delivery until framework parity was established.
+v0.6.0 shipped the native integration deprecations. v0.7 is native-Skills-only
+and removes those integrations and legacy MCP delivery. v0.7 is not yet released.
+The maintainer selected this direction on 2026-10-06, accepting the loss of the
+previous framework-client paths.
 
 | Removed surface | v0.7 direction |
 | --- | --- |
@@ -33,8 +32,10 @@ the earlier plan to retain legacy delivery until framework parity was establishe
 | Eight legacy tools and `skills://` catalog resources | Use `skills/list`, `skills/get`, and `resources/read` on `skill://` URIs |
 | Synchronous `create_mcp_server` | Await the native factory. The old `.server` module is removed |
 | Legacy server fast path and image/tool options | No eager injection or tool conversion in native delivery |
-| `agentskills serve --native` | Remove the flag. Serving is native-only by default |
-| `mode: legacy` configuration | Rejected. Omit `mode` or set `native` |
+| `agentskills serve --native` | Remove the flag. Serving is always native |
+| `mode` configuration key | Removed. Unknown keys, including `mode`, are rejected |
+| `create_native_mcp_server` and `build_native_server` | Use `create_mcp_server` and `build_server` |
+| Base64 `blob` for every file | UTF-8 text without NUL is read as `text`, other files as `blob` |
 
 `agentskills-adapters` imports instruction formats and remains supported. Core,
 filesystem, HTTP, retrieval, testing, CLI tooling, and MCP remain maintained:
@@ -42,8 +43,8 @@ eight distributions in lockstep releases.
 
 ## Source Retention
 
-Retired source and dependent examples are deleted from the active tree, not moved
-under `archived/`. An in-tree archive would still look vendorable and would create
+Retired source and dependent examples are deleted from the active tree, with no
+`archived/` directory. An in-tree archive would still look vendorable and would create
 ambiguity about scanning, testing, dependency updates, and support. The immutable
 [v0.6.0 source tag](https://github.com/pratikxpanda/agentskills-sdk/tree/v0.6.0)
 and [versioned documentation](https://pratikxpanda.github.io/agentskills-sdk/0.6.0/)
@@ -90,8 +91,8 @@ provider = LocalFileSystemSkillProvider("./skills")
 server = await create_mcp_server([Skill("incident-response", provider)])
 ```
 
-`create_native_mcp_server` remains an equivalent public name. The factory captures
-immutable snapshots. Restart to publish changed content. HTTP providers must
+`create_mcp_server` captures immutable snapshots. Programmatic servers publish
+changed content with `await server.refresh()`. HTTP providers must
 enable complete file manifests with `file_manifest=True`.
 
 ```bash
@@ -114,5 +115,5 @@ Scripts are not executed by resource reads and `allowed-tools` grants no permiss
 TLS, authorization, origin/host validation, and audience isolation are deployment
 responsibilities. Do not pass inbound bearer tokens to upstream providers.
 Local preflight and transport tests do not certify production security or model
-behavior. The remaining v0.7 trust and operability features are tracked in the
-[roadmap](ROADMAP.md#next-v07-trust-operability).
+behavior. See [Trust and Operability](trust-and-operability.md) for publisher
+verification, content policy, refresh, and network controls.

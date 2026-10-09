@@ -1,6 +1,6 @@
 ---
 title: Agent Skills SDK Roadmap
-description: MCP-first priorities, native adapter retirement, and future SDK capabilities.
+description: MCP-first priorities, the native-only v0.7 line, and future SDK capabilities.
 ---
 
 > Public roadmap for the [Agent Skills SDK](index.md). Themes and ordering, not dates.
@@ -32,11 +32,10 @@ explicit design doc arguing the trade-off.
 
 ## Direction From v0.6.0
 
-v0.6.0 establishes standards-aligned skill delivery over MCP. The next priority is
-production trust and operability. Native LangChain and Microsoft Agent Framework
-integrations were deprecated in v0.6.0. The v0.7 development line retires them and
-legacy MCP delivery following the explicit native-only decision below. Previously
-published wheels are unchanged.
+v0.6.0 establishes standards-aligned skill delivery over MCP. The v0.7 development
+line builds production trust and operability on that contract. It is native-only:
+the v0.6 framework integrations and legacy MCP delivery are removed. Published
+v0.6 wheels are unchanged.
 
 ### Official MCP Skills Support
 
@@ -67,30 +66,23 @@ discovery and transport binding. Alignment means:
    Hosts own selection, approval, context injection, and execution permissions. Skills are
    identified by originating server plus URI, not by name alone.
 
-The v0.6 `get_skill_*` tools and `skills://catalog/*` resources were a legacy compatibility
+The v0.6 `get_skill_*` tools and `skills://catalog/*` resources were a compatibility
 surface, not this extension, and are removed in v0.7. MCP prompts may provide user-invoked shortcuts, but do not
 substitute for native skill discovery. Section disclosure and retrieval remain useful SDK
 features, without becoming proprietary requirements for reading a standards-compliant skill.
 
-### Native Integration Retirement
+### Native-Only Delivery
 
 Decision on 2026-10-06: v0.7 is native-Skills-only. The maintainer explicitly
-accepted removal of the legacy framework-client migration paths rather than
-waiting for native framework parity. The table records the original staged
-plan. Its parity gate is superseded by this decision, not claimed as passed.
-See the [breaking-change guide](mcp-migration.md) for explicit gaps and pinning
-guidance. Retired source is removed from the active tree, not copied into an
+accepted removal of the v0.6 framework packages, the Agent Framework bridge, the
+legacy tools and catalog resources, and MCP 1.x support rather than waiting for
+native framework parity. Retired source is deleted from the active tree, with no
 `archived/` directory. The v0.6.0 tag, wheels, and versioned docs preserve history.
+See the [breaking-change guide](mcp-migration.md) for pinning guidance.
 
-| Stage | Planned change | Exit condition |
-| --- | --- | --- |
-| v0.6: deprecate | Announce maintenance-only status for `agentskills-langchain`, `agentskills-agentframework`, and `AgentSkillsMcpContextProvider` plus the `[agentframework]` extra in `agentskills-mcp-server`. No new framework-specific features. Continue critical correctness and security fixes during the migration window. | Publish replacement examples using framework-owned MCP clients, a feature-gap matrix, deprecation warnings, and release notes. Audit catalog injection, retrieval, session pruning, fast path, and image delivery rather than assuming tool connectivity replaces them. |
-| v0.7 or later: retire | End the two native distributions' participation in lockstep releases and remove the Agent Framework bridge/extra from the maintained MCP package. Update dependency, test, build, publish, and documentation inventories together. | At least one full minor-release migration window after deprecation ships, tested migration paths for both frameworks, and an explicit breaking-change notice. Unresolved gaps must have documented alternatives before removal. |
-| After retirement | Keep previously published wheels and versioned documentation available. Framework-specific integration examples may remain, using upstream MCP clients. | No deletion or yanking solely for retirement, no new first-party native adapters, and no claim that archived versions track future framework releases. |
-
-Retiring framework adapters does not retire `agentskills-adapters`, which imports instruction
-formats. Nor does it remove the framework-neutral core, providers, retrieval, testing, or CLI.
-Migration parity need not reproduce every framework convenience, but any loss must be explicit.
+`agentskills-adapters` imports instruction formats and remains supported, as do the
+framework-neutral core, providers, retrieval, testing, and CLI. No new first-party
+framework adapters are planned.
 
 ## Themes
 
@@ -198,7 +190,7 @@ included, not postponed to the broader trust work in v0.7.
 
 | Item | Theme | Package(s) | Notes |
 | --- | --- | --- | --- |
-| Native adapter deprecation and migration | Interoperability | native integrations, MCP, docs | Start the retirement sequence above. Provide LangChain and Microsoft Agent Framework examples using their upstream MCP clients. Inventory framework-only behaviour and publish supported replacements or explicit gaps before removing anything. |
+| Native adapter deprecation and migration | Interoperability | native integrations, MCP, docs | Deprecate the native framework adapters and provide examples using their upstream MCP clients. Inventory framework-only behaviour and publish supported replacements or explicit gaps before removing anything. |
 | Official Skills extension and protocol baseline | Correctness | `agentskills-mcp-server` | Select an official Python MCP SDK release with the required protocol/extension support. Implement capability declaration, `skills/list`, `skills/get`, required request metadata and result/cache fields, pagination, and specified errors. Record supported protocol and extension revisions. An empty or partial listing must not prevent direct lookup of a served skill. |
 | Lossless skill resources and manifests | Correctness / Trust | core, providers, MCP | Add the provider capabilities needed to serve complete raw `SKILL.md` content and every supporting file, including nonstandard and nested directories. Preserve all frontmatter fields, resolve registry aliases to conforming URI paths, and publish complete byte-accurate manifests. Retain coherent snapshots so files cannot drift from advertised digests. Do not pass canonical reads through body-only, section, image-conversion, or binary-omission paths. Reserve `"dynamic"` for genuinely dynamic content, not as a workaround for missing enumeration. |
 | Legacy MCP compatibility and host boundaries | Interoperability | MCP, core, retrieval | Keep existing tools and `skills://` resources as an explicit compatibility mode during adoption. Do not silently rewrite their URIs or claim feature parity. Native Skills mode must not eagerly inline a lone skill at discovery or connection time. Keep selection, consent, session/context tracking, and `allowed-tools` grants host-owned. Avoid duplicate catalog injection when the host already manages skills. |
@@ -303,8 +295,8 @@ removed from the roadmap. Examples using those frameworks' MCP clients remain in
 
 | Item | Notes |
 |---|---|
-| API freeze | Public surface documented and frozen, with native adapter retirement complete. Anything not documented is explicitly private. |
-| Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated version guarantees for maintained packages. Publish supported MCP protocol/extension revisions and the legacy compatibility lifecycle. |
+| API freeze | Public surface documented and frozen. Anything not documented is explicitly private. |
+| Compatibility policy | SemVer commitments, a written deprecation policy with a minimum support window, and coordinated version guarantees for maintained packages. Publish supported MCP protocol/extension revisions. |
 | Release automation end-to-end | Preserve existing Trusted Publishing and attestations. Complete changelog automation and validate the reduced package inventory and reproducible release process. |
 | Control plane interoperability | Stabilize versioning, integrity, telemetry, origin-preserving MCP composition, and caller-owned authorization boundaries. Protocol conformance and tested host compatibility are release gates. |
 
@@ -323,8 +315,8 @@ Stating these prevents recurring proposals and scope creep.
    or enterprise authorization service is outside the SDK.
 - **Being an agent framework.** Frameworks connect through MCP. The SDK does not own their
    orchestration, conversation state, tool permissions, or execution sandbox.
-- **Maintaining native framework adapters.** Retire the LangChain and Microsoft Agent Framework
-   integrations through the migration policy above. New framework support uses MCP examples.
+- **Maintaining native framework adapters.** The LangChain and Microsoft Agent Framework
+   integrations were removed in v0.7. New framework support uses MCP examples.
 - **Forking the skill format.** Divergence from the open spec is a last resort.
 
 ---

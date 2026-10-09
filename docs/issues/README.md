@@ -50,6 +50,6 @@ than being quietly deleted.
 | Prefix | Values |
 |---|---|
 | `theme:` | `correctness`, `performance`, `resilience`, `agent-effectiveness`, `interoperability`, `trust`, `operability`, `dx`, `ecosystem`, `project-health` |
-| `package:` | `core`, `fs`, `http`, `langchain`, `agentframework`, `mcp-server`, `tools`, `testing`, `retrieval`, `adapters` |
+| `package:` | `core`, `fs`, `http`, `mcp-server`, `tools`, `testing`, `retrieval`, `adapters` |
 | `type:` | `bug`, `feature`, `docs`, `chore` |
 | flat | `good-first-issue`, `help-wanted`, `breaking-change` |

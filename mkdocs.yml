@@ -20,9 +20,6 @@ nav:
       - Skill selection: packages/retrieval.md
       - CLI tooling: packages/tools.md
       - Testing toolkit: packages/testing.md
-  - Retired Integrations:
-      - LangChain: packages/langchain.md
-      - Agent Framework: packages/agentframework.md
   - Roadmap: ROADMAP.md
   - ADRs: adr/README.md
   - Issue plans:
