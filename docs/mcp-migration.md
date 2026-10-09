@@ -1,6 +1,6 @@
 ---
 title: MCP Migration
-description: Breaking changes and migration boundaries for the native-only v0.7 development line.
+description: Breaking changes and migration boundaries for the native-only v0.7 release.
 ---
 
 ## Additional v0.7 Controls
@@ -19,7 +19,7 @@ configuration contract and host/deployment boundaries.
 ## v0.7 Breaking Changes
 
 v0.6.0 shipped the native integration deprecations. v0.7 is native-Skills-only
-and removes those integrations and legacy MCP delivery. v0.7 is not yet released.
+and removes those integrations and legacy MCP delivery.
 The maintainer selected this direction on 2026-10-06, accepting the loss of the
 previous framework-client paths.
 

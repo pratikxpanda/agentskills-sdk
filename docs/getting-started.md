@@ -11,10 +11,10 @@ The SDK is split into focused packages.
 - One provider (`agentskills-fs` or `agentskills-http`)
 - `agentskills-mcp-server` for native Skills delivery to a conforming host
 
-v0.7 is in development. Install the checkout until it is published:
+Install the native MCP server with the filesystem provider:
 
 ```bash
-pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+pip install "agentskills-mcp-server[fs]"
 ```
 
 ## Publish Skills

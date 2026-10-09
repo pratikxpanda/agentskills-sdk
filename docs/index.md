@@ -16,11 +16,11 @@ A Python SDK for discovering, retrieving, and serving
 
 ## Install
 
-v0.6.0 is released. The v0.7 development line is native-only. Review the
-[breaking changes](mcp-migration.md). Install the checkout until v0.7 is published:
+v0.7.0 is native-only. Review the [breaking changes](mcp-migration.md) before
+upgrading from v0.6.
 
 ```bash
-pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+pip install "agentskills-mcp-server[fs]"
 ```
 
 Or install the authoring CLI:

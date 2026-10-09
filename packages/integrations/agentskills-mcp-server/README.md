@@ -5,21 +5,17 @@ description: Serve the official MCP Skills extension with immutable, lossless re
 
 ## Native Skills Only
 
-The v0.7 development line requires MCP SDK `>=2.2,<3`. It serves the official
+Version 0.7 requires MCP SDK `>=2.2,<3`. It serves the official
 `io.modelcontextprotocol/skills` extension on protocol `2026-07-28` through
 `skills/list`, `skills/get`, and canonical `skill://` resources. Clients on older
 protocol revisions see the same `skill://` files as ordinary resources and cannot
 call the Skills methods. See the
 [breaking-change guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md).
-v0.7 is not yet released. Install the development checkout until publication.
 
 ## Install
 
-The release install is `pip install 'agentskills-mcp-server[fs]>=0.7,<0.8'`.
-For development, install the local core, filesystem, and MCP packages together:
-
 ```bash
-python -m pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+pip install "agentskills-mcp-server[fs]"
 ```
 
 The `[http]` extra adds the HTTP provider. Publisher verification needs
