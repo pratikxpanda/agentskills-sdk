@@ -9,7 +9,7 @@ import pytest
 
 from agentskills_core import SkillUnavailableError
 from agentskills_tools.discovery import CliError, SkillLocation
-from agentskills_tools.serve import build_native_server
+from agentskills_tools.serve import build_server
 
 
 class TestBuildNativeServer:
@@ -28,13 +28,11 @@ class TestBuildNativeServer:
             assert await skills[0].read_file("SKILL.md") == expected
             return server
 
-        module.create_native_mcp_server = build
+        module.create_mcp_server = build
         monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
 
         assert (
-            await build_native_server(
-                skills_root, [SkillLocation("alpha", path)], name="Native test"
-            )
+            await build_server(skills_root, [SkillLocation("alpha", path)], name="Native test")
             is server
         )
 
@@ -45,7 +43,7 @@ class TestBuildNativeServer:
         monkeypatch.setitem(sys.modules, "agentskills_mcp_server", None)
 
         with pytest.raises(CliError, match=r"MCP SDK 2\.2.*agentskills-tools\[serve\]"):
-            await build_native_server(skills_root, [SkillLocation("alpha", path)], name="Test")
+            await build_server(skills_root, [SkillLocation("alpha", path)], name="Test")
 
     @pytest.mark.parametrize(
         "error",
@@ -60,8 +58,8 @@ class TestBuildNativeServer:
         async def build(skills, *, name):
             raise error
 
-        module.create_native_mcp_server = build
+        module.create_mcp_server = build
         monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
 
         with pytest.raises(CliError, match="agentskills inspect PATH --native"):
-            await build_native_server(skills_root, [SkillLocation("alpha", path)], name="Test")
+            await build_server(skills_root, [SkillLocation("alpha", path)], name="Test")

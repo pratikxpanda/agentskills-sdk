@@ -224,11 +224,11 @@ async def measure_native(root: Path, identifiers: list[str]) -> dict[str, Any]:
     """Measure native discovery and progressive reads with an official client."""
     from mcp import Client
 
-    from agentskills_mcp_server import create_native_mcp_server
+    from agentskills_mcp_server import create_mcp_server
 
     provider = CountingProvider(root)
     started = perf_counter()
-    server = await create_native_mcp_server(
+    server = await create_mcp_server(
         [Skill(identifier, provider) for identifier in identifiers], page_size=25
     )
     build_ms = (perf_counter() - started) * 1000
@@ -259,7 +259,13 @@ async def measure_native(root: Path, identifiers: list[str]) -> dict[str, Any]:
         manifest = {resource["uri"]: resource for resource in entry["resources"]}
         for uri in wanted:
             resource = await metrics.timed("delivery", client.read_resource(uri))
-            data = base64.b64decode(resource.contents[0].blob, validate=True)
+            content = resource.contents[0]
+            text = getattr(content, "text", None)
+            data = (
+                text.encode("utf-8")
+                if text is not None
+                else base64.b64decode(content.blob, validate=True)
+            )
             if (
                 len(data) != manifest[uri]["size"]
                 or "sha256:" + sha256(data).hexdigest() != manifest[uri]["digest"]
@@ -270,7 +276,6 @@ async def measure_native(root: Path, identifiers: list[str]) -> dict[str, Any]:
         for entry in entries
     ]
     return {
-        "mode": "native",
         "buildMs": build_ms,
         "discoveredSkills": len(entries),
         "selectionMetadataTokens": estimate_tokens(json_text(metadata)),

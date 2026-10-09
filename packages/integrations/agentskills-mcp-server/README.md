@@ -7,10 +7,9 @@ description: Serve the official MCP Skills extension with immutable, lossless re
 
 The v0.7 development line requires MCP SDK `>=2.2,<3`. It serves the official
 `io.modelcontextprotocol/skills` extension on protocol `2026-07-28` through
-`skills/list`, `skills/get`, and canonical `skill://` resources.
-
-Legacy tools, `skills://` catalogs, the Agent Framework bridge and extra, and
-MCP 1.x support are removed. See the
+`skills/list`, `skills/get`, and canonical `skill://` resources. Clients on older
+protocol revisions see the same `skill://` files as ordinary resources and cannot
+call the Skills methods. See the
 [breaking-change guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/mcp-migration.md).
 v0.7 is not yet released. Install the development checkout until publication.
 
@@ -41,14 +40,15 @@ server = asyncio.run(create_mcp_server([Skill("incident-response", provider)]))
 server.run(transport="stdio")
 ```
 
-`create_mcp_server` is now async. `create_native_mcp_server` names the same
-factory. Both accept a `SkillRegistry` or a sequence of raw `Skill` handles.
-Raw handles avoid imposing registry-specific parsing restrictions before native
-publication. Discovery is metadata-only, including for a single skill.
+`create_mcp_server` is async and accepts a `SkillRegistry` or a sequence of raw
+`Skill` handles. Raw handles avoid imposing registry-specific parsing restrictions
+before publication. Discovery is metadata-only, including for a single skill.
 
 The factory captures complete immutable file sets before serving. It preserves
 original `SKILL.md` bytes, frontmatter, supporting directories, and binary files.
-Each manifest contains raw-byte SHA-256 digests and sizes. Programmatic servers
+Each manifest contains raw-byte SHA-256 digests and sizes. A file whose bytes are
+valid UTF-8 without NUL is read as `text` and every other file as `blob`. Both
+forms return the exact captured bytes. Programmatic servers
 support `await server.refresh()` and `server.health()`.
 Server-provided hashes establish consistency, not publisher identity or safety.
 Programmatic callers own provider cleanup and must keep providers open for refresh.
@@ -76,14 +76,14 @@ python -m agentskills_mcp_server --config server.json --transport streamable-htt
 ```
 
 JSON and YAML are supported. `${VAR}` placeholders resolve from the environment.
-The CLI closes owned provider clients after capture, including on failure.
+Unknown top-level keys are rejected. The CLI closes owned provider clients after
+capture, including on failure.
 
 | Field | Default | Meaning |
 | --- | --- | --- |
 | `name` | Required | Server display name |
 | `skills` | Required, nonempty | IDs, provider types, and constructor options |
 | `instructions` | `null` | Optional server-level instructions |
-| `mode` | `native` | Only `native` is accepted. Remove `legacy` configs |
 | `skill_paths` | `{}` | Registry ID to canonical publication path |
 | `listed_skill_ids` | `null` | Optional listing subset, not authorization |
 | `page_size` | `100` | Maximum entries per discovery page |
@@ -123,9 +123,7 @@ resource bytes. Use SDK 2 `Client` for extension negotiation, not its older
 `ClientSession` compatibility API. Ordinary tools/resources connectivity does not
 establish Skills support.
 
-The former LangChain and Agent Framework examples used removed tools. They are
-not v0.7 migration recipes. There is no claim of verified native framework
-activation parity. Hosts own selection, manifest verification, origin visibility,
+Hosts own selection, manifest verification, origin visibility,
 per-skill consent, context injection, session tracking, image rendering, and
 execution policy. Resource reads never execute scripts or grant `allowed-tools`.
 

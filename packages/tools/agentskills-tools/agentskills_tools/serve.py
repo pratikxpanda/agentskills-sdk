@@ -16,7 +16,7 @@ from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.discovery import CliError, SkillLocation
 
 
-async def build_native_server(
+async def build_server(
     root: Path,
     locations: list[SkillLocation],
     *,
@@ -29,7 +29,7 @@ async def build_native_server(
         CliError: If native MCP support is missing or publication fails.
     """
     try:
-        from agentskills_mcp_server import create_native_mcp_server
+        from agentskills_mcp_server import create_mcp_server
     except ImportError as exc:
         raise CliError(
             "Native serving requires the MCP server extra and MCP SDK 2.2+. "
@@ -38,7 +38,7 @@ async def build_native_server(
     try:
         provider = LocalFileSystemSkillProvider(root, max_file_bytes=max_file_bytes)
         skills = [Skill(location.skill_id, provider) for location in locations]
-        return await create_native_mcp_server(skills, name=name)
+        return await create_mcp_server(skills, name=name)
     except (AgentSkillsError, OSError, ValueError) as exc:
         raise CliError(
             f"cannot publish native skills: {exc}\n"

@@ -30,7 +30,6 @@ class TestInspectNativeLocation:
         inspection = await inspect_native_location(skills_root, SkillLocation("alpha", path))
 
         assert inspection["scope"] == "localSkillSnapshot"
-        assert inspection["mode"] == "native"
         assert inspection["fileCount"] == 3
         assert inspection["totalBytes"] == len(source) + 8
         assert inspection["manifest"]["uri"] == "skill://alpha/SKILL.md"

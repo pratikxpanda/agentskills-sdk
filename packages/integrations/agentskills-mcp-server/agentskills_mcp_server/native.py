@@ -31,6 +31,16 @@ from agentskills_core.trust import TrustPolicy
 _PROTOCOLS = frozenset({"2026-07-28"})
 
 
+def _content(data: bytes) -> str | bytes:
+    """Return text only when UTF-8 decoding cannot change a byte."""
+    if b"\x00" in data:
+        return data
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data
+
+
 class _ListParams(RequestParams):
     cursor: StrictStr | None = None
 
@@ -65,7 +75,12 @@ class _SkillsExtension(Extension):
                 mime_type = mimetypes.guess_type(file.path)[0] or "application/octet-stream"
                 if file.path.rsplit("/", 1)[-1] == "SKILL.md":
                     mime_type = "text/markdown"
+                elif mime_type == "application/octet-stream" and isinstance(
+                    _content(file.data), str
+                ):
+                    mime_type = "text/plain"
                 resource = BinaryResource(uri=uri, data=file.data, mime_type=mime_type)
+                resource.name = file.path.rsplit("/", 1)[-1]
                 if uri in self._resources:
                     previous = self._resources[uri]
                     if previous.data != file.data:
@@ -167,7 +182,6 @@ class _LiveSkillsExtension(Extension):
                         "annotations": list(entry.annotations),
                     }
                 }
-                compiled._skills[manifest["uri"]]["_meta"] = metadata
                 for resource in manifest["resources"]:
                     compiled._resources[resource["uri"]].meta = metadata
             self._compiled = compiled
@@ -210,7 +224,7 @@ class _LiveSkillsExtension(Extension):
             self.observer,
             "lookup",
             origin=self.origin,
-            revision=result["skill"]["_meta"]["io.agentskills/publication"]["revision"],
+            revision=compiled._resources[params.uri].meta["io.agentskills/publication"]["revision"],
             status="stale" if state.stale else "ok",
             duration_seconds=monotonic() - started,
         )
@@ -281,7 +295,9 @@ class NativeSkillsServer(MCPServer):
             duration_seconds=monotonic() - started,
         )
         return [
-            ReadResourceContents(content=resource.data, mime_type=resource.mime_type, meta=metadata)
+            ReadResourceContents(
+                content=_content(resource.data), mime_type=resource.mime_type, meta=metadata
+            )
         ]
 
     def secure_http_app(
@@ -310,7 +326,7 @@ class NativeSkillsServer(MCPServer):
         )
 
 
-async def create_native_mcp_server(
+async def create_mcp_server(
     skills: SkillRegistry | Sequence[Skill],
     *,
     name: str = "AgentSkills",
@@ -329,7 +345,7 @@ async def create_native_mcp_server(
 ) -> NativeSkillsServer:
     """Capture immutable sources and serve the official Skills extension.
 
-    Requires MCP SDK 2.2+ and protocol 2026-07-28. No legacy tools, catalog
+    Requires MCP SDK 2.2+ and protocol 2026-07-28. No tools, catalog
     injection, execution, or directory-read capability are registered.
     Call ``await server.refresh()`` to publish a new snapshot. Callers supply only skills
     authorized for the server's audience. Hosts retain approval and trust duties.

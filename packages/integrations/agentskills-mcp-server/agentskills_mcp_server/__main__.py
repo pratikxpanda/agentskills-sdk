@@ -154,7 +154,6 @@ def main() -> None:
                 {
                     "status": "ready",
                     "scope": "localServerConstruction",
-                    "mode": config.mode,
                     "mcpSdkVersion": version("mcp"),
                     "skillCount": len(config.skills),
                     "providerTypes": sorted({skill.provider for skill in config.skills}),

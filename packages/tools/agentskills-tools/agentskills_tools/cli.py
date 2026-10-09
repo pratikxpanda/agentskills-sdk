@@ -63,7 +63,7 @@ from agentskills_tools.render import (
     render_text,
 )
 from agentskills_tools.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
-from agentskills_tools.serve import build_native_server
+from agentskills_tools.serve import build_server
 from agentskills_tools.validate import validate_locations
 
 EXIT_OK = 0
@@ -454,7 +454,7 @@ def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
     server = asyncio.run(
-        build_native_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
+        build_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
     )
     if args.check:
         print(f"Publication ready: {len(locations)} skills in native mode.", file=out)

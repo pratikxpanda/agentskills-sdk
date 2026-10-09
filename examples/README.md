@@ -30,12 +30,8 @@ The [benchmark guide](../docs/mcp-benchmarks.md) describes the corpus, requests,
 digest verification, and limitations. No model credentials are needed. Native
 stdio and loopback HTTP tests also exercise real protocol round trips.
 
-## Retired Framework Examples
-
-The LangChain, Agent Framework, and legacy MCP examples are preserved in the
-[v0.6.0 tag](https://github.com/pratikxpanda/agentskills-sdk/tree/v0.6.0/examples).
-They depend on removed APIs and are not v0.7 recipes. Read the
-[migration guide](../docs/mcp-migration.md) before upgrading.
+## Hosts
 
 An ordinary MCP tool client is not a native Skills host. Selection, approval,
 digest verification, context injection, and execution policy remain host-owned.
+See the [breaking changes](../docs/mcp-migration.md) for what v0.7 removed.

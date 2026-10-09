@@ -564,7 +564,7 @@ class HTTPStaticFileSkillProvider(SkillProvider):
         """Return the complete, sorted file list without fetching file contents.
 
         The host must publish ``{"files": ["SKILL.md", "data/nested.bin"]}``
-        in the skill's ``index.json``. This is separate from legacy grouped
+        in the skill's ``index.json``. This is separate from grouped
         resource listing and must include every supporting file.
         """
         if not self.supports_file_access:

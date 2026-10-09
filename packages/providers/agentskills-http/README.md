@@ -155,7 +155,7 @@ Missing categories default to empty lists. A manifest is host-supplied data whos
 ## Lossless File Access
 
 For v0.6 byte-preserving delivery, publish a complete `files` list in each skill's
-`index.json`. This can coexist with the legacy grouped resource keys:
+`index.json`. This can coexist with the grouped resource keys:
 
 ```json
 {
@@ -171,7 +171,7 @@ async with HTTPStaticFileSkillProvider(BASE, file_manifest=True) as provider:
 ```
 
 The host is responsible for listing every file. The provider cannot discover
-omitted files on a static host. Unlike legacy resource listing, unsafe paths,
+omitted files on a static host. Unlike resource listing, unsafe paths,
 duplicates, non-string entries, or a missing `SKILL.md` entry reject the manifest.
 Enabling `resource_manifest` alone does not enable lossless file access.
 

@@ -9,10 +9,9 @@ nothing.  A diagram can cost thousands of tokens to say exactly zero.
 
 This module is the branch above that fallback.  Given a name and its
 bytes it reports a media type and whether the resource is a candidate
-for native delivery, so the three integrations cannot drift on what
-counts as an image.  What to *do* with that answer -- an MCP
-``ImageContent``, a LangChain content block, an Agent Framework data
-content -- stays in each integration, because only the shapes differ.
+for native delivery, so integrations cannot drift on what counts as an
+image.  What to *do* with that answer -- an MCP ``ImageContent``, for
+instance -- stays in each integration, because only the shapes differ.
 
 Detection is by magic bytes first and file name second.  A name is a
 claim and bytes are evidence; handing a model an ``image/png`` block

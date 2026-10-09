@@ -37,7 +37,7 @@ import os
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -156,11 +156,10 @@ class ServerConfig(BaseModel):
         skills: One or more skill definitions to register.
     """
 
-    model_config = ConfigDict(hide_input_in_errors=True)
+    model_config = ConfigDict(hide_input_in_errors=True, extra="forbid")
     name: str = Field(..., description="Display name for the MCP server")
     instructions: str | None = Field(None, description="Optional server-level instructions")
     skills: list[SkillConfig] = Field(..., description="Skills to register", min_length=1)
-    mode: Literal["native"] = "native"
     skill_paths: dict[str, str] = Field(default_factory=dict)
     listed_skill_ids: list[str] | None = None
     page_size: int = Field(100, gt=0)

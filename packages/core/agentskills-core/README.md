@@ -186,7 +186,7 @@ non-JSON values, and expanded frontmatter JSON above 16 MiB are rejected. The
 builder also enforces the native 512-file and 16 MiB file-set limits.
 
 This helper does not start a protocol server or establish host approval. Use
-`create_native_mcp_server` from
+`create_mcp_server` from
 [agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server#native-skills)
 for protocol delivery.
 

@@ -243,7 +243,7 @@ class TestNativeInspect:
         assert "protocol required  2026-07-28" in output
         assert "limits  512 files" in output
         assert "not live server or host verification" in output
-        assert "Client fallback" in output
+        assert "Skills extension" in output
 
     def test_limit_failure_is_actionable(self, write_skill, skills_root, capsys):
         write_skill("alpha")
@@ -450,7 +450,7 @@ class TestServe:
         async def build(root, locations, *, name, max_file_bytes):
             return object()
 
-        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
+        monkeypatch.setattr("agentskills_tools.cli.build_server", build)
         arguments = ["serve", str(skills_root), "--check"]
 
         assert main(arguments) == 0
@@ -459,7 +459,7 @@ class TestServe:
         assert "host behavior not tested" in output.out
         assert output.err == ""
 
-    def test_native_serving_uses_native_builder(
+    def test_serving_uses_the_publication_builder(
         self, write_skill, skills_root, monkeypatch, capsys
     ):
         write_skill("alpha")
@@ -474,7 +474,7 @@ class TestServe:
             assert max_file_bytes == 1024
             return FakeServer()
 
-        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
+        monkeypatch.setattr("agentskills_tools.cli.build_server", build)
 
         assert (
             main(
@@ -505,7 +505,7 @@ class TestServe:
         async def build(root, locations, *, name, max_file_bytes):
             return _FakeServer()
 
-        monkeypatch.setattr("agentskills_tools.cli.build_native_server", build)
+        monkeypatch.setattr("agentskills_tools.cli.build_server", build)
 
         assert main(["serve", str(skills_root), "--transport", "streamable-http"]) == 0
         assert started == {"transport": "streamable-http"}

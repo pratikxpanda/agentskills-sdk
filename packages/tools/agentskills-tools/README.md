@@ -102,7 +102,7 @@ Native inspection reads every file into a bounded snapshot and reports canonical
 URIs, original-byte sizes and SHA-256 digests, unchanged frontmatter, and protocol
 requirements. It includes binary, hidden, and nonstandard supporting files.
 It does not require the MCP extra and does not pass canonical content through
-the legacy body parser. `--native` and `--cost` are mutually exclusive.
+the body parser. `--native` and `--cost` are mutually exclusive.
 
 Each skill is limited to 512 files and 16 MiB. The additional per-file bound
 defaults to 16 MiB and can be lowered with `--max-file-bytes`. Invalid manifests,
@@ -304,9 +304,8 @@ agentskills serve ./skills --transport streamable-http
 ```
 
 Native serving requires the server extra and `mcp>=2.2,<3`. It keeps the full
-canonical resources and does not register legacy tools. The former `--native`
-serving flag is removed. Clients must implement the Skills extension. There is
-no compatibility mode for tools-only clients.
+canonical resources and registers no tools. Clients must implement the Skills
+extension. There is no compatibility mode for tools-only clients.
 
 `--check` builds the actual server and exits without starting a listener. Native
 preflight validates all captures together, including publication conflicts and

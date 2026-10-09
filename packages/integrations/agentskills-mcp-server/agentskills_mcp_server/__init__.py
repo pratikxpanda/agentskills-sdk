@@ -5,7 +5,7 @@ Protocol <https://modelcontextprotocol.io>`_ Skills extension, providing:
 
 * :func:`create_mcp_server` -- asynchronously builds a native Skills server from a
   :class:`~agentskills_core.SkillRegistry`.  Useful when you have
-  registry or raw skill handles. Legacy tools and catalog resources are not served.
+  registry or raw skill handles. No tools or catalog resources are served.
 * CLI entry-point (``python -m agentskills_mcp_server --config server.json``)
   for zero-code server startup.
 
@@ -28,11 +28,6 @@ Install::
     pip install agentskills-mcp-server
 """
 
-from agentskills_mcp_server.native import create_native_mcp_server
+from agentskills_mcp_server.native import create_mcp_server
 
-create_mcp_server = create_native_mcp_server
-
-__all__ = [
-    "create_mcp_server",
-    "create_native_mcp_server",
-]
+__all__ = ["create_mcp_server"]

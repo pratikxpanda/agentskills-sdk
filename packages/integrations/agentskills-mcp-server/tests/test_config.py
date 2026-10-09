@@ -67,28 +67,25 @@ class TestSkillConfig:
 
 
 class TestServerConfig:
-    def test_given_legacy_mode_when_configured_then_rejected(self):
-        with pytest.raises(ValidationError, match="native"):
+    @pytest.mark.parametrize("mode", ["legacy", "native", "other"])
+    def test_given_removed_mode_key_when_configured_then_rejected(self, mode):
+        with pytest.raises(ValidationError, match="mode"):
             ServerConfig(
-                name="Retired", mode="legacy", skills=[SkillConfig(id="example", provider="fs")]
+                name="Retired",
+                mode=mode,
+                skills=[SkillConfig(id="example", provider="fs")],
             )
 
-    def test_native_mode_options(self):
+    def test_publication_options(self):
         config = ServerConfig(
             name="Native",
-            mode="native",
             skills=[SkillConfig(id="example", provider="fs")],
             skill_paths={"example": "team/example"},
             listed_skill_ids=[],
             page_size=1,
         )
-        assert config.mode == "native"
         assert config.listed_skill_ids == []
         assert config.max_skills == 128
-        with pytest.raises(ValidationError):
-            ServerConfig(
-                name="Invalid", mode="other", skills=[SkillConfig(id="example", provider="fs")]
-            )
 
     def test_minimal(self):
         cfg = ServerConfig(
@@ -96,7 +93,6 @@ class TestServerConfig:
             skills=[SkillConfig(id="s1", provider="fs")],
         )
         assert cfg.name == "Test"
-        assert cfg.mode == "native"
         assert cfg.instructions is None
         assert len(cfg.skills) == 1
 
@@ -256,6 +252,16 @@ class TestResolveProvider:
 # ------------------------------------------------------------------
 
 
+def _raw_content(content) -> bytes:
+    import base64
+
+    text = content.get("text") if isinstance(content, dict) else getattr(content, "text", None)
+    if text is not None:
+        return text.encode("utf-8")
+    blob = content["blob"] if isinstance(content, dict) else content.blob
+    return base64.b64decode(blob)
+
+
 def _write_skill(tmp_path: Path, skill_id: str) -> None:
     """Create a minimal valid skill directory."""
     skill_dir = tmp_path / skill_id
@@ -276,7 +282,6 @@ async def _build_server_from_config(config: ServerConfig):
 
 class TestConfigDrivenServer:
     def test_mcpc_native_discovery_and_verified_reads(self, tmp_path):
-        import base64
         import os
         import subprocess
         import sys
@@ -298,7 +303,6 @@ class TestConfigDrivenServer:
             target.write_bytes(data)
         config = ServerConfig(
             name="mcpc compatibility",
-            mode="native",
             page_size=1,
             skill_paths={"skill-a": "team/skill-a"},
             skills=[
@@ -344,7 +348,7 @@ class TestConfigDrivenServer:
         try:
             invoke("connect", f"{client_path}:native", session)
             direct = invoke(session, "skills-get", uri)
-            assert base64.b64decode(direct["contents"][0]["blob"]) == files["SKILL.md"]
+            assert _raw_content(direct["contents"][0]) == files["SKILL.md"]
             listing = invoke(session, "skills-list")
             assert {skill["uri"] for skill in listing} == {uri, "skill://skill-b/SKILL.md"}
             assert all("contents" not in skill for skill in listing)
@@ -352,7 +356,7 @@ class TestConfigDrivenServer:
             assert len(manifest) == len(files)
             for relative_path, expected in files.items():
                 result = invoke(session, "skills-get", uri, relative_path)
-                actual = base64.b64decode(result["contents"][0]["blob"])
+                actual = _raw_content(result["contents"][0])
                 resource = next(
                     entry
                     for entry in manifest
@@ -366,7 +370,6 @@ class TestConfigDrivenServer:
 
     async def test_stdio_default_native_roundtrip(self, tmp_path):
         import asyncio
-        import base64
         import os
         import sys
 
@@ -394,13 +397,12 @@ class TestConfigDrivenServer:
             assert len(resources.resources) == 1
             contents = await client.read_resource("skill://test-skill/SKILL.md")
             assert (
-                base64.b64decode(contents.contents[0].blob)
+                _raw_content(contents.contents[0])
                 == (tmp_path / "test-skill" / "SKILL.md").read_bytes()
             )
 
     async def test_unnegotiated_extension_request_is_rejected(self, tmp_path):
         import asyncio
-        import base64
         import os
         import sys
 
@@ -411,7 +413,6 @@ class TestConfigDrivenServer:
         raw = (tmp_path / "test-skill" / "SKILL.md").read_bytes()
         config = ServerConfig(
             name="Extension negotiation",
-            mode="native",
             skills=[SkillConfig(id="test-skill", provider="fs", options={"root": str(tmp_path)})],
         )
         config_path = tmp_path / "native-server.json"
@@ -432,7 +433,7 @@ class TestConfigDrivenServer:
             resources = (await session.list_resources()).resources
             assert [str(resource.uri) for resource in resources] == ["skill://test-skill/SKILL.md"]
             contents = await session.read_resource("skill://test-skill/SKILL.md")
-            assert base64.b64decode(contents.contents[0].blob) == raw
+            assert _raw_content(contents.contents[0]) == raw
             with pytest.raises(MCPError) as unsupported:
                 await session.send_request(Request(method="skills/list", params={}), Result)
             assert unsupported.value.error.code == -32601
@@ -704,8 +705,7 @@ def test_given_detached_proof_config_when_published_then_verified():
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
-    @pytest.mark.parametrize("mode", ["native"])
-    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys, mode):
+    def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys):
         from agentskills_mcp_server.__main__ import main
 
         config_file = tmp_path / "check.json"
@@ -713,7 +713,6 @@ class TestCLI:
             json.dumps(
                 {
                     "name": "Check",
-                    "mode": mode,
                     "skills": [
                         {
                             "id": "example",
@@ -741,10 +740,9 @@ class TestCLI:
         report = json.loads(output)
         assert report["status"] == "ready"
         assert report["scope"] == "localServerConstruction"
-        assert report["mode"] == mode
         assert report["providerTypes"] == ["http"]
         assert report["mcpSdkVersion"]
-        assert report["requiresProtocol"] == ("2026-07-28" if mode == "native" else None)
+        assert report["requiresProtocol"] == "2026-07-28"
         assert report["transportTested"] is False
         assert "private-value" not in output
         assert "example.invalid" not in output

@@ -52,7 +52,6 @@ async def inspect_native_location(
     return {
         "id": location.skill_id,
         "path": relative_to_cwd(location.path),
-        "mode": "native",
         "scope": "localSkillSnapshot",
         "manifest": manifest,
         "fileCount": len(snapshot.files),
@@ -131,7 +130,10 @@ def render_native_inspection_text(inspection: dict[str, Any], out: TextIO) -> No
     for resource in manifest["resources"]:
         print(f"  {resource['uri']} ({resource['size']} bytes, {resource['digest']})", file=out)
     print("\nOffline local snapshot check, not live server or host verification.", file=out)
-    print("Client fallback: use legacy server mode for ordinary MCP tools and resources.", file=out)
+    print(
+        "Clients need the Skills extension. Tools-only clients cannot discover these skills.",
+        file=out,
+    )
 
 
 def render_inspection_text(inspection: dict[str, Any], out: TextIO) -> None:
