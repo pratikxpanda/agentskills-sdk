@@ -17,8 +17,8 @@ Catalog sizes are limited to 1-128, at most eight sizes, and 1-10 repetitions.
 
 ## Measurements
 
-Schema version 2 contains only native measurements. The previous legacy comparison
-and its recorded results remain in the
+Schema version 2 contains only native measurements. The v0.6 comparison against the
+since-removed server and its recorded results remain in the
 [v0.6.0 benchmark](https://github.com/pratikxpanda/agentskills-sdk/blob/v0.6.0/docs/mcp-benchmarks.md).
 
 - Lexical top-one precision, recall, and explicit no-match cases, separate from discovery

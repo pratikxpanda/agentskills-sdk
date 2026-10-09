@@ -1,6 +1,6 @@
 # ADR 0009 — Images are returned natively, behind an opt-in flag
 
-**Status:** Superseded in part in v0.7. The framework integrations were removed. Only MCP `ImageContent` guidance still applies to core helpers.
+**Status:** Superseded in part by [ADR 0010](0010-native-skills-only.md). The framework integrations were removed in v0.7. The `classify_resource()` helper and its opt-in guidance still apply to custom hosts.
 **Date:** 2026-10
 **Packages:** `agentskills-core`, `agentskills-langchain`, `agentskills-agentframework`, `agentskills-mcp-server`
 
@@ -60,7 +60,7 @@ nothing.
 
 ## Consequences
 
-**Good**
+### Good
 
 - A diagram bundled with a skill is something the model can actually see.
 - One classifier, so the three integrations cannot drift on what an image is.
@@ -68,7 +68,7 @@ nothing.
 - ADR 0007's envelope stays the fallback rather than being replaced, so there
   is no migration.
 
-**Costs**
+### Costs
 
 - Two return types to reason about per resource tool, once `vision` is on.
 - The caller has to know whether its model can see, and gets an API error if it

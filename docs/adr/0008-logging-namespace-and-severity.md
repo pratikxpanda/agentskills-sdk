@@ -24,13 +24,13 @@ Use one `agentskills.*` logger namespace and keep severity semantics narrow.
 
 ## Consequences
 
-**Good**
+### Good
 
 - One logger root can control verbosity across all packages.
 - Logs align better with operational decision points.
 - Duplicate "logged and raised" error events are reduced.
 
-**Costs**
+### Costs
 
 - Contributors must follow conventions rather than default habits.
 - Misuse can creep back without review discipline.

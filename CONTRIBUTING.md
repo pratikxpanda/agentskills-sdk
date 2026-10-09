@@ -35,6 +35,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 ## Pull Request Process
 
 1. **Fork** the repository and create a feature branch:
+
    ```bash
    git checkout -b feat/my-feature
    ```
@@ -42,6 +43,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 2. **Make your changes** with tests. Every new feature or bug fix should include tests.
 
 3. **Run checks** locally before pushing:
+
    ```bash
    python scripts/dev.py check    # lint + format check + type check
    python scripts/dev.py test     # run all tests
@@ -49,7 +51,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 
 4. **Commit** with a clear, descriptive message (see below).
 
-5. **Open a pull request** against `main`. Fill in the PR template and link any related issues.
+5. **Open a pull request** against `main` and link any related issues. Assign a label, because release notes are grouped by label alone: `enhancement` or `feature` for features, `bug` or `fix` for fixes, `documentation` for docs, and `ci` or `automation` for workflow changes.
 
 6. **Address review feedback** - maintainers may request changes before merging.
 
@@ -73,7 +75,7 @@ This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formattin
 
 Use clear, imperative-mood commit messages:
 
-```
+```text
 feat: add TLS enforcement option to HTTP provider
 fix: prevent path traversal in filesystem provider
 test: add boundary tests for frontmatter parsing
@@ -81,7 +83,7 @@ docs: update core README with security section
 chore: pin CI actions to commit SHAs
 ```
 
-Prefix with `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, or `ci:` to categorise the change.
+Prefix with `feat:`, `fix:`, `perf:`, `test:`, `docs:`, `chore:`, `refactor:`, or `ci:` to categorise the change. Add `!` after the prefix, as in `feat!:`, for a breaking change.
 
 ## Testing
 
@@ -96,7 +98,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for per-package test commands, co
 
 ## Project Structure
 
-This is a Python monorepo managed by Poetry. Each package under `packages/` has its own `pyproject.toml` and can be published independently to PyPI. When adding code, keep dependencies minimal - providers depend only on `agentskills-core`, integrations depend on `agentskills-core` + their framework.
+This is a Python monorepo managed by Poetry. Each package under `packages/` has its own `pyproject.toml` and can be published independently to PyPI. All packages ship in lockstep at one version. When adding code, keep dependencies minimal: `agentskills-core` requires only `pyyaml`, providers depend only on `agentskills-core`, and the MCP server depends on `agentskills-core` and the MCP SDK.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full package table, CI pipeline, and release process.
 

@@ -22,7 +22,9 @@ For development, install the local core, filesystem, and MCP packages together:
 python -m pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
 ```
 
-The `[http]` extra adds the HTTP provider. Use an isolated server environment
+The `[http]` extra adds the HTTP provider. Publisher verification needs
+`agentskills-core[verification]` and OpenTelemetry export needs
+`agentskills-core[telemetry]`. Use an isolated server environment
 when a host framework pins a different MCP SDK version.
 
 ## Serve a Folder

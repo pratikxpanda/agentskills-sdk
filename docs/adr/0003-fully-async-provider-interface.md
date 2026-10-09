@@ -24,13 +24,13 @@ The provider contract remains fully async.
 
 ## Consequences
 
-**Good**
+### Good
 
 - One concurrency model across core, providers, and integrations.
 - Event-loop safety is enforced at provider boundaries.
 - Call sites do not need sync/async adapter branches.
 
-**Costs**
+### Costs
 
 - Provider implementors must reason about thread handoff for blocking I/O.
 - Contributors can accidentally reintroduce blocking paths without tests.

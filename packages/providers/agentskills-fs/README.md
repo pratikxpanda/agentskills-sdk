@@ -63,7 +63,7 @@ provider.invalidate()                      # forget everything
 
 ## Lossless File Access
 
-The v0.6 file-access capability preserves original bytes and lists the complete
+The file-access capability preserves original bytes and lists the complete
 skill tree, including hidden files and arbitrary nested directories:
 
 ```python

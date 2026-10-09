@@ -50,6 +50,23 @@ def publication_policy(snapshot):
 64-byte signature data. Signing keys stay in publisher-controlled tooling and
 never belong in a server config. Configure one policy/proof per skill.
 
+To produce a proof, capture the same files the server will publish and sign the
+payload with the private key:
+
+```python
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from agentskills_core import Skill, capture_skill
+from agentskills_core.trust import DetachedSignature, signature_payload
+
+private_key = Ed25519PrivateKey.generate()  # load your real key instead
+public_key_bytes = private_key.public_key().public_bytes_raw()
+
+snapshot = await capture_skill(Skill("incident-response", provider))
+payload = signature_payload(snapshot, origin="publisher:operations")
+proof = DetachedSignature("release-key-2026", private_key.sign(payload))
+```
+
 The signed UTF-8 payload is ASCII JSON with sorted keys and compact separators.
 It contains `contract="agentskills-snapshot-v1"`, `origin`, `skillId`, `version`
 (a string or null), and `revision`. The revision is `sha256:` followed by the

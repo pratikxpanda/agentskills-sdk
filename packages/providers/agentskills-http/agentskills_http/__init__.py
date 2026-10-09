@@ -11,6 +11,7 @@ Install::
     pip install agentskills-http
 """
 
+from agentskills_http.network import NetworkPolicyError
 from agentskills_http.static import HTTPStaticFileSkillProvider
 
-__all__ = ["HTTPStaticFileSkillProvider"]
+__all__ = ["HTTPStaticFileSkillProvider", "NetworkPolicyError"]

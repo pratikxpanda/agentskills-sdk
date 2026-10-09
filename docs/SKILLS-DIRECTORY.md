@@ -1,4 +1,7 @@
-# Agent Skills Directory
+---
+title: Agent Skills Directory
+description: A curated directory of Agent Skills repositories, awesome lists, and community resources.
+---
 
 A curated directory of [Agent Skills](https://agentskills.io) repositories, awesome lists, and community resources. Use these as inspiration, reference implementations, or load them into your own agents using the [HTTP provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-http/README.md).
 

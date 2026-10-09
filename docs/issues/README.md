@@ -12,22 +12,24 @@ specification: problem statement, proposed approach, open questions, and accepta
 Each file covers one milestone, in the same order as the corresponding roadmap table.
 
 | Milestone | Items | State |
-|---|---|---|
+| --- | --- | --- |
 | [v0.3 — Foundations](./v0.3.md) | 12 | Shipped |
 | [v0.4 — Developer Experience](./v0.4.md) | 12 | Shipped |
 | [v0.5 — Agent Effectiveness](./v0.5.md) | 6 | Shipped |
 | [v0.6: MCP-First Skills](./v0.6.md) | 7 | Included in v0.6.0. Deployment validation remains explicitly deferred. |
-| v0.7: Trust & Operability | 7 | Implemented in development, unreleased. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#next-v07-trust-operability). |
+| v0.7: Trust & Operability | 7 | Merged to `main`, unreleased. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#v07-trust-operability). |
 | v0.8: Portable Distribution | 5 | Candidate priorities. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
 | v1.0 — Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
 A milestone only gets a file once its items are concrete enough to have acceptance criteria.
-The later ones are deliberately still one-liners on the roadmap.
+The later ones are deliberately still one-liners on the roadmap. The v0.3 to v0.6 files are
+historical records. They describe packages and APIs, such as the LangChain and Agent
+Framework integrations, that v0.7 removed.
 
 ## Relationship to GitHub Issues
 
 | | Lives here | Lives on the issue |
-|---|---|---|
+| --- | --- | --- |
 | Problem statement, proposed design, acceptance criteria | yes | a link back to here |
 | Status, assignee, milestone, discussion, linked PRs | | yes |
 
@@ -48,7 +50,7 @@ than being quietly deleted.
 ## Labels
 
 | Prefix | Values |
-|---|---|
+| --- | --- |
 | `theme:` | `correctness`, `performance`, `resilience`, `agent-effectiveness`, `interoperability`, `trust`, `operability`, `dx`, `ecosystem`, `project-health` |
 | `package:` | `core`, `fs`, `http`, `mcp-server`, `tools`, `testing`, `retrieval`, `adapters` |
 | `type:` | `bug`, `feature`, `docs`, `chore` |

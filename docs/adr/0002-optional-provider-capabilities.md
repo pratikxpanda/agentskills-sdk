@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-07
-**Packages:** `agentskills-core`, `agentskills-fs`, `agentskills-http`, all integrations
+**Packages:** `agentskills-core`, `agentskills-fs`, `agentskills-http`, `agentskills-mcp-server`
 
 ## Context
 
@@ -60,7 +60,7 @@ an error it can retry.
 
 ## Consequences
 
-**Good**
+### Good
 
 - Third-party providers are unaffected by this and every future capability addition.
 - The unsupported case is impossible to confuse with the empty case.
@@ -68,7 +68,7 @@ an error it can retry.
 - Callers have a cheap pre-flight check (`if provider.supports_resource_listing:`) that avoids
   exception-driven control flow.
 
-**Costs**
+### Costs
 
 - The contract is weaker. Consumers must branch on capability rather than relying on the
   interface, and static type checking cannot enforce that they do.
