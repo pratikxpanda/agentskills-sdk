@@ -87,10 +87,11 @@ if $DRY_RUN; then
 else
     for rel_path in "${PYPROJECT_FILES[@]}"; do
         file_path="$REPO_ROOT/$rel_path"
-        # These ship in lockstep, so a dependent must require the core it ships with.
+        # These ship in lockstep, so a dependent must require the siblings it ships with.
         sed_args=(
+            -E
             -e "s/version = \"$current_version\"/version = \"$new_version\"/"
-            -e "s/agentskills-core = \"[^\"]*\"/agentskills-core = \">=$new_version,<1.0\"/"
+            -e "s/(agentskills-[a-z-]+ = \{?(version = )?)\">=[^\"]*\"/\1\">=$new_version,<1.0\"/"
         )
         if [[ "$(uname)" == "Darwin" ]]; then
             sed -i '' "${sed_args[@]}" "$file_path"

@@ -8,10 +8,8 @@ See the [migration guide](../mcp-migration.md) and
 [server setup](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/integrations/agentskills-mcp-server/README.md).
 
 ```bash
-pip install "agentskills-mcp-server[fs]>=0.7,<0.8"
+pip install "agentskills-mcp-server[fs]"
 ```
-
-The command above applies once v0.7 is published. Until then, install the checkout.
 
 ::: agentskills_mcp_server.native.create_mcp_server
     options:

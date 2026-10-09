@@ -5,7 +5,7 @@ description: Native MCP Skills publication and model-free discovery benchmarks.
 
 ## Native Publication
 
-Run from the repository root after installing the development checkout:
+Run from the repository root after `pip install "agentskills-mcp-server[fs]"`:
 
 ```bash
 python -m agentskills_mcp_server --config examples/server-fs.json --check

@@ -295,7 +295,7 @@ per-skill options, environment placeholders — use
 [agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server)
 with a `server.json`.
 
-The v0.7 development line serves native Skills only:
+Version 0.7 serves native Skills only:
 
 ```bash
 agentskills serve ./skills --check

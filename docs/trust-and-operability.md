@@ -18,11 +18,10 @@ The SDK does not execute scripts, grant tools, approve nested skills, or sandbox
 ## Publisher Verification
 
 Install `agentskills-core[verification]` for Ed25519 verification through
-`cryptography`. Core still imports without that extra. Install local checkout
-paths while v0.7 is unreleased:
+`cryptography`. Core still imports without that extra.
 
 ```bash
-python -m pip install './packages/core/agentskills-core[verification,telemetry]' ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+pip install "agentskills-core[verification,telemetry]" "agentskills-mcp-server[fs]"
 ```
 
 Publisher tooling captures an immutable complete source and signs

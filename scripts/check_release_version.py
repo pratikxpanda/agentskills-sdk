@@ -64,22 +64,26 @@ def _check_versions(tag: str | None) -> tuple[str | None, list[str]]:
     return version, []
 
 
-def _check_core_floor(version: str) -> list[str]:
-    """Dependents must require the core they are released with.
+def _check_sibling_floors(version: str) -> list[str]:
+    """Dependents must require the sibling packages they are released with.
 
     They ship in lockstep, so a floor below the release version lets pip
-    resolve an older core against a newer dependent and fail at import.
+    resolve an older sibling against a newer dependent and fail at import.
     """
     expected = f">={version},<1.0"
     errors = []
     print()
     for package in DEPENDENTS:
-        found = _manifest(package)["tool"]["poetry"]["dependencies"]["agentskills-core"]
-        print(f"  {Path(package).name:<32} agentskills-core {found}")
-        if found != expected:
-            errors.append(
-                f"{Path(package).name} requires agentskills-core {found!r}, expected {expected!r}."
-            )
+        dependencies = _manifest(package)["tool"]["poetry"]["dependencies"]
+        for name, spec in dependencies.items():
+            if not name.startswith("agentskills-"):
+                continue
+            found = spec["version"] if isinstance(spec, dict) else spec
+            print(f"  {Path(package).name:<32} {name} {found}")
+            if found != expected:
+                errors.append(
+                    f"{Path(package).name} requires {name} {found!r}, expected {expected!r}."
+                )
     return errors
 
 
@@ -90,7 +94,7 @@ def main() -> int:
 
     version, errors = _check_versions(args.tag)
     if version is not None:
-        errors += _check_core_floor(version)
+        errors += _check_sibling_floors(version)
 
     if errors:
         print("\nERROR:", file=sys.stderr)

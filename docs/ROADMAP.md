@@ -32,8 +32,8 @@ explicit design doc arguing the trade-off.
 
 ## Direction From v0.6.0
 
-v0.6.0 establishes standards-aligned skill delivery over MCP. The v0.7 development
-line builds production trust and operability on that contract. It is native-only:
+v0.6.0 establishes standards-aligned skill delivery over MCP. v0.7.0 builds
+production trust and operability on that contract. It is native-only:
 the v0.6 framework integrations and legacy MCP delivery are removed. Published
 v0.6 wheels are unchanged.
 
@@ -253,7 +253,7 @@ checks do not certify those behaviors.
 
 ## v0.7 "Trust & Operability"
 
-Merged to `main` and unreleased. v0.7 is native-only and adds production trust and
+Shipped as v0.7.0. v0.7 is native-only and adds production trust and
 operability controls on the Skills extension contract. Contracts, tested failure
 cases, and deployment responsibilities are in the
 [trust and operability guide](trust-and-operability.md), and removals are in the

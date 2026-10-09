@@ -32,20 +32,20 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-testing`](packages/testing/agentskills-testing/README.md) | **Tooling** - the provider conformance suite and an in-memory provider, for anyone writing a provider or testing against one. | [![PyPI](https://img.shields.io/pypi/v/agentskills-testing?label=)](https://pypi.org/project/agentskills-testing/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-testing?label=)](https://pepy.tech/project/agentskills-testing) |
 
 **Which do I need?** A provider plus the native MCP server for a host implementing
-the Skills extension. For the v0.7 development checkout:
+the Skills extension:
 
 ```bash
-pip install ./packages/core/agentskills-core ./packages/providers/agentskills-fs ./packages/integrations/agentskills-mcp-server
+pip install "agentskills-mcp-server[fs]"
 ```
 
 If you *write* skills rather than consume them, you want `agentskills-tools` instead.
 
 ## How It Works
 
-v0.6.0 is released. This checkout is the v0.7 development line: native-only MCP
-delivery on SDK 2.2+ and protocol 2026-07-28, with eight maintained packages.
-Review the [breaking changes](docs/mcp-migration.md) before upgrading. v0.7 has
-not been published. Publisher verification, content policy, controlled refresh,
+v0.7.0 is the current release: native-only MCP delivery on SDK 2.2+ and
+protocol 2026-07-28, with eight maintained packages.
+Review the [breaking changes](docs/mcp-migration.md) before upgrading from v0.6.
+Publisher verification, content policy, controlled refresh,
 and network hardening are described in the
 [trust and operability guide](docs/trust-and-operability.md).
 
