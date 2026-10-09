@@ -1,4 +1,4 @@
-# ADR 0002 — Optional provider capabilities are opt-in methods with a declared flag
+# ADR 0002: Optional provider capabilities are opt-in methods with a declared flag
 
 **Status:** Accepted
 **Date:** 2026-07
@@ -11,11 +11,11 @@ satisfiable by any backend: given a skill ID, return metadata, body, or a named 
 
 Two planned features do not fit that shape:
 
-- **`list_resources()`** (v0.3 issue 4) — enumerate the references, scripts and assets a skill
+- **`list_resources()`** (v0.3 issue 4): enumerate the references, scripts and assets a skill
   contains. A filesystem provider can do this trivially. A static HTTP host cannot: there is no
   directory listing over plain HTTP, so enumeration requires an out-of-band manifest that may
   or may not exist.
-- **`discover()`** (v0.4 issue 5) — enumerate the skills a backend holds, rather than requiring
+- **`discover()`** (v0.4 issue 5): enumerate the skills a backend holds, rather than requiring
   explicit registration. Same asymmetry.
 
 Adding either as a required abstract method breaks every third-party `SkillProvider` at import
@@ -26,7 +26,7 @@ nothing".
 
 That distinction is the crux. An agent told a skill has no references stops looking. An agent
 told the provider cannot enumerate goes and reads the skill body for names. Collapsing the two
-produces a confidently wrong answer — the same failure mode as the binary-resource corruption
+produces a confidently wrong answer, the same failure mode as the binary-resource corruption
 fixed in v0.3 issue 5, where a silent fallback destroyed data without raising.
 
 ## Decision
@@ -72,7 +72,7 @@ an error it can retry.
 
 - The contract is weaker. Consumers must branch on capability rather than relying on the
   interface, and static type checking cannot enforce that they do.
-- Capability flags and methods can drift apart — a provider could implement `list_resources()`
+- Capability flags and methods can drift apart: a provider could implement `list_resources()`
   and forget the flag, or set the flag and not implement the method. Nothing enforces the pair.
   A conformance test helper in core would close this; deferred until a third capability exists.
 - Every new capability adds a flag. Past three or four this wants restructuring into a
@@ -84,7 +84,7 @@ an error it can retry.
 - **Required abstract method.** Rejected: cleanest contract, but breaks every external
   implementor for a method a third of providers cannot honestly implement. Reconsider at v1.0
   when the shape has stopped moving.
-- **Default returning `{}`.** Rejected on the grounds above — it is the option the original
+- **Default returning `{}`.** Rejected on the grounds above: it is the option the original
   issue recommended, and it is the one that produces silent wrong answers.
 - **Separate mixin ABCs (`SupportsResourceListing`).** Rejected for now: `isinstance` checks are
   cleaner than flags and give better typing, but the mixin cannot express per-instance

@@ -27,7 +27,7 @@ opt-in. See [Trust and Operability](trust-and-operability.md).
 Custom hosts can implement layered disclosure using core APIs:
 
 1. Catalog entry (name/description) in the system prompt
-2. Body outline — section keys and their token cost — when a skill is large
+2. Body outline (section keys and their token cost) when a skill is large
 3. One section, or the full skill body, only when selected
 4. Individual references, scripts, and assets only when needed
 
@@ -86,7 +86,7 @@ False activation is not a lesser failure than non-activation. It is worse: it co
 body load *and* puts instructions written for a different situation in front of the model.
 
 Both fields are optional lists of at most five non-empty strings of at most 200 characters
-each. The bounds are not arbitrary — these fields ride in the catalog, so they are charged on
+each. The bounds are not arbitrary: these fields ride in the catalog, so they are charged on
 every turn for every registered skill, and a skill needing a sixth condition is usually two
 skills. They render next to the description in both catalog formats and are omitted entirely
 when absent, so a skill written before they existed renders byte-for-byte as it did.
@@ -102,7 +102,7 @@ two things get worse as a registry grows, not one: the token bill, and the model
 pick correctly from a long list.
 
 `include`, `exclude`, `tags` and `max_chars` all narrow the catalog already, but each requires
-the caller to know the answer in advance — and `max_chars` drops entries from the end, which is
+the caller to know the answer in advance, and `max_chars` drops entries from the end, which is
 arbitrary with respect to relevance. [`agentskills-retrieval`](packages/retrieval.md) narrows it
 by what was asked instead:
 
@@ -121,7 +121,7 @@ accepts one optional `total=` so the rendered catalog can report the narrowing h
 than claiming to be complete.
 
 Selection is opt-in and always visible. From inside an agent, a skill that was ranked out is
-indistinguishable from one that was never registered — so every selection is logged with its
+indistinguishable from one that was never registered, so every selection is logged with its
 scores, the near-misses are kept on `Selection.rejected`, and a selection that matches nothing
 falls back to the full catalog rather than leaving the agent with no skills at all.
 

@@ -46,7 +46,7 @@ This runs the suite with branch coverage, writes `coverage.xml` and `htmlcov/`, 
 package or the aggregate is below its floor. CI runs the same command and publishes the report to
 the job summary of every run.
 
-Coverage is measured by **import name**, not by path — `[tool.coverage.run] source_pkgs` in the
+Coverage is measured by **import name**, not by path: `[tool.coverage.run] source_pkgs` in the
 root `pyproject.toml`. Measuring `packages/` instead would count the test files, and a test file
 is trivially covered by the act of running it.
 
@@ -58,7 +58,7 @@ Floors are enforced at two levels:
 | Per package | `COVERAGE_FLOORS` in `scripts/dev.py` | An aggregate floor alone lets one package rot behind the others |
 
 Both were set to the value measured when the gate was introduced, and are meant to ratchet
-upward. Raise a floor when its package moves up. If you have to lower one, say why in the PR —
+upward. Raise a floor when its package moves up. If you have to lower one, say why in the PR:
 the point of the gate is that lowering it is a visible decision rather than a silent drift.
 
 ## Linting & Formatting
@@ -159,7 +159,7 @@ and declaring those would defeat the point of making them optional.
 ## Logging Conventions
 
 Every package logs into one `agentskills.*` namespace. Get a logger with the shared helper and
-pass `__name__` — the distribution prefix is rewritten, so `agentskills_http.static` logs as
+pass `__name__`: the distribution prefix is rewritten, so `agentskills_http.static` logs as
 `agentskills.http.static`:
 
 ```python
@@ -184,7 +184,7 @@ logging.getLogger("agentskills").setLevel(logging.DEBUG)
 | --- | --- | --- |
 | `DEBUG` | Fetch, parse and cache events | Per request |
 | `INFO` | Registration outcomes | Once per skill |
-| `WARNING` | Degraded but recovered behaviour — a retried request, an unrecognised metadata key | Rare |
+| `WARNING` | Degraded but recovered behaviour: a retried request, an unrecognised metadata key | Rare |
 
 There is no `ERROR` level in the SDK. Anything that fails raises, and the caller decides whether
 it was an error. Logging and raising the same failure reports it twice and takes that decision
@@ -192,7 +192,7 @@ away.
 
 ### Never log secrets
 
-The library attaches only a `NullHandler`, so it has no idea where records end up — assume a
+The library attaches only a `NullHandler`, so it has no idea where records end up: assume a
 shared log aggregator.
 
 - **Never log a raw URL.** Pass it through `redact_url()` first. Credentials live in query
@@ -201,7 +201,7 @@ shared log aggregator.
 - **Never log request headers,** redacted or otherwise. There is no legitimate operational
   question that a header value answers, and a redactor you have to remember to call is a trap.
 - **Never pass `exc_info` for a transport exception.** `httpx` exception reprs embed the full
-  request URL, query string included — the same leak fixed in the error paths.
+  request URL, query string included, the same leak fixed in the error paths.
 
 New log statements touching a URL or a request must be covered by a test asserting the secret
 does not appear in `caplog.text`. See `TestLogRecordsCarryNoSecrets` in the HTTP provider tests.
@@ -230,7 +230,7 @@ All packages share the same version. Use the bump script to update all `pyprojec
 ```
 
 The script also rewrites each dependent's `agentskills-core` constraint to `>=<new>,<1.0`. The
-packages ship in lockstep, so a dependent must require the core it was released with —
+packages ship in lockstep, so a dependent must require the core it was released with:
 otherwise pip can resolve an older core against a newer dependent and fail at import.
 
 ### 2. Commit and merge
@@ -247,7 +247,7 @@ git tag v<version>
 git push origin v<version>
 ```
 
-The tag must be `v` followed by the exact version string — `0.3.0rc1` is tagged `v0.3.0rc1`.
+The tag must be `v` followed by the exact version string: `0.3.0rc1` is tagged `v0.3.0rc1`.
 A tag that is neither `vX.Y.Z` nor `vX.Y.Z` plus `a1`, `b1` or `rc1` fails the run before
 anything is built, naming the shape it expected. Pre-release tags publish to PyPI like any
 other: `pip` will not install one unless `--pre` is passed, so they cannot reach anybody who
@@ -259,7 +259,7 @@ did not ask for them.
 environment for a reviewer. Approving releases all of them; there is one approval per
 release, not one per package.
 
-Publishing uses [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — the
+Publishing uses [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/): the
 runner mints a short-lived OIDC token, and no PyPI API token exists anywhere in the repository,
 in Actions secrets, or on a workstation. Each distribution is uploaded with a PEP 740 provenance
 attestation.
@@ -267,7 +267,7 @@ attestation.
 Packages go up in dependency order: core, then providers, then integrations. PyPI does not
 enforce this; it exists so that nobody installing mid-release resolves a package whose
 dependency is not there yet. If a run fails part-way, the failing step names the package and
-everything above it is already live — re-running the job is safe, because published versions are
+everything above it is already live: re-running the job is safe, because published versions are
 skipped rather than re-uploaded.
 
 The GitHub Release, with auto-generated notes, is created only after every package is live, so
@@ -277,12 +277,12 @@ marked as a pre-release.
 ### Dry runs
 
 Run the **Publish** workflow manually (`workflow_dispatch`). It runs the version guard, builds
-every distribution and uploads the artifact, then stops — publishing takes a tag. What it does
+every distribution and uploads the artifact, then stops: publishing takes a tag. What it does
 not exercise is the upload itself, and there is no longer a scratch index that would.
 
 ### Publishing by hand
 
-`scripts/publish.ps1` still works and needs a PyPI token. It is for emergencies — recovering a
+`scripts/publish.ps1` still works and needs a PyPI token. It is for emergencies: recovering a
 release when GitHub Actions is down. Prefer the workflow: it is the only path that produces
 attestations and an audit trail.
 
@@ -314,7 +314,7 @@ project an incoming token belongs to, so only one pending publisher can exist at
 > A pending trusted publisher matching this configuration has already been registered for a
 > different project name.
 
-Bootstrapping N projects on a fresh index therefore takes N sequential rounds — register one,
+Bootstrapping N projects on a fresh index therefore takes N sequential rounds: register one,
 publish it, and the pending publisher converts to a project-scoped one, freeing the slot for the
 next. `skip-existing` makes each round cheap, since packages already published are skipped.
 

@@ -53,7 +53,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 
 5. **Open a pull request** against `main` and link any related issues. Assign a label, because release notes are grouped by label alone: `enhancement` or `feature` for features, `bug` or `fix` for fixes, `documentation` for docs, and `ci` or `automation` for workflow changes.
 
-6. **Address review feedback** - maintainers may request changes before merging.
+6. **Address review feedback**: maintainers may request changes before merging.
 
 ### What makes a good PR
 
@@ -67,7 +67,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full development guide, i
 
 - **Type hints**: Use type annotations on all public functions and methods.
 - **Docstrings**: Use Google-style docstrings for public APIs.
-- **`py.typed`**: All packages ship type information - maintain `py.typed` markers.
+- **`py.typed`**: All packages ship type information. Maintain `py.typed` markers.
 
 This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full list of dev commands.
 
@@ -87,7 +87,7 @@ Prefix with `feat:`, `fix:`, `perf:`, `test:`, `docs:`, `chore:`, `refactor:`, o
 
 ## Testing
 
-All tests must pass before a PR can be merged. Aim for meaningful test coverage - test edge cases and error paths, not just happy paths.
+All tests must pass before a PR can be merged. Aim for meaningful test coverage: test edge cases and error paths, not just happy paths.
 
 ```bash
 python scripts/dev.py check    # lint + format check + type check

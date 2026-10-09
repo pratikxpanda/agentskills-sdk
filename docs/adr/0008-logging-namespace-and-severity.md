@@ -1,4 +1,4 @@
-# ADR 0008 — One agentskills logging namespace with intentional severity
+# ADR 0008: One agentskills logging namespace with intentional severity
 
 **Status:** Accepted
 **Date:** 2026-08

@@ -37,13 +37,13 @@ The maintainer merges pull requests manually. **Do not create, update, or commen
 issues or pull requests, and do not use the `gh` CLI for that.** After a merge, sync
 `main` and cut a fresh branch for the next item.
 
-One roadmap item — or one tightly coupled cluster — per branch. If scope drifts, rename
+One roadmap item (or one tightly coupled cluster) per branch. If scope drifts, rename
 the branch or squash-merge under a title that matches what actually landed.
 
 ### Labels
 
 Releases are built with `generate_release_notes: true`, which groups merged pull requests
-by the label map in `.github/release.yml`. **The label is the only input — the branch
+by the label map in `.github/release.yml`. **The label is the only input: the branch
 prefix and commit message are ignored.** An unlabelled pull request lands under "Other
 Changes", which is where most of 0.3.0 ended up.
 
@@ -57,7 +57,7 @@ Changes", which is where most of 0.3.0 ended up.
 
 Label the pull request before merging; adding it afterwards does not change notes that
 have already been generated. Adding a category means editing `.github/release.yml` and
-creating the label in the repository — a label used in that file but absent from the
+creating the label in the repository: a label used in that file but absent from the
 repository silently matches nothing.
 
 ## Commands
@@ -71,7 +71,7 @@ python -m ruff format --check packages/ examples/
 python scripts/check_declared_dependencies.py     # a package must declare what it imports
 ```
 
-`scripts/dev.py check` also runs a `mypy` step, but `mypy` is not currently installed —
+`scripts/dev.py check` also runs a `mypy` step, but `mypy` is not currently installed:
 that task fails for reasons unrelated to your change.
 
 ## Conventions
@@ -101,7 +101,7 @@ that task fails for reasons unrelated to your change.
   `coverage run -m pytest` for this reason; do not "simplify" it back.
 - **Constructing an `httpx.AsyncClient` costs ~0.17s** (TLS context), which is why
   `agentskills-http`'s tests dominate the suite runtime. Share one module-scoped client
-  when adding tests there — respx intercepts before it binds to an event loop.
+  when adding tests there: respx intercepts before it binds to an event loop.
 - **`poetry.lock` hides upstream breaking changes.** Locked installs kept CI green while
   the published packages were broken for every new user. The advisory `test-unlocked` CI
   job resolves without the lock; when it fails, the fix belongs in a version constraint,
@@ -118,7 +118,7 @@ that task fails for reasons unrelated to your change.
   happens to be importable.
 - **Dependabot mangles the version comment on action pins.** `# v4.37.4.4.37.42.4.37.4` has
   appeared twice. The SHA is right and the comment is not, so read it as decoration and
-  confirm with `git ls-remote --tags <repo> 'refs/tags/vX.Y.Z^{}'` — annotated tags, which
+  confirm with `git ls-remote --tags <repo> 'refs/tags/vX.Y.Z^{}'`: annotated tags, which
   `github/codeql-action` uses, need the `^{}` or you compare against the tag object.
 - **`codeql-action/init` and `/analyze` must be pinned to the same version.** A mismatch fails
   the scan with "Loaded a configuration file for version X, but running version Y". Dependabot
@@ -127,7 +127,7 @@ that task fails for reasons unrelated to your change.
 - **A 200 response does not mean a badge rendered.** shields.io returns 200 with the words
   "rate limited by upstream service" drawn into the SVG. Inspect the rendered text.
 - **A `GITHUB_TOKEN`-created event never triggers another workflow.** `publish.yml` creates
-  the GitHub Release, so a `release:` trigger anywhere else is dead code — the versioned
+  the GitHub Release, so a `release:` trigger anywhere else is dead code: the versioned
   docs deploy sat unreachable through two releases. `docs.yml` chains off `workflow_run` of
   `Publish` instead. The exceptions are `workflow_dispatch` and `repository_dispatch`.
 - **`publish.yml` triggers on `v*.*.*`, not `v*`.** `actions/validate` is advertised as
