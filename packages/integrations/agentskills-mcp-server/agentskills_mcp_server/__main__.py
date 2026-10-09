@@ -144,6 +144,7 @@ def main() -> None:
                 page_size=config.page_size,
                 max_skills=config.max_skills,
                 max_total_bytes=config.max_total_bytes,
+                publication_policy=config.build_publication_policy(),
             )
 
     server = asyncio.run(_build())

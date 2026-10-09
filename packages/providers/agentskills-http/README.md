@@ -17,7 +17,13 @@ Serves [Agent Skills](https://agentskills.io) from any static HTTP file host - S
 pip install agentskills-http
 ```
 
-Requires Python 3.12 or newer. Installs `agentskills-core`, `httpx`, and `pyyaml` as dependencies.
+Requires Python 3.12 or newer. Installs `agentskills-core`, `httpx`, `httpcore`, and `pyyaml`.
+
+v0.7 defaults to public-network destinations only. DNS answers are validated
+at connection time and the connection is pinned to an approved IP. Redirects
+are rejected and environment proxies are not inherited. Internal hosts require
+`allow_private_network=True`. Use `require_tls=True` for production sources.
+See the [trust and operability guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/trust-and-operability.md).
 
 ## Expected URL Layout
 
@@ -69,11 +75,18 @@ import httpx
 from agentskills_http import HTTPStaticFileSkillProvider
 
 client = httpx.AsyncClient(timeout=30, headers={"Authorization": "Bearer <token>"})
-provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=client)
+provider = HTTPStaticFileSkillProvider(
+  "https://cdn.example.com/skills", client=client, allow_private_network=True
+)
 # caller is responsible for closing the client
 ```
 
 > **Note:** `client` and `headers` are mutually exclusive. Configure headers on the client directly when providing your own.
+
+Custom clients require explicit `allow_private_network=True` because DNS,
+TLS, proxies, and destination restrictions are caller-owned. Apply equivalent
+network restrictions in that client when destinations are untrusted. Redirects
+and response-size limits are still enforced by the provider.
 
 ## API
 
@@ -95,6 +108,8 @@ provider = HTTPStaticFileSkillProvider("https://cdn.example.com/skills", client=
 | `max_retries` | `int` | `2` | Retries after the initial attempt, for retryable failures only |
 | `retry_backoff` | `float` | `0.5` | Base delay in seconds for exponential backoff |
 | `max_retry_delay` | `float` | `30.0` | Ceiling on any single backoff sleep |
+| `allow_private_network` | `bool` | `False` | Opt out of public-only destinations. Required for custom clients |
+| `observer` | callable or `None` | `None` | Content-free fetch/cache events with hashed origin |
 
 > **Note:** `client` and `headers`/`params` are mutually exclusive. Configure headers and params on the client directly when providing your own.
 

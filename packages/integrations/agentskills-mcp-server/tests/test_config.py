@@ -664,6 +664,43 @@ class TestResolveEnvVars:
 # ------------------------------------------------------------------
 
 
+def test_given_detached_proof_config_when_published_then_verified():
+    import base64
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from agentskills_core.snapshots import SkillFile, SkillSnapshot
+    from agentskills_core.trust import signature_payload
+    from agentskills_mcp_server.config import TrustConfig
+
+    snapshot = SkillSnapshot(
+        "alpha", (SkillFile("SKILL.md", b"---\nname: alpha\ndescription: Test\n---\nBody"),)
+    )
+    key = Ed25519PrivateKey.generate()
+    trust = TrustConfig(
+        origin="publisher",
+        trusted_keys={"release": base64.b64encode(key.public_key().public_bytes_raw()).decode()},
+        key_id="release",
+        signature=base64.b64encode(
+            key.sign(signature_payload(snapshot, origin="publisher"))
+        ).decode(),
+    )
+    config = ServerConfig(name="test", skills=[SkillConfig(id="alpha", provider="fs", trust=trust)])
+
+    assert config.build_publication_policy()(snapshot).source_identity.status == "verified"
+    assert (
+        TrustConfig(origin="local", require_signature=False)
+        .verify_and_publish(snapshot)
+        .source_identity.status
+        == "unsigned"
+    )
+    with pytest.raises(ValueError, match="base64"):
+        trust.model_copy(update={"signature": "invalid!!"}).verify_and_publish(snapshot)
+    config.skills.append(SkillConfig(id="other", provider="fs"))
+    with pytest.raises(ValueError, match="every skill"):
+        config.build_publication_policy()
+
+
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 

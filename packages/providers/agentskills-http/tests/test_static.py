@@ -59,10 +59,26 @@ def _mock_skill_routes(router: respx.MockRouter) -> None:
     )
 
 
+@pytest.mark.parametrize("length", ["secret-invalid", "-1"])
+@respx.mock
+async def test_given_invalid_length_when_fetching_then_error_and_events_exclude_headers(length):
+    events = []
+    respx.get(f"{BASE}/test-skill/SKILL.md").respond(
+        content=b"body", headers={"Content-Length": length}
+    )
+    async with HTTPStaticFileSkillProvider(BASE, observer=events.append) as provider:
+        with pytest.raises(AgentSkillsError, match="Content-Length") as caught:
+            await provider.get_body("test-skill")
+    assert "secret" not in str(caught.value)
+    assert events[0].status == "error" and "body" not in repr(events)
+
+
 class TestLosslessFiles:
     @pytest.fixture
     def provider(self, lossless_client):
-        return HTTPStaticFileSkillProvider(BASE, client=lossless_client, file_manifest=True)
+        return HTTPStaticFileSkillProvider(
+            BASE, client=lossless_client, file_manifest=True, allow_private_network=True
+        )
 
     @respx.mock
     async def test_complete_listing_does_not_fetch_files(self, provider):
@@ -129,7 +145,9 @@ class TestLosslessFiles:
             await provider.read_file("test-skill", "SKILL.md")
 
     async def test_opt_in_is_required(self, lossless_client):
-        provider = HTTPStaticFileSkillProvider(BASE, client=lossless_client, resource_manifest=True)
+        provider = HTTPStaticFileSkillProvider(
+            BASE, client=lossless_client, resource_manifest=True, allow_private_network=True
+        )
         assert not provider.supports_file_access
         with pytest.raises(FileAccessNotSupportedError):
             await provider.list_files("test-skill")
@@ -139,7 +157,11 @@ class TestLosslessFiles:
     @respx.mock
     async def test_size_limit_is_enforced(self, lossless_client):
         provider = HTTPStaticFileSkillProvider(
-            BASE, client=lossless_client, file_manifest=True, max_response_bytes=2
+            BASE,
+            client=lossless_client,
+            file_manifest=True,
+            max_response_bytes=2,
+            allow_private_network=True,
         )
         route = respx.get(f"{BASE}/test-skill/data.bin").respond(content=b"12")
         assert await provider.read_file("test-skill", "data.bin") == b"12"
@@ -207,7 +229,11 @@ class TestLosslessFiles:
         assert "content-length" not in response.headers
         respx.get(f"{BASE}/test-skill/data.bin").mock(return_value=response)
         provider = HTTPStaticFileSkillProvider(
-            BASE, client=lossless_client, file_manifest=True, max_response_bytes=2
+            BASE,
+            client=lossless_client,
+            file_manifest=True,
+            max_response_bytes=2,
+            allow_private_network=True,
         )
         with pytest.raises(AgentSkillsError, match="maximum size"):
             await provider.read_file("test-skill", "data.bin")
@@ -313,7 +339,7 @@ class TestClientLifecycle:
     async def test_external_client_not_closed(self):
         respx.get(f"{BASE}/test-skill/SKILL.md").respond(text=SKILL_MD)
         client = httpx.AsyncClient()
-        provider = HTTPStaticFileSkillProvider(BASE, client=client)
+        provider = HTTPStaticFileSkillProvider(BASE, client=client, allow_private_network=True)
         await provider.get_metadata("test-skill")
         await provider.aclose()
         # client should still be open

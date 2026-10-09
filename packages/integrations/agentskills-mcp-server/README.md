@@ -48,9 +48,15 @@ publication. Discovery is metadata-only, including for a single skill.
 
 The factory captures complete immutable file sets before serving. It preserves
 original `SKILL.md` bytes, frontmatter, supporting directories, and binary files.
-Each manifest contains raw-byte SHA-256 digests and sizes. Restart to refresh.
+Each manifest contains raw-byte SHA-256 digests and sizes. Programmatic servers
+support `await server.refresh()` and `server.health()`.
 Server-provided hashes establish consistency, not publisher identity or safety.
-Programmatic callers own provider cleanup after capture.
+Programmatic callers own provider cleanup and must keep providers open for refresh.
+Optional `publication_policy` verifies detached signatures, pins content, and
+applies reject/redact/annotate hooks before manifests are generated. See the
+[trust and operability guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/trust-and-operability.md)
+for publisher configuration, token limits, verified stale policy, telemetry,
+and authenticated remote HTTP deployment.
 
 ## Configuration
 
@@ -87,6 +93,9 @@ The CLI closes owned provider clients after capture, including on failure.
 Filesystem options include `root` and `max_file_bytes`. HTTP options include
 `base_url`, `headers`, `params`, `file_manifest`, `resource_manifest`, and
 `max_response_bytes`. HTTP native publication requires `file_manifest: true` and
+a public destination by default. Internal destinations require explicit
+`allow_private_network: true`. Redirects are always rejected. Configure
+`require_tls`, `timeout`, and retry limits as needed. Publication requires
 a complete per-skill file index. See the
 [HTTP provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-http/README.md).
 

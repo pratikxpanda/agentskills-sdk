@@ -3,6 +3,19 @@ title: MCP Migration
 description: Breaking changes and migration boundaries for the native-only v0.7 development line.
 ---
 
+## Additional v0.7 Controls
+
+HTTP providers now block private-network destinations by default and never follow
+redirects. Internal hosts and caller-supplied HTTPX clients require explicit
+`allow_private_network=True`. Caller-supplied clients own their network enforcement.
+`base_url` no longer accepts embedded credentials, query strings, or fragments.
+Pass upstream credentials through `headers` or `params`, never from inbound MCP tokens.
+
+The native factory also supports publisher verification, content policy,
+controlled refresh, verified outage fallback, telemetry, and authenticated remote
+HTTP integration. See [Trust and Operability](trust-and-operability.md) for the
+configuration contract and host/deployment boundaries.
+
 ## v0.7 Breaking Changes
 
 v0.6.0 shipped the native integration deprecations. The v0.7 development line

@@ -31,14 +31,20 @@ Example config (JSON)::
 
 from __future__ import annotations
 
+import base64
+import binascii
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from agentskills_core import SkillProvider, get_logger
+from agentskills_core.policy import Publication, publish_snapshot
+from agentskills_core.snapshots import SkillSnapshot
+from agentskills_core.trust import DetachedSignature, TrustPolicy
 
 _logger = get_logger(__name__)
 
@@ -73,6 +79,13 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
             "resource_manifest",
             "file_manifest",
             "max_response_bytes",
+            "allow_private_network",
+            "require_tls",
+            "timeout",
+            "max_retries",
+            "retry_backoff",
+            "max_retry_delay",
+            "skill_manifest",
         }
         filtered = {key: value for key, value in options.items() if key in safe_http_keys}
         return HTTPStaticFileSkillProvider(**filtered)
@@ -83,15 +96,54 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
     )
 
 
+class TrustConfig(BaseModel):
+    """Deployment-owned detached Ed25519 proof and base64 public-key allowlist."""
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+    origin: str
+    trusted_keys: dict[str, str] = Field(default_factory=dict)
+    require_signature: bool = True
+    revision: str | None = None
+    version: str | None = None
+    key_id: str | None = None
+    signature: str | None = None
+
+    def verify_and_publish(self, snapshot: SkillSnapshot) -> Publication:
+        """Decode deployment-owned keys and verify the complete original capture."""
+        try:
+            keys = {
+                name: base64.b64decode(value, validate=True)
+                for name, value in self.trusted_keys.items()
+            }
+            proof = (
+                None
+                if self.signature is None
+                else DetachedSignature(
+                    self.key_id or "", base64.b64decode(self.signature, validate=True)
+                )
+            )
+        except (ValueError, binascii.Error):
+            raise ValueError("Trust keys and signatures must be valid base64") from None
+        return publish_snapshot(
+            snapshot,
+            trust=TrustPolicy(
+                self.origin, keys, self.require_signature, self.revision, self.version
+            ),
+            proof=proof,
+        )
+
+
 class SkillConfig(BaseModel):
     """Configuration for a single skill."""
 
+    model_config = ConfigDict(hide_input_in_errors=True)
     id: str = Field(..., description="Skill identifier")
     provider: str = Field(..., description="Provider type (e.g., 'fs', 'http')")
     options: dict[str, Any] = Field(
         default_factory=dict,
         description="Provider-specific options passed to the provider constructor",
     )
+    trust: TrustConfig | None = None
 
 
 class ServerConfig(BaseModel):
@@ -104,6 +156,7 @@ class ServerConfig(BaseModel):
         skills: One or more skill definitions to register.
     """
 
+    model_config = ConfigDict(hide_input_in_errors=True)
     name: str = Field(..., description="Display name for the MCP server")
     instructions: str | None = Field(None, description="Optional server-level instructions")
     skills: list[SkillConfig] = Field(..., description="Skills to register", min_length=1)
@@ -113,6 +166,21 @@ class ServerConfig(BaseModel):
     page_size: int = Field(100, gt=0)
     max_skills: int = Field(128, gt=0)
     max_total_bytes: int = Field(64 * 1024 * 1024, ge=0)
+
+    def build_publication_policy(self) -> Callable[[SkillSnapshot], Publication] | None:
+        """Require an explicit trust policy for every skill when verification is configured."""
+        configured = {skill.id: skill.trust for skill in self.skills if skill.trust is not None}
+        if not configured:
+            return None
+        if len(configured) != len(self.skills):
+            raise ValueError(
+                "Configure trust for every skill. Use require_signature=false for unsigned sources."
+            )
+
+        def publish(snapshot: SkillSnapshot) -> Publication:
+            return configured[snapshot.skill_id].verify_and_publish(snapshot)
+
+        return publish
 
 
 # ------------------------------------------------------------------

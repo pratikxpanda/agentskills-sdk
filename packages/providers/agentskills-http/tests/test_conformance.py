@@ -87,7 +87,7 @@ class TestHTTPStaticFileConformance(ProviderConformanceSuite):
     def provider(self, client: httpx.AsyncClient) -> HTTPStaticFileSkillProvider:
         # Without manifests a static host cannot be enumerated, so the
         # suite takes the not-supported branch for both capabilities.
-        return HTTPStaticFileSkillProvider(BASE, client=client)
+        return HTTPStaticFileSkillProvider(BASE, client=client, allow_private_network=True)
 
 
 @pytest.mark.usefixtures("contract_host_with_manifests")
@@ -97,7 +97,11 @@ class TestHTTPStaticFileManifestConformance(ProviderConformanceSuite):
         # The same assertions again with both optional capabilities on,
         # which is the only way the manifest branches get contract-tested.
         return HTTPStaticFileSkillProvider(
-            BASE, client=client, resource_manifest=True, skill_manifest=True
+            BASE,
+            client=client,
+            resource_manifest=True,
+            skill_manifest=True,
+            allow_private_network=True,
         )
 
 
@@ -105,4 +109,6 @@ class TestHTTPStaticFileManifestConformance(ProviderConformanceSuite):
 class TestHTTPStaticFileContentLimits(ContentLimitConformanceSuite):
     @pytest.fixture
     def limited_provider(self, client: httpx.AsyncClient) -> HTTPStaticFileSkillProvider:
-        return HTTPStaticFileSkillProvider(BASE, client=client, max_response_bytes=4)
+        return HTTPStaticFileSkillProvider(
+            BASE, client=client, max_response_bytes=4, allow_private_network=True
+        )

@@ -263,7 +263,10 @@ checks do not certify those behaviors.
 Build production controls on the native-only MCP contract. Retirement is the
 first implementation cluster and follows the explicit decision above.
 Server-provided hashes establish consistency, not publisher trust. v0.7 is not
-released and the trust and operability features below remain planned.
+released. The controls below are implemented in the development tree. See the
+[trust and operability guide](trust-and-operability.md) for contracts, tested
+failure cases, and deployment responsibilities. Local tests do not certify
+production identity infrastructure, TLS gateways, or host approval behavior.
 
 | Item | Theme | Package(s) | Notes |
 | --- | --- | --- | --- |

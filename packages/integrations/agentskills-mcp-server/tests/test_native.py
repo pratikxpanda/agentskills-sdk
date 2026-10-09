@@ -32,6 +32,177 @@ async def test_given_public_factory_when_connected_then_only_native_skills_are_s
         assert (await _request(client, "skills/list"))["skills"] == []
 
 
+async def test_given_refresh_when_source_changes_then_manifest_and_bytes_change_together(tmp_path):
+    from mcp import Client, MCPError
+
+    from agentskills_mcp_server import create_mcp_server
+
+    skills = [_skill(tmp_path, name) for name in ("alpha", "beta")]
+    events = []
+    server = await create_mcp_server(
+        skills, page_size=1, observer=events.append, origin="private-origin"
+    )
+    async with Client(server) as client:
+        first = await _request(client, "skills/list")
+        revision = first["skills"][0]["_meta"]["io.agentskills/publication"]["revision"]
+        (tmp_path / "alpha" / "new.bin").write_bytes(b"\xff")
+        await server.refresh()
+        second = await _request(client, "skills/list")
+        assert revision != second["skills"][0]["_meta"]["io.agentskills/publication"]["revision"]
+        assert (
+            base64.b64decode((await client.read_resource("skill://alpha/new.bin")).contents[0].blob)
+            == b"\xff"
+        )
+        with pytest.raises(MCPError):
+            await _request(client, "skills/list", cursor=first["nextCursor"])
+        skills.clear()
+        await server.refresh()
+        assert (await client.list_resources()).resources == []
+        with pytest.raises(MCPError):
+            await client.read_resource("skill://alpha/new.bin")
+    assert server.health()["skillCount"] == 0
+    assert {event.operation for event in events} >= {
+        "fetch",
+        "verification",
+        "refresh",
+        "discovery",
+    }
+    assert "private-origin" not in repr(events)
+
+
+async def test_given_verified_source_when_outage_then_stale_is_visible_and_revocation_withdraws(
+    tmp_path, monkeypatch
+):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from agentskills_core import ProviderUnavailableError, SkillUnavailableError
+    from agentskills_core.policy import publish_snapshot
+    from agentskills_core.snapshots import capture_skill
+    from agentskills_core.trust import (
+        DetachedSignature,
+        TrustPolicy,
+        VerificationError,
+        signature_payload,
+    )
+    from agentskills_mcp_server import create_mcp_server
+
+    skill = _skill(tmp_path, "alpha")
+    snapshot = await capture_skill(skill)
+    key = Ed25519PrivateKey.generate()
+    trust = TrustPolicy("publisher", {"key": key.public_key().public_bytes_raw()})
+    proof = DetachedSignature("key", key.sign(signature_payload(snapshot, origin="publisher")))
+    server = await create_mcp_server(
+        [skill],
+        max_stale_age=60,
+        publication_policy=lambda source: publish_snapshot(source, trust=trust, proof=proof),
+    )
+
+    async def unavailable(*args, **kwargs):
+        raise ProviderUnavailableError("outage")
+
+    monkeypatch.setattr(skill, "read_file", unavailable)
+    assert (await server.refresh())["stale"] is True
+    contents = await server.read_resource("skill://alpha/SKILL.md")
+    assert contents[0].meta["io.agentskills/publication"]["stale"] is True
+    trust = TrustPolicy("publisher")
+    with pytest.raises(VerificationError):
+        await server.refresh()
+    assert not server.health()["ready"]
+    with pytest.raises(SkillUnavailableError):
+        await server.read_resource("skill://alpha/SKILL.md")
+
+
+async def test_given_remote_helper_without_auth_when_built_then_rejected():
+    from agentskills_mcp_server import create_mcp_server
+
+    server = await create_mcp_server([])
+    with pytest.raises(ValueError, match="authorization"):
+        server.secure_http_app(
+            allowed_hosts=["skills.example"], allowed_origins=["https://host.example"]
+        )
+    with pytest.raises(ValueError, match="explicit"):
+        server.secure_http_app(allowed_hosts=["*"], allowed_origins=[])
+
+
+@pytest.mark.parametrize("change", ["removed_file", "changed_skill", "removed_skill"])
+async def test_given_known_change_before_outage_when_refreshed_then_stale_is_forbidden(
+    tmp_path, monkeypatch, change
+):
+    from agentskills_core import ProviderUnavailableError, SkillUnavailableError
+    from agentskills_mcp_server import create_mcp_server
+
+    skills = [_skill(tmp_path, name) for name in ("alpha", "beta")]
+    (tmp_path / "alpha" / "extra.bin").write_bytes(b"extra")
+    server = await create_mcp_server(skills, max_stale_age=60)
+
+    async def unavailable(*args, **kwargs):
+        raise ProviderUnavailableError("outage")
+
+    if change == "removed_file":
+        (tmp_path / "alpha" / "extra.bin").unlink()
+        monkeypatch.setattr(skills[0], "read_file", unavailable)
+    elif change == "changed_skill":
+        (tmp_path / "alpha" / "extra.bin").write_bytes(b"changed")
+        monkeypatch.setattr(skills[1], "read_file", unavailable)
+    else:
+        skills.pop(0)
+        monkeypatch.setattr(skills[0], "read_file", unavailable)
+
+    with pytest.raises(SkillUnavailableError) as caught:
+        await server.refresh()
+    assert not isinstance(caught.value, ProviderUnavailableError)
+    assert not server.health()["ready"]
+
+
+async def test_given_authorized_http_app_when_origin_or_host_is_invalid_then_rejected():
+    import httpx
+    from mcp.server.auth.provider import AccessToken
+    from mcp.server.auth.settings import AuthSettings
+
+    from agentskills_mcp_server import create_mcp_server
+
+    class Verifier:
+        async def verify_token(self, token):
+            if token != "accepted":
+                return None
+            return AccessToken(
+                token=token,
+                client_id="test",
+                scopes=["skills:read"],
+                resource="https://skills.example/mcp",
+            )
+
+    server = await create_mcp_server(
+        [],
+        auth=AuthSettings(
+            issuer_url="https://identity.example",
+            resource_server_url="https://skills.example/mcp",
+            required_scopes=["skills:read"],
+            validate_token_resource=True,
+        ),
+        token_verifier=Verifier(),
+    )
+    app = server.secure_http_app(
+        allowed_hosts=["skills.example"], allowed_origins=["https://host.example"]
+    )
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://skills.example"
+        ) as client,
+    ):
+        assert (await client.post("/mcp", json={})).status_code == 401
+        headers = {"Authorization": "Bearer accepted", "Origin": "https://host.example"}
+        assert (
+            await client.post("/mcp", json={}, headers={**headers, "Host": "evil.example"})
+        ).status_code == 421
+        assert (
+            await client.post(
+                "/mcp", json={}, headers={**headers, "Origin": "https://evil.example"}
+            )
+        ).status_code == 403
+
+
 async def test_native_discovery_lookup_and_original_bytes(tmp_path):
     from mcp import Client, MCPError
 

@@ -4,20 +4,29 @@ from __future__ import annotations
 
 import mimetypes
 import secrets
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
+from time import monotonic
 from typing import Any
 
 from mcp import MCPError
 from mcp.server import MCPServer
+from mcp.server.auth.provider import TokenVerifier
+from mcp.server.auth.settings import AuthSettings
 from mcp.server.extension import Extension, MethodBinding, ResourceBinding
+from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.mcpserver.resources.types import BinaryResource
-from mcp.types import RequestParams
+from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import RequestParams, Resource
 from pydantic import StrictStr
 
-from agentskills_core import Skill, SkillRegistry
+from agentskills_core import ProviderUnavailableError, Skill, SkillRegistry, SkillUnavailableError
 from agentskills_core.manifests import build_skill_manifest
+from agentskills_core.policy import Publication, publish_snapshot
+from agentskills_core.refresh import CatalogGeneration, SnapshotCatalog
 from agentskills_core.snapshots import DEFAULT_SNAPSHOT_MAX_BYTES, SkillSnapshot, capture_skill
+from agentskills_core.telemetry import DisclosureEvent, emit_event
+from agentskills_core.trust import TrustPolicy
 
 _PROTOCOLS = frozenset({"2026-07-28"})
 
@@ -113,6 +122,194 @@ class _SkillsExtension(Extension):
         }
 
 
+class _LiveSkillsExtension(Extension):
+    identifier = "io.modelcontextprotocol/skills"
+
+    def __init__(
+        self,
+        catalog: SnapshotCatalog,
+        paths: Mapping[str, str],
+        page_size: int,
+        listed: Collection[str] | None,
+        observer: Callable[[DisclosureEvent], None] | None,
+        origin: str,
+    ) -> None:
+        self.catalog = catalog
+        self.paths = paths
+        self.page_size = page_size
+        self.listed = listed
+        self.observer = observer
+        self.origin = origin
+        self._generation: str | None = None
+        self._compiled: _SkillsExtension | None = None
+
+    def view(self) -> tuple[CatalogGeneration, _SkillsExtension]:
+        state = self.catalog.current
+        if self._compiled is None or state.generation != self._generation:
+            compiled = _SkillsExtension(
+                [entry.snapshot for entry in state.publications],
+                self.paths,
+                self.page_size,
+                self.listed,
+            )
+            for entry in state.publications:
+                manifest = build_skill_manifest(
+                    entry.snapshot, skill_path=self.paths.get(entry.snapshot.skill_id)
+                )
+                metadata = {
+                    "io.agentskills/publication": {
+                        "origin": entry.source_identity.origin,
+                        "revision": entry.revision,
+                        "sourceRevision": entry.source_identity.revision,
+                        "sourceStatus": entry.source_identity.status,
+                        "publisher": entry.source_identity.publisher,
+                        "transformed": entry.transformed,
+                        "annotations": list(entry.annotations),
+                    }
+                }
+                compiled._skills[manifest["uri"]]["_meta"] = metadata
+                for resource in manifest["resources"]:
+                    compiled._resources[resource["uri"]].meta = metadata
+            self._compiled = compiled
+            self._generation = state.generation
+        return state, self._compiled
+
+    def resources(self) -> Sequence[ResourceBinding]:
+        return ()
+
+    def methods(self) -> Sequence[MethodBinding]:
+        return (
+            MethodBinding("skills/list", _ListParams, self._list, _PROTOCOLS),
+            MethodBinding("skills/get", _GetParams, self._get, _PROTOCOLS),
+        )
+
+    async def _list(self, context: Any, params: _ListParams) -> dict[str, Any]:
+        started = monotonic()
+        state, compiled = self.view()
+        result = await compiled._list(context, params)
+        result["_meta"] = {
+            "io.agentskills/catalog": {"generation": state.generation, "stale": state.stale}
+        }
+        emit_event(
+            self.observer,
+            "discovery",
+            origin=self.origin,
+            status="stale" if state.stale else "ok",
+            duration_seconds=monotonic() - started,
+        )
+        return result
+
+    async def _get(self, context: Any, params: _GetParams) -> dict[str, Any]:
+        started = monotonic()
+        state, compiled = self.view()
+        result = await compiled._get(context, params)
+        result["_meta"] = {
+            "io.agentskills/catalog": {"generation": state.generation, "stale": state.stale}
+        }
+        emit_event(
+            self.observer,
+            "lookup",
+            origin=self.origin,
+            revision=result["skill"]["_meta"]["io.agentskills/publication"]["revision"],
+            status="stale" if state.stale else "ok",
+            duration_seconds=monotonic() - started,
+        )
+        return result
+
+
+class NativeSkillsServer(MCPServer):
+    """Native server with explicit refresh and audience-scoped readiness.
+
+    Call ``refresh`` from an application-owned control path. Keep providers open
+    for its lifetime. Neither refresh nor health is an MCP execution tool.
+    """
+
+    def __init__(self, extension: _LiveSkillsExtension, **kwargs: Any) -> None:
+        self._skills_extension = extension
+        super().__init__(extensions=[extension], **kwargs)
+
+    async def refresh(self) -> dict[str, Any]:
+        """Atomically republish fresh source content, applying current policies."""
+        await self._skills_extension.catalog.refresh()
+        return self.health()
+
+    def health(self) -> dict[str, Any]:
+        """Report publication readiness without implying deployment certification."""
+        catalog = self._skills_extension.catalog
+        if not catalog.ready:
+            return {"ready": False}
+        state = catalog.current
+        return {
+            "ready": True,
+            "generation": state.generation,
+            "stale": state.stale,
+            "skillCount": len(state.publications),
+        }
+
+    async def list_resources(self) -> list[Resource]:
+        """List only the current coherent resource generation."""
+        _, compiled = self._skills_extension.view()
+        return [
+            Resource(
+                uri=resource.uri,
+                name=resource.name or "",
+                description=resource.description,
+                mime_type=resource.mime_type,
+                _meta=resource.meta,
+            )
+            for resource in compiled._resources.values()
+        ]
+
+    async def read_resource(self, uri: Any, context: Any = None) -> list[ReadResourceContents]:
+        """Read captured bytes, never refetching or implicitly activating a skill."""
+        started = monotonic()
+        extension = self._skills_extension
+        state, compiled = extension.view()
+        resource = compiled._resources.get(str(uri))
+        if resource is None:
+            raise MCPError(-32602, "Unknown skill resource")
+        metadata = deepcopy(resource.meta)
+        metadata["io.agentskills/publication"]["stale"] = state.stale
+        emit_event(
+            extension.observer,
+            "fetch",
+            origin=extension.origin,
+            revision=metadata["io.agentskills/publication"]["revision"],
+            status="stale" if state.stale else "ok",
+            byte_count=len(resource.data),
+            cache_hit=True,
+            duration_seconds=monotonic() - started,
+        )
+        return [
+            ReadResourceContents(content=resource.data, mime_type=resource.mime_type, meta=metadata)
+        ]
+
+    def secure_http_app(
+        self, *, allowed_hosts: Sequence[str], allowed_origins: Sequence[str]
+    ) -> Any:
+        """Build remote HTTP with explicit origin/host policy and MCP authorization.
+
+        Supply ``auth`` and ``token_verifier`` at construction. Terminate TLS
+        through the deployment. Use a distinct server/catalog for each audience.
+        This helper never forwards incoming tokens to skill providers.
+        """
+        if (
+            not allowed_hosts
+            or not allowed_origins
+            or any("*" in value for value in (*allowed_hosts, *allowed_origins))
+        ):
+            raise ValueError("Remote HTTP requires explicit non-wildcard hosts and origins")
+        if self.settings.auth is None:
+            raise ValueError("Remote HTTP requires deployment-supplied MCP authorization")
+        return self.streamable_http_app(
+            transport_security=TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=list(allowed_hosts),
+                allowed_origins=list(allowed_origins),
+            )
+        )
+
+
 async def create_native_mcp_server(
     skills: SkillRegistry | Sequence[Skill],
     *,
@@ -123,12 +320,18 @@ async def create_native_mcp_server(
     page_size: int = 100,
     max_skills: int = 128,
     max_total_bytes: int = 64 * 1024 * 1024,
-) -> MCPServer:
+    publication_policy: Callable[[SkillSnapshot], Publication] | None = None,
+    origin: str = "unconfigured",
+    max_stale_age: float = 0,
+    observer: Callable[[DisclosureEvent], None] | None = None,
+    auth: AuthSettings | None = None,
+    token_verifier: TokenVerifier | None = None,
+) -> NativeSkillsServer:
     """Capture immutable sources and serve the official Skills extension.
 
     Requires MCP SDK 2.2+ and protocol 2026-07-28. No legacy tools, catalog
     injection, execution, or directory-read capability are registered.
-    Restart the server to publish a new snapshot. Callers supply only skills
+    Call ``await server.refresh()`` to publish a new snapshot. Callers supply only skills
     authorized for the server's audience. Hosts retain approval and trust duties.
 
     Args:
@@ -140,6 +343,13 @@ async def create_native_mcp_server(
         page_size: Complete skill entries per listing page.
         max_skills: Maximum number of captured handles.
         max_total_bytes: Maximum aggregate retained file bytes across captures.
+        publication_policy: Trusted verifier/content policy called before manifests.
+            Omission explicitly publishes unsigned content, never verified content.
+        origin: Stable non-secret source identity, not a display name.
+        max_stale_age: Opt-in maximum age in seconds for verified outage snapshots.
+        observer: Optional privacy-preserving disclosure observer.
+        auth: Deployment-supplied MCP authorization settings for remote HTTP.
+        token_verifier: Deployment-supplied token validator. Never reused upstream.
 
     Returns:
         A modern MCP server ready for stdio or Streamable HTTP transport.
@@ -163,13 +373,88 @@ async def create_native_mcp_server(
     listed = None if listed_skill_ids is None else frozenset(listed_skill_ids)
     if listed is not None and listed - skill_ids:
         raise ValueError("listed_skill_ids contains unknown skill IDs")
-    snapshots: list[SkillSnapshot] = []
-    remaining = max_total_bytes
-    for skill in handles:
-        snapshot = await capture_skill(
-            skill, max_total_bytes=min(DEFAULT_SNAPSHOT_MAX_BYTES, remaining)
+
+    async def load() -> list[SkillSnapshot]:
+        current_handles = (
+            skills.list_skills() if isinstance(skills, SkillRegistry) else list(skills)
         )
-        snapshots.append(snapshot)
-        remaining -= snapshot.total_bytes
-    extension = _SkillsExtension(snapshots, paths, page_size, listed)
-    return MCPServer(name, instructions=instructions, extensions=[extension])
+        if len(current_handles) > max_skills:
+            raise ValueError("Skill registry exceeds max_skills")
+        snapshots = []
+        remaining = max_total_bytes
+        previous = (
+            {source.skill_id: source for source in catalog.current.sources} if catalog.ready else {}
+        )
+        changed = (
+            bool(previous) and {skill.get_id() for skill in current_handles} != previous.keys()
+        )
+        for skill in current_handles:
+            started = monotonic()
+            try:
+                snapshot = await capture_skill(
+                    skill,
+                    max_total_bytes=min(DEFAULT_SNAPSHOT_MAX_BYTES, remaining),
+                    previous_snapshot=previous.get(skill.get_id()),
+                )
+            except ProviderUnavailableError:
+                if changed:
+                    raise SkillUnavailableError(
+                        "Catalog changed before a provider outage"
+                    ) from None
+                raise
+            changed = changed or (bool(previous) and previous.get(skill.get_id()) != snapshot)
+            snapshots.append(snapshot)
+            remaining -= snapshot.total_bytes
+            emit_event(
+                observer,
+                "fetch",
+                origin=origin,
+                byte_count=snapshot.total_bytes,
+                duration_seconds=monotonic() - started,
+            )
+        return snapshots
+
+    def publish(snapshot: SkillSnapshot) -> Publication:
+        started = monotonic()
+        try:
+            result = (
+                publication_policy(snapshot)
+                if publication_policy is not None
+                else publish_snapshot(snapshot, trust=TrustPolicy(origin, require_signature=False))
+            )
+        except Exception:
+            emit_event(
+                observer,
+                "verification",
+                origin=origin,
+                status="error",
+                duration_seconds=monotonic() - started,
+            )
+            raise
+        emit_event(
+            observer,
+            "verification",
+            origin=origin,
+            revision=result.revision,
+            duration_seconds=monotonic() - started,
+        )
+        return result
+
+    def validate(publications: Sequence[Publication]) -> None:
+        _SkillsExtension([entry.snapshot for entry in publications], paths, page_size, listed)
+
+    catalog = SnapshotCatalog(
+        load,
+        publish,
+        validate=validate,
+        max_skills=max_skills,
+        max_total_bytes=max_total_bytes,
+        max_stale_age=max_stale_age,
+        observer=observer,
+        origin=origin,
+    )
+    await catalog.refresh()
+    extension = _LiveSkillsExtension(catalog, paths, page_size, listed, observer, origin)
+    return NativeSkillsServer(
+        extension, name=name, instructions=instructions, auth=auth, token_verifier=token_verifier
+    )

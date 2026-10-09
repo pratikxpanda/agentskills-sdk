@@ -10,6 +10,7 @@ nav:
   - Concepts: concepts.md
   - MCP Migration: mcp-migration.md
   - MCP Benchmarks: mcp-benchmarks.md
+  - Trust and Operability: trust-and-operability.md
   - Packages:
       - Core: packages/core.md
       - Format adapters: packages/adapters.md
