@@ -95,8 +95,8 @@ mcp = ">=2.2,<3"
 pydantic = ">=2.0"
 
 [package.extras]
-fs = ["agentskills-fs (>=0.6.0,<1.0)"]
-http = ["agentskills-http (>=0.6.0,<1.0)"]
+fs = ["agentskills-fs (>=0.7.0,<1.0)"]
+http = ["agentskills-http (>=0.7.0,<1.0)"]
 
 [package.source]
 type = "directory"
@@ -150,9 +150,9 @@ files = []
 develop = true
 
 [package.dependencies]
-agentskills-adapters = ">=0.3.0,<1.0"
+agentskills-adapters = ">=0.7.0,<1.0"
 agentskills-core = ">=0.7.0,<1.0"
-agentskills-fs = ">=0.6.0,<1.0"
+agentskills-fs = ">=0.7.0,<1.0"
 pyyaml = ">=6.0,<7.0"
 
 [package.extras]
