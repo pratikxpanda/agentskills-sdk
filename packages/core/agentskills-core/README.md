@@ -417,7 +417,7 @@ Discovery does not validate. An ID it returns can still fail `validate_skill()`,
 
 ### Encoding Resources for Tool Output
 
-Resources are `bytes`, but tool interfaces return text. `encode_resource_content()` is the shared conversion used by every integration, so behaviour cannot drift between them:
+Resources are `bytes`, but tool interfaces return text. `encode_resource_content()` is the shared conversion for custom hosts and tools, so behaviour cannot drift between them:
 
 ```python
 from agentskills_core import encode_resource_content
@@ -429,7 +429,7 @@ Valid UTF-8 passes through unchanged. Anything else returns a JSON envelope carr
 
 ### Classifying Resources for Native Delivery
 
-An envelope is the right answer for an opaque binary and the wrong one for a diagram — the model gets a wall of base64 where a picture was. `classify_resource()` decides which is which, once, so the three integrations cannot drift on what counts as an image:
+An envelope is the right answer for an opaque binary and the wrong one for a diagram — the model gets a wall of base64 where a picture was. `classify_resource()` decides which is which, once, so custom hosts cannot drift on what counts as an image:
 
 ```python
 from agentskills_core import classify_resource
@@ -445,7 +445,7 @@ Detection reads the leading bytes first and the name second: a name is a claim, 
 
 Images get their own ceiling, `DEFAULT_MAX_INLINE_IMAGE_BYTES` (5 MiB), rather than sharing the 64 KiB binary cap. The binary cap tracks tokens, because base64 in a text field is billed per byte; a native image is billed by tile count, so the same ceiling would have turned nearly every real screenshot into a stub saying it was too large. 5 MiB is the lowest per-image limit among the major vision APIs.
 
-Integrations use this behind an opt-in `vision=True` flag — see [ADR 0009](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0009-native-image-content.md). When `renderable` is `False` the caller falls back to `encode_resource_content()`, which is always safe.
+Custom hosts can use this behind an opt-in flag of their own, because the SDK cannot ask a model whether it can see. See [ADR 0009](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0009-native-image-content.md). When `renderable` is `False` the caller falls back to `encode_resource_content()`, which is always safe. Native MCP delivery does not use either helper: it serves original bytes and leaves rendering to the host.
 
 ### Logging
 
