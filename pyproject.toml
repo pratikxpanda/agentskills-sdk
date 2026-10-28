@@ -15,6 +15,10 @@ agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server"
 agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
 agentskills-tools = { path = "packages/tools/agentskills-tools", develop = true }
 agentskills-testing = { path = "packages/testing/agentskills-testing", develop = true }
+certifi = ">=2026.10.19"
+opentelemetry-api = ">=1.45.1"
+filelock = ">=4.2.1"
+msgpack = ">=1.2.3"
 pyjwt = ">=2.12.0"
 
 [tool.poetry.group.dev.dependencies]
