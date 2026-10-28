@@ -34,6 +34,7 @@ PACKAGES = [
     "packages/providers/agentskills-fs",
     "packages/providers/agentskills-git",
     "packages/providers/agentskills-http",
+    "packages/providers/agentskills-azure-blob",
     "packages/integrations/agentskills-mcp-server",
     "packages/retrieval/agentskills-retrieval",
     "packages/tools/agentskills-tools",
