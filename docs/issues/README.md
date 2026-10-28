@@ -18,7 +18,7 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 | [v0.5: Agent Effectiveness](./v0.5.md) | 6 | Shipped |
 | [v0.6: MCP-First Skills](./v0.6.md) | 7 | Included in v0.6.0. Deployment validation remains explicitly deferred. |
 | v0.7: Trust & Operability | 7 | Included in v0.7.0. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#v07-trust-operability). |
-| v0.8: Portable Distribution | 5 | Git provider implementation started; remaining priorities are candidates. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
+| v0.8: Portable Distribution | 5 | Git provider, lockfile CLI, and MCP client helper implementation underway; remaining priorities are candidates. Acceptance criteria are not finalized. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
 | v1.0: Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
 A milestone only gets a file once its items are concrete enough to have acceptance criteria.
