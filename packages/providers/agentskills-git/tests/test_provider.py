@@ -1,13 +1,15 @@
 """Tests for the Git-backed provider."""
 
+import gc
 import hashlib
 import os
+import stat
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from agentskills_core import SkillRegistry
+from agentskills_core import SkillRegistry, capture_skill
 from agentskills_git import GitSkillProvider, GitSkillProviderError
 
 
@@ -88,6 +90,12 @@ class TestGitSkillProvider:
                 max_cache_bytes=max_cache_bytes,
             )
 
+    def test_given_negative_total_cache_limit_when_initialized_then_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        with pytest.raises(ValueError, match="max_total_cache_bytes must be non-negative"):
+            GitSkillProvider("repo", "main", tmp_path, max_total_cache_bytes=-1)
+
     async def test_given_branch_when_discovered_then_pins_commit_and_reads_skill(
         self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
     ) -> None:
@@ -128,6 +136,10 @@ class TestGitSkillProvider:
 
         registry = SkillRegistry()
         assert await registry.register_all(provider) == ["incident-response"]
+        snapshot = await capture_skill(registry.get_skill("incident-response"))
+        assert snapshot.get_file("assets/map.bin").digest == (
+            "sha256:" + hashlib.sha256(b"\x00\xff").hexdigest()
+        )
 
     async def test_given_moved_branch_when_provider_reused_then_keeps_resolved_commit(
         self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
@@ -228,6 +240,51 @@ class TestGitSkillProvider:
 
         assert not limited._cache_path.exists()
 
+    async def test_given_total_cache_limit_when_adding_ref_then_evicts_oldest_inactive_entry(
+        self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
+    ) -> None:
+        source, bare, env = git_source
+        _git(["branch", "copy"], cwd=source, env=env)
+        _git(["push", str(bare), "copy"], cwd=source, env=env)
+        cache = tmp_path / "cache"
+        first = GitSkillProvider(str(bare), "main", cache)
+        await first.discover()
+        first_path = first._cache_path
+        checkout_size = first._check_cache_size(first_path)
+        (first_path / ".git" / "config").chmod(stat.S_IREAD)
+        del first
+        gc.collect()
+        provider = GitSkillProvider(
+            str(bare),
+            "copy",
+            cache,
+            max_total_cache_bytes=checkout_size * 2 - 1,
+        )
+
+        assert await provider.discover() == ["incident-response"]
+
+        assert not first_path.exists()
+        assert provider._cache_path.is_dir()
+
+    async def test_given_live_cache_entry_when_total_limit_reached_then_preserves_entry(
+        self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
+    ) -> None:
+        source, bare, env = git_source
+        _git(["branch", "copy"], cwd=source, env=env)
+        _git(["push", str(bare), "copy"], cwd=source, env=env)
+        cache = tmp_path / "cache"
+        first = GitSkillProvider(str(bare), "main", cache)
+        await first.discover()
+        first_size = first._check_cache_size(first._cache_path)
+        second = GitSkillProvider(
+            str(bare), "copy", cache, max_total_cache_bytes=first_size * 2 - 1
+        )
+
+        with pytest.raises(GitSkillProviderError, match="no inactive checkout is available"):
+            await second.discover()
+
+        assert first._cache_path.is_dir()
+
     async def test_given_invalid_cached_commit_marker_when_discovered_then_refetches(
         self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
     ) -> None:
@@ -295,7 +352,7 @@ class TestGitSkillProvider:
         _, bare, _ = git_source
         provider = GitSkillProvider(str(bare), "missing-ref", tmp_path / "cache")
 
-        with pytest.raises(GitSkillProviderError, match="Could not fetch or cache"):
+        with pytest.raises(GitSkillProviderError, match="Could not fetch revision"):
             await provider.discover()
 
     async def test_given_git_executable_failure_when_discovered_then_wraps_os_error(
@@ -312,5 +369,5 @@ class TestGitSkillProvider:
         monkeypatch.setattr(subprocess, "run", fail_git)
         provider = GitSkillProvider(str(bare), "main", tmp_path / "cache")
 
-        with pytest.raises(GitSkillProviderError, match="Could not fetch or cache"):
+        with pytest.raises(GitSkillProviderError, match="Could not initialize repository"):
             await provider.discover()

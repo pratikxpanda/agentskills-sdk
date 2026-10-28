@@ -26,9 +26,21 @@ registry = SkillRegistry()
 await registry.register_all(provider)
 ```
 
-The resolved commit is available as `provider.resolved_commit` after the first provider operation.
-The current cache limit applies per checkout. Total cache bounds, eviction, and content digest
-reporting remain open work for this milestone.
+The repository is available as `provider.repository`, and the resolved commit is available as
+`provider.resolved_commit` after the first provider operation. Use `capture_skill` to produce the
+shared core snapshot with per-file SHA-256 digests:
+
+```python
+from agentskills_core import capture_skill
+
+snapshot = await capture_skill(registry.get_skill("incident-response"))
+[(file.path, file.digest) for file in snapshot.files]
+```
+
+Each checkout defaults to a 256 MiB limit. The cache defaults to 1 GiB total and evicts the
+least-recently-used inactive checkout when it needs space. Active providers in the current process
+are protected. Coordination across processes sharing one cache directory remains open work for this
+milestone.
 
 ::: agentskills_git.GitSkillProvider
     options:

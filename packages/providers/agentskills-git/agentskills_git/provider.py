@@ -7,9 +7,11 @@ import hashlib
 import os
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
+import weakref
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -17,7 +19,10 @@ from agentskills_core import SkillProvider
 from agentskills_fs import LocalFileSystemSkillProvider
 
 DEFAULT_MAX_CACHE_BYTES = 256 * 1024 * 1024
+DEFAULT_MAX_TOTAL_CACHE_BYTES = 1024 * 1024 * 1024
 _COMMIT_PATTERN = re.compile(r"[0-9a-f]{40,64}")
+_CACHE_LOCK = threading.RLock()
+_ACTIVE_PROVIDERS: weakref.WeakSet = weakref.WeakSet()
 
 
 class GitSkillProviderError(RuntimeError):
@@ -41,6 +46,7 @@ class GitSkillProvider(SkillProvider):
         cache_dir: Directory for the pinned checkout.
         subdirectory: POSIX repository-relative directory containing skills.
         max_cache_bytes: Maximum size of the checkout and Git metadata.
+        max_total_cache_bytes: Maximum total size of completed checkouts in the cache.
 
     Raises:
         ValueError: If the ref, subdirectory, or cache limit is invalid.
@@ -64,6 +70,7 @@ class GitSkillProvider(SkillProvider):
         *,
         subdirectory: str = ".",
         max_cache_bytes: int = DEFAULT_MAX_CACHE_BYTES,
+        max_total_cache_bytes: int = DEFAULT_MAX_TOTAL_CACHE_BYTES,
     ) -> None:
         if not repository:
             raise ValueError("repository must not be empty")
@@ -76,12 +83,15 @@ class GitSkillProvider(SkillProvider):
             raise ValueError("subdirectory must stay within the repository")
         if max_cache_bytes < 0:
             raise ValueError("max_cache_bytes must be non-negative")
+        if max_total_cache_bytes < 0:
+            raise ValueError("max_total_cache_bytes must be non-negative")
 
         self.repository = repository
         self.ref = ref
         self.cache_dir = Path(cache_dir)
         self.subdirectory = relative
         self.max_cache_bytes = max_cache_bytes
+        self.max_total_cache_bytes = max_total_cache_bytes
         self._lock = threading.Lock()
         self._provider: LocalFileSystemSkillProvider | None = None
         self._resolved_commit: str | None = None
@@ -197,18 +207,18 @@ class GitSkillProvider(SkillProvider):
         return await asyncio.to_thread(self._get_provider_sync)
 
     def _get_provider_sync(self) -> LocalFileSystemSkillProvider:
-        if self._provider is not None:
-            return self._provider
-        with self._lock:
+        with _CACHE_LOCK, self._lock:
             if self._provider is not None:
                 return self._provider
             root, commit = self._materialize()
             self._provider = LocalFileSystemSkillProvider(root)
             self._resolved_commit = commit
+            _ACTIVE_PROVIDERS.add(self)
             return self._provider
 
     def _materialize(self) -> tuple[Path, str]:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        operation = "validate cache"
         if self._cache_path.is_symlink() or self._cache_path.is_junction():
             raise GitSkillProviderError("Git cache entry must not be a link")
         marker = self._cache_path / ".agentskills-git-commit"
@@ -217,6 +227,8 @@ class GitSkillProvider(SkillProvider):
             root = self._content_root(self._cache_path)
             if _COMMIT_PATTERN.fullmatch(commit) and root.is_dir():
                 self._check_cache_size(self._cache_path)
+                self._make_cache_room(0, preserve=self._cache_path)
+                os.utime(self._cache_path, None)
                 return root, commit
             shutil.rmtree(self._cache_path)
         elif self._cache_path.exists():
@@ -238,27 +250,34 @@ class GitSkillProvider(SkillProvider):
                 env = os.environ.copy()
                 env["GIT_CONFIG_NOSYSTEM"] = "1"
                 env["GIT_CONFIG_GLOBAL"] = str(global_config)
+                operation = "initialize repository"
                 self._git(["init", "--quiet", f"--template={template}", str(repo_dir)], env, hooks)
+                operation = "configure remote"
                 self._git(
                     ["-C", str(repo_dir), "remote", "add", "origin", self.repository],
                     env,
                     hooks,
                 )
+                operation = "fetch revision"
                 self._git(
                     ["-C", str(repo_dir), "fetch", "--quiet", "--depth=1", "origin", self.ref],
                     env,
                     hooks,
                 )
+                operation = "resolve commit"
                 commit = self._git(
                     ["-C", str(repo_dir), "rev-parse", "FETCH_HEAD^{commit}"], env, hooks
                 ).strip()
                 if not _COMMIT_PATTERN.fullmatch(commit):
                     raise GitSkillProviderError("Git returned an invalid resolved commit")
+                operation = "checkout commit"
                 self._git(
                     ["-C", str(repo_dir), "checkout", "--quiet", "--detach", commit], env, hooks
                 )
+                operation = "remove remote metadata"
                 self._git(["-C", str(repo_dir), "remote", "remove", "origin"], env, hooks)
                 (repo_dir / ".git" / "FETCH_HEAD").unlink(missing_ok=True)
+                operation = "validate skill directory"
                 root = self._content_root(repo_dir)
                 if not root.is_dir():
                     raise GitSkillProviderError(
@@ -266,15 +285,17 @@ class GitSkillProvider(SkillProvider):
                     )
                 self._reject_links(root)
                 (repo_dir / ".agentskills-git-commit").write_text(commit, encoding="ascii")
-                self._check_cache_size(repo_dir)
+                operation = "check checkout size"
+                size = self._check_cache_size(repo_dir)
+                operation = "make cache room"
+                self._make_cache_room(size)
+                operation = "promote checkout into cache"
                 shutil.move(str(repo_dir), str(self._cache_path))
                 return self._content_root(self._cache_path), commit
         except GitSkillProviderError:
             raise
-        except (OSError, subprocess.SubprocessError):
-            raise GitSkillProviderError(
-                "Could not fetch or cache the configured Git revision"
-            ) from None
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise GitSkillProviderError(f"Could not {operation} ({type(exc).__name__})") from None
 
     def _git(self, args: list[str], env: dict[str, str], hooks: Path) -> str:
         result = subprocess.run(
@@ -299,17 +320,64 @@ class GitSkillProvider(SkillProvider):
             raise GitSkillProviderError("Configured subdirectory escapes the checkout")
         return resolved
 
-    def _check_cache_size(self, repo_dir: Path) -> None:
+    def _check_cache_size(self, repo_dir: Path) -> int:
+        size = self._directory_size(repo_dir)
+        if size > self.max_cache_bytes:
+            raise GitSkillProviderError(
+                f"Repository checkout exceeds max_cache_bytes ({self.max_cache_bytes})"
+            )
+        return size
+
+    @staticmethod
+    def _directory_size(directory: Path) -> int:
         size = 0
-        for path in repo_dir.rglob("*"):
-            if path.is_symlink():
+        for path in directory.rglob("*"):
+            if path.is_symlink() or path.is_junction():
                 raise GitSkillProviderError("Repository checkout contains a symbolic link")
             if path.is_file():
                 size += path.stat().st_size
-                if size > self.max_cache_bytes:
-                    raise GitSkillProviderError(
-                        f"Repository checkout exceeds max_cache_bytes ({self.max_cache_bytes})"
-                    )
+        return size
+
+    def _make_cache_room(self, incoming_size: int, *, preserve: Path | None = None) -> None:
+        entries: list[tuple[int, int, Path]] = []
+        total_size = 0
+        for path in self.cache_dir.iterdir():
+            marker = path / ".agentskills-git-commit"
+            if path.is_symlink() or path.is_junction() or not path.is_dir() or not marker.is_file():
+                continue
+            size = self._directory_size(path)
+            total_size += size
+            entries.append((path.stat().st_mtime_ns, size, path))
+
+        active_paths = {
+            provider._cache_path
+            for provider in tuple(_ACTIVE_PROVIDERS)
+            if provider._provider is not None
+        }
+        for _, size, path in sorted(entries):
+            if total_size + incoming_size <= self.max_total_cache_bytes:
+                break
+            if path == preserve or path in active_paths:
+                continue
+            self._remove_cache_entry(path)
+            total_size -= size
+
+        if total_size + incoming_size > self.max_total_cache_bytes:
+            raise GitSkillProviderError(
+                "Total Git cache exceeds max_total_cache_bytes "
+                f"({self.max_total_cache_bytes}); no inactive checkout is available to evict"
+            )
+
+    @staticmethod
+    def _remove_cache_entry(path: Path) -> None:
+        def retry_read_only(func: Any, target: str, error_info: tuple[Any, ...]) -> None:
+            error = error_info[1]
+            if not isinstance(error, PermissionError):
+                raise error
+            os.chmod(target, stat.S_IREAD | stat.S_IWRITE)
+            func(target)
+
+        shutil.rmtree(path, onerror=retry_read_only)
 
     @staticmethod
     def _reject_links(repo_dir: Path) -> None:
