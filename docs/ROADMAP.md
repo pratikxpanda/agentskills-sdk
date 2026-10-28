@@ -292,14 +292,19 @@ coordination is implemented with file locks and leases. Release acceptance crite
 development.
 
 The tools CLI can create and update a Git lockfile and verify a local checkout offline against the
-resolved commit and canonical file manifests. Rollback uses the prior lockfile revision in version
-control.
+resolved commit and canonical file manifests. Verification reads Git objects without fetching,
+checks the worktree is clean, and detects ignored or untracked files. Rollback uses the prior
+lockfile revision in version control.
+
+The MCP package provides an origin-bound client helper for paginated Skills discovery, direct
+lookup, and on-demand digest-verified reads. It does not own selection, approval, transport, or
+session lifecycle. Server-to-server federation and loop prevention still need acceptance criteria.
 
 | Item | Theme | Notes |
 | --- | --- | --- |
 | Git provider with reproducible resolution | Distribution | Resolve refs to immutable commits, support subdirectory selection and a bounded local cache, and record origin and content digests. Do not run repository hooks or skill scripts. This is the first additional provider priority. |
 | Skill lockfile and offline verification | Trust / DX | Record source, resolved revision, and per-file digests so CI and agents use the same content. Add drift detection and explicit update/rollback workflows. Reuse extension manifests rather than inventing a second skill format. This is local tooling, not an archive transport extension. Initial CLI workflow is implemented; acceptance criteria remain open. |
-| Framework-neutral MCP consumption and composition | Interoperability | Assess an optional MCP-backed provider/client helper using the official client SDK. Preserve originating server plus URI, on-demand reads, verification, cache isolation, and caller-owned approval. Avoid eager `register_all` content validation on discovery and prevent identity loss or loops when composing servers. No framework lifecycle adapters. |
+| Framework-neutral MCP consumption and composition | Interoperability | The first client helper is implemented using the official client SDK. Preserve originating server plus URI, on-demand reads, verification, cache isolation, and caller-owned approval. Avoid eager `register_all` content validation on discovery and prevent identity loss or loops when composing servers. No framework lifecycle adapters. Federation and loop-prevention criteria remain open. |
 | Object storage and OCI sources | Distribution | Add only with demonstrated demand. Object stores should reuse native credential chains. OCI should reuse existing artifact signing and registry controls. Both must preserve the same manifest and progressive-disclosure contracts. |
 | Optional MCP prompt shortcuts | DX | User-invoked workflows for hosts that support prompts. Add only where they improve a tested workflow, without replacing Skills discovery or bypassing approval and provenance. |
 

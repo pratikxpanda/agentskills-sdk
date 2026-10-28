@@ -21,6 +21,24 @@ pip install "agentskills-mcp-server[fs]"
     options:
       show_root_heading: true
 
+## Client
+
+The framework-neutral client helper uses a caller-owned MCP session. Listing returns origin-bound
+references without reading resource bodies. Resource reads happen on demand and verify the
+manifest digest.
+
+::: agentskills_mcp_server.client.McpSkillsClient
+    options:
+      show_root_heading: true
+
+::: agentskills_mcp_server.client.McpSkillReference
+    options:
+      show_root_heading: true
+
+::: agentskills_mcp_server.client.McpSkillIdentity
+    options:
+      show_root_heading: true
+
 ## Configuration
 
 ::: agentskills_mcp_server.config.ServerConfig

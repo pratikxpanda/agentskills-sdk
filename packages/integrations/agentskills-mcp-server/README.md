@@ -55,6 +55,28 @@ applies reject/redact/annotate hooks before manifests are generated. See the
 for publisher configuration, token limits, verified stale policy, telemetry,
 and authenticated remote HTTP deployment.
 
+## Consume Skills
+
+Wrap an initialized official MCP client session to list manifests without reading skill bodies.
+Keep the session, transport, credentials, selection, and approval under host control:
+
+```python
+from agentskills_mcp_server import McpSkillsClient
+
+client = McpSkillsClient(session, origin="incident-runbooks")
+skills = await client.list_skills()
+skill = await client.get_skill(skills[0].identity.uri)
+body_resource = next(
+  item for item in skill.manifest["resources"] if item["uri"] == skill.identity.uri
+)
+body = await client.read_resource(skill, body_resource["uri"])
+```
+
+References retain both the supplied origin identity and canonical `skill://` URI. Reads verify
+the manifest's size and SHA-256 digest. The client does not implement `SkillProvider` or insert
+remote content into a `SkillRegistry`, since registration validates by reading bodies eagerly.
+It also keeps no shared response cache, so separate server origins remain isolated.
+
 ## Configuration
 
 ```json
