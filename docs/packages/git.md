@@ -39,8 +39,8 @@ snapshot = await capture_skill(registry.get_skill("incident-response"))
 
 Each checkout defaults to a 256 MiB limit. The cache defaults to 1 GiB total and evicts the
 least-recently-used inactive checkout when it needs space. Active providers in the current process
-are protected. Coordination across processes sharing one cache directory remains open work for this
-milestone.
+and other processes sharing the cache are protected by lease locks. Release acceptance criteria
+remain open work for this milestone.
 
 ::: agentskills_git.GitSkillProvider
     options:

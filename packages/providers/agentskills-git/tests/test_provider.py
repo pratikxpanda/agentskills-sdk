@@ -5,10 +5,13 @@ import hashlib
 import os
 import stat
 import subprocess
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+import agentskills_git.provider as git_provider_module
 from agentskills_core import SkillRegistry, capture_skill
 from agentskills_git import GitSkillProvider, GitSkillProviderError
 
@@ -60,6 +63,163 @@ def git_source(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
 
 
 class TestGitSkillProvider:
+    @pytest.mark.parametrize("windows", [False, True])
+    def test_given_platform_lock_backend_when_locking_then_uses_platform_api(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, windows: bool
+    ) -> None:
+        calls: list[tuple[int, int]] = []
+        lock_api = (
+            SimpleNamespace(
+                LK_LOCK=1,
+                LK_NBLCK=2,
+                LK_UNLCK=3,
+                locking=lambda descriptor, mode, count: calls.append((mode, count)),
+            )
+            if windows
+            else SimpleNamespace(
+                LOCK_EX=4,
+                LOCK_NB=8,
+                LOCK_UN=16,
+                flock=lambda descriptor, mode: calls.append((mode, 1)),
+            )
+        )
+        module_name = "msvcrt" if windows else "fcntl"
+        monkeypatch.setattr(git_provider_module, "_is_windows", lambda: windows)
+        monkeypatch.setitem(sys.modules, module_name, lock_api)
+
+        with (tmp_path / "lock").open("w+b") as stream:
+            git_provider_module._lock_file(stream, blocking=False)
+            git_provider_module._unlock_file(stream)
+
+        assert len(calls) == 2
+
+    def test_given_contended_windows_lock_when_blocking_then_retries_until_acquired(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        attempts: list[int] = []
+
+        def lock(descriptor: int, mode: int, count: int) -> None:
+            attempts.append(mode)
+            if len(attempts) == 1:
+                raise PermissionError(13, "lock is held")
+
+        lock_api = SimpleNamespace(LK_NBLCK=2, LK_UNLCK=3, locking=lock)
+        monkeypatch.setattr(git_provider_module, "_is_windows", lambda: True)
+        monkeypatch.setattr(git_provider_module.time, "sleep", lambda seconds: None)
+        monkeypatch.setitem(sys.modules, "msvcrt", lock_api)
+
+        with (tmp_path / "lock").open("w+b") as stream:
+            git_provider_module._lock_file(stream, blocking=True)
+            git_provider_module._unlock_file(stream)
+
+        assert attempts == [lock_api.LK_NBLCK, lock_api.LK_NBLCK, lock_api.LK_UNLCK]
+
+    def test_given_lease_lock_failure_when_created_then_removes_partial_lease(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        provider = GitSkillProvider("repo", "main", tmp_path)
+
+        def fail_lock(stream: object, *, blocking: bool) -> None:
+            raise OSError("lock unavailable")
+
+        monkeypatch.setattr(git_provider_module, "_lock_file", fail_lock)
+
+        with pytest.raises(OSError, match="lock unavailable"):
+            provider._create_cache_lease()
+
+        lease_dir = tmp_path / ".leases" / provider._cache_path.name
+        assert list(lease_dir.iterdir()) == []
+
+    def test_given_release_lock_failure_when_released_then_removes_lease(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lease = tmp_path / "lease"
+        lease.write_bytes(b"123")
+        stream = lease.open("r+b")
+
+        def fail_unlock(open_stream: object) -> None:
+            raise OSError("unlock unavailable")
+
+        monkeypatch.setattr(git_provider_module, "_unlock_file", fail_unlock)
+
+        git_provider_module._release_cache_lease(stream, lease)
+
+        assert not lease.exists()
+
+    def test_given_resolved_subdirectory_outside_checkout_then_rejects_escape(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        checkout = tmp_path / "checkout"
+        outside = tmp_path / "outside"
+        checkout.mkdir()
+        outside.mkdir()
+        provider = GitSkillProvider("repo", "main", tmp_path / "cache", subdirectory="skills")
+        resolve = Path.resolve
+
+        def resolve_outside(path: Path, *args: object, **kwargs: object) -> Path:
+            if path == checkout / "skills":
+                return outside
+            return resolve(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "resolve", resolve_outside)
+
+        with pytest.raises(GitSkillProviderError, match="escapes the checkout"):
+            provider._content_root(checkout)
+
+    def test_given_symlink_in_checkout_when_sizing_then_rejects_link(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        checkout = tmp_path / "checkout"
+        checkout.mkdir()
+        linked_file = checkout / "linked"
+        linked_file.write_text("content", encoding="utf-8")
+        monkeypatch.setattr(type(linked_file), "is_symlink", lambda path: path == linked_file)
+
+        with pytest.raises(GitSkillProviderError, match="contains a symbolic link"):
+            GitSkillProvider._directory_size(checkout)
+
+    def test_given_symlink_in_skill_tree_when_validating_then_rejects_link(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        skill_root = tmp_path / "skill"
+        skill_root.mkdir()
+        linked_file = skill_root / "linked"
+        linked_file.write_text("content", encoding="utf-8")
+        monkeypatch.setattr(type(linked_file), "is_symlink", lambda path: path == linked_file)
+
+        with pytest.raises(GitSkillProviderError, match="contains a symbolic link"):
+            GitSkillProvider._reject_links(skill_root)
+
+    def test_given_lease_disappearing_during_scan_then_treats_cache_as_inactive(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        provider = GitSkillProvider("repo", "main", tmp_path)
+        lease_dir = tmp_path / ".leases" / provider._cache_path.name
+        lease_dir.mkdir(parents=True)
+        lease_path = lease_dir / "lease"
+        lease_path.write_text("1", encoding="ascii")
+        path_open = Path.open
+
+        def race_open(path: Path, *args: object, **kwargs: object):
+            if path == lease_path:
+                raise FileNotFoundError(path)
+            return path_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", race_open)
+
+        assert not provider._has_active_lease(provider._cache_path)
+
+    def test_given_non_permission_eviction_error_when_removing_then_propagates(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def invoke_onerror(path: Path, *, onerror: object) -> None:
+            onerror(lambda target: None, str(path), (OSError, OSError("failure"), None))
+
+        monkeypatch.setattr(git_provider_module.shutil, "rmtree", invoke_onerror)
+
+        with pytest.raises(OSError, match="failure"):
+            GitSkillProvider._remove_cache_entry(tmp_path / "cache")
+
     @pytest.mark.parametrize(
         ("repository", "ref", "subdirectory", "max_cache_bytes", "message"),
         [
@@ -284,6 +444,58 @@ class TestGitSkillProvider:
             await second.discover()
 
         assert first._cache_path.is_dir()
+
+    async def test_given_other_process_lease_when_evicting_then_preserves_then_reclaims_entry(
+        self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path
+    ) -> None:
+        source, bare, env = git_source
+        _git(["branch", "copy"], cwd=source, env=env)
+        _git(["push", str(bare), "copy"], cwd=source, env=env)
+        cache = tmp_path / "cache"
+        initial = GitSkillProvider(str(bare), "main", cache)
+        await initial.discover()
+        main_path = initial._cache_path
+        budget = initial._check_cache_size(main_path) * 2 - 1
+        del initial
+        gc.collect()
+        script = "\n".join(
+            [
+                "import asyncio, sys",
+                "from pathlib import Path",
+                "from agentskills_git import GitSkillProvider",
+                "async def main():",
+                "    provider = GitSkillProvider(sys.argv[1], 'main', Path(sys.argv[2]))",
+                "    await provider.discover()",
+                "    print('ready', flush=True)",
+                "    await asyncio.to_thread(sys.stdin.readline)",
+                "asyncio.run(main())",
+            ]
+        )
+        process = subprocess.Popen(
+            [sys.executable, "-c", script, str(bare), str(cache)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            text=True,
+        )
+        try:
+            assert process.stdout is not None
+            assert process.stdout.readline().strip() == "ready"
+            provider = GitSkillProvider(str(bare), "copy", cache, max_total_cache_bytes=budget)
+            with pytest.raises(GitSkillProviderError, match="no inactive checkout"):
+                await provider.discover()
+            assert main_path.is_dir()
+
+            process.terminate()
+            process.wait(timeout=10)
+
+            assert await provider.discover() == ["incident-response"]
+            assert not main_path.exists()
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                process.wait(timeout=10)
 
     async def test_given_invalid_cached_commit_marker_when_discovered_then_refetches(
         self, git_source: tuple[Path, Path, dict[str, str]], tmp_path: Path

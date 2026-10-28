@@ -43,7 +43,7 @@ The provider does not run repository hooks, submodules, or skill scripts. It ign
 Git configuration and disables the `ext` transport. Symlink entries are rejected. The cache has a
 configurable size limit per checkout (`max_cache_bytes`, 256 MiB by default) and a 1 GiB total
 limit (`max_total_cache_bytes`). Least-recently-used inactive checkouts are evicted to stay within
-the total limit. Active providers in this process are not evicted. Remote authentication uses Git's supported transport
+the total limit. File locks protect active checkouts across processes. Remote authentication uses Git's supported transport
 mechanisms, except credentials from global Git configuration are not loaded by this provider.
 
 Use the shared core snapshot API to capture original files and their SHA-256 digests:
@@ -56,5 +56,4 @@ for file in snapshot.files:
     print(file.path, file.digest)
 ```
 
-The cache does not coordinate active checkouts across separate processes yet. Broader Git host
-compatibility is also still being tested.
+Broader Git host compatibility is still being tested.

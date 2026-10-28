@@ -288,7 +288,8 @@ ordered by expected value rather than a commitment to add every provider.
 
 Implementation has started on the Git provider. It resolves refs to commit SHAs, uses the core
 snapshot API for per-file digests, and bounds the cache with LRU eviction. Cross-process cache
-coordination and acceptance criteria remain under development.
+coordination is implemented with file locks and leases. Release acceptance criteria remain under
+development.
 
 | Item | Theme | Notes |
 | --- | --- | --- |

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import errno
 import hashlib
+import importlib
 import os
 import re
 import shutil
@@ -11,6 +14,8 @@ import stat
 import subprocess
 import tempfile
 import threading
+import time
+import uuid
 import weakref
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -23,6 +28,74 @@ DEFAULT_MAX_TOTAL_CACHE_BYTES = 1024 * 1024 * 1024
 _COMMIT_PATTERN = re.compile(r"[0-9a-f]{40,64}")
 _CACHE_LOCK = threading.RLock()
 _ACTIVE_PROVIDERS: weakref.WeakSet = weakref.WeakSet()
+
+
+def _ensure_lock_byte(stream: Any) -> None:
+    stream.seek(0, os.SEEK_END)
+    if stream.tell() == 0:
+        stream.write(b"\0")
+        stream.flush()
+    stream.seek(0)
+
+
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
+def _lock_file(stream: Any, *, blocking: bool) -> None:
+    _ensure_lock_byte(stream)
+    if _is_windows():
+        lock_api = importlib.import_module("msvcrt")
+        if not blocking:
+            lock_api.locking(stream.fileno(), lock_api.LK_NBLCK, 1)
+            return
+        deadline = time.monotonic() + 300
+        while True:
+            stream.seek(0)
+            try:
+                lock_api.locking(stream.fileno(), lock_api.LK_NBLCK, 1)
+                return
+            except OSError as exc:
+                if exc.errno not in {errno.EACCES, errno.EDEADLK} and getattr(
+                    exc, "winerror", None
+                ) not in {32, 33}:
+                    raise
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
+    else:
+        lock_api = importlib.import_module("fcntl")
+        mode = lock_api.LOCK_EX | (0 if blocking else lock_api.LOCK_NB)
+        lock_api.flock(stream.fileno(), mode)
+
+
+def _unlock_file(stream: Any) -> None:
+    stream.seek(0)
+    if _is_windows():
+        lock_api = importlib.import_module("msvcrt")
+        lock_api.locking(stream.fileno(), lock_api.LK_UNLCK, 1)
+    else:
+        lock_api = importlib.import_module("fcntl")
+        lock_api.flock(stream.fileno(), lock_api.LOCK_UN)
+
+
+@contextlib.contextmanager
+def _cache_directory_lock(cache_dir: Path):
+    with (cache_dir / ".agentskills-cache.lock").open("a+b") as stream:
+        _lock_file(stream, blocking=True)
+        try:
+            yield
+        finally:
+            _unlock_file(stream)
+
+
+def _release_cache_lease(stream: Any, path: Path) -> None:
+    with contextlib.suppress(OSError):
+        _unlock_file(stream)
+    stream.close()
+    path.unlink(missing_ok=True)
+    with contextlib.suppress(OSError):
+        path.parent.rmdir()
 
 
 class GitSkillProviderError(RuntimeError):
@@ -95,6 +168,7 @@ class GitSkillProvider(SkillProvider):
         self._lock = threading.Lock()
         self._provider: LocalFileSystemSkillProvider | None = None
         self._resolved_commit: str | None = None
+        self._lease_finalizer: weakref.finalize | None = None
         identity = "\0".join((repository, ref, relative.as_posix()))
         self._cache_path = self.cache_dir / hashlib.sha256(identity.encode()).hexdigest()
 
@@ -210,11 +284,29 @@ class GitSkillProvider(SkillProvider):
         with _CACHE_LOCK, self._lock:
             if self._provider is not None:
                 return self._provider
-            root, commit = self._materialize()
-            self._provider = LocalFileSystemSkillProvider(root)
-            self._resolved_commit = commit
-            _ACTIVE_PROVIDERS.add(self)
-            return self._provider
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            with _cache_directory_lock(self.cache_dir):
+                root, commit = self._materialize()
+                self._create_cache_lease()
+                self._provider = LocalFileSystemSkillProvider(root)
+                self._resolved_commit = commit
+                _ACTIVE_PROVIDERS.add(self)
+                return self._provider
+
+    def _create_cache_lease(self) -> None:
+        lease_dir = self.cache_dir / ".leases" / self._cache_path.name
+        lease_dir.mkdir(parents=True, exist_ok=True)
+        lease_path = lease_dir / f"{os.getpid()}-{uuid.uuid4().hex}"
+        stream = lease_path.open("x+b")
+        try:
+            stream.write(str(os.getpid()).encode("ascii"))
+            stream.flush()
+            _lock_file(stream, blocking=True)
+        except OSError:
+            stream.close()
+            lease_path.unlink(missing_ok=True)
+            raise
+        self._lease_finalizer = weakref.finalize(self, _release_cache_lease, stream, lease_path)
 
     def _materialize(self) -> tuple[Path, str]:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -357,9 +449,11 @@ class GitSkillProvider(SkillProvider):
         for _, size, path in sorted(entries):
             if total_size + incoming_size <= self.max_total_cache_bytes:
                 break
-            if path == preserve or path in active_paths:
+            if path == preserve or path in active_paths or self._has_active_lease(path):
                 continue
             self._remove_cache_entry(path)
+            lease_dir = self.cache_dir / ".leases" / path.name
+            shutil.rmtree(lease_dir, ignore_errors=True)
             total_size -= size
 
         if total_size + incoming_size > self.max_total_cache_bytes:
@@ -367,6 +461,31 @@ class GitSkillProvider(SkillProvider):
                 "Total Git cache exceeds max_total_cache_bytes "
                 f"({self.max_total_cache_bytes}); no inactive checkout is available to evict"
             )
+
+    def _has_active_lease(self, cache_path: Path) -> bool:
+        lease_dir = self.cache_dir / ".leases" / cache_path.name
+        if not lease_dir.is_dir():
+            return False
+        active = False
+        for lease_path in lease_dir.iterdir():
+            stale = False
+            try:
+                with lease_path.open("r+b") as stream:
+                    try:
+                        _lock_file(stream, blocking=False)
+                    except OSError:
+                        active = True
+                    else:
+                        _unlock_file(stream)
+                        stale = True
+            except FileNotFoundError:
+                continue
+            if stale:
+                lease_path.unlink(missing_ok=True)
+        if not active:
+            with contextlib.suppress(OSError):
+                lease_dir.rmdir()
+        return active
 
     @staticmethod
     def _remove_cache_entry(path: Path) -> None:
