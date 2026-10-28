@@ -86,6 +86,7 @@ class TestServerConfig:
         )
         assert config.listed_skill_ids == []
         assert config.max_skills == 128
+        assert config.skill_prompt_shortcuts is False
 
     def test_minimal(self):
         cfg = ServerConfig(
@@ -94,7 +95,17 @@ class TestServerConfig:
         )
         assert cfg.name == "Test"
         assert cfg.instructions is None
+        assert cfg.skill_prompt_shortcuts is False
         assert len(cfg.skills) == 1
+
+    def test_skill_prompt_shortcuts_can_be_enabled(self):
+        cfg = ServerConfig(
+            name="Test",
+            skills=[SkillConfig(id="s1", provider="fs")],
+            skill_prompt_shortcuts=True,
+        )
+
+        assert cfg.skill_prompt_shortcuts is True
 
     def test_with_instructions(self):
         cfg = ServerConfig(

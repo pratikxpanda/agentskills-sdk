@@ -39,6 +39,10 @@ manifest digest.
     options:
       show_root_heading: true
 
+Set `skill_prompt_shortcuts=True` on `create_mcp_server` to register the optional `use-skill`
+prompt. It is user-invoked, resolves a canonical URI against the current catalog, and does not
+grant tool permissions. The folder CLI flag is `--skill-prompts`.
+
 ## Configuration
 
 ::: agentskills_mcp_server.config.ServerConfig

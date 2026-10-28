@@ -162,6 +162,7 @@ class ServerConfig(BaseModel):
     skills: list[SkillConfig] = Field(..., description="Skills to register", min_length=1)
     skill_paths: dict[str, str] = Field(default_factory=dict)
     listed_skill_ids: list[str] | None = None
+    skill_prompt_shortcuts: bool = False
     page_size: int = Field(100, gt=0)
     max_skills: int = Field(128, gt=0)
     max_total_bytes: int = Field(64 * 1024 * 1024, ge=0)

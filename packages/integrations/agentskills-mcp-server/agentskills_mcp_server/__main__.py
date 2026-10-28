@@ -141,6 +141,7 @@ def main() -> None:
                 instructions=config.instructions,
                 skill_paths=config.skill_paths,
                 listed_skill_ids=config.listed_skill_ids,
+                skill_prompt_shortcuts=config.skill_prompt_shortcuts,
                 page_size=config.page_size,
                 max_skills=config.max_skills,
                 max_total_bytes=config.max_total_bytes,
