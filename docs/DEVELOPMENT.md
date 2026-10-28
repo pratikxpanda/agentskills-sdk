@@ -327,6 +327,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/core/agentskills-core` | Storage-agnostic abstractions (`SkillProvider`, `Skill`, `SkillRegistry`, `validate_skill`), immutable snapshots and manifests, and the optional trust, policy, refresh, and telemetry modules |
 | `packages/adapters/agentskills-adapters` | Import AGENTS.md, Copilot instructions, Cursor rules, and Claude skills as native `Skill` objects |
 | `packages/providers/agentskills-fs` | Load skills from the local filesystem |
+| `packages/providers/agentskills-git` | Load skills from a Git revision pinned to its resolved commit (v0.8 work in progress) |
 | `packages/providers/agentskills-http` | Load skills from a static HTTP server, with public-network-only defaults |
 | `packages/integrations/agentskills-mcp-server` | Native MCP Skills server with complete manifests and lossless resources |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers (`agentskills-retrieval` on PyPI) |

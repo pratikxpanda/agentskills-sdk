@@ -8,7 +8,8 @@ description: Publish native MCP Skills or use the framework-neutral Python APIs.
 The SDK is split into focused packages.
 
 - `agentskills-core` for registry and validation
-- One provider (`agentskills-fs` or `agentskills-http`)
+- One provider (`agentskills-fs` or `agentskills-http`); `agentskills-git` is under
+  development for v0.8
 - `agentskills-mcp-server` for native Skills delivery to a conforming host
 
 Install the native MCP server with the filesystem provider:

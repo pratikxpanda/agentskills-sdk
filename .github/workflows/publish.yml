@@ -79,6 +79,7 @@ jobs:
             packages/core/agentskills-core \
             packages/adapters/agentskills-adapters \
             packages/providers/agentskills-fs \
+            packages/providers/agentskills-git \
             packages/providers/agentskills-http \
             packages/integrations/agentskills-mcp-server \
             packages/retrieval/agentskills-retrieval \
@@ -118,7 +119,7 @@ jobs:
           name: dist
           path: dist
 
-      # core -> providers -> integrations. PyPI does not enforce this order; it
+      # core -> adapters/providers -> integrations. PyPI does not enforce this order; it
       # exists so nobody can resolve a package whose dependency is not up yet.
       - name: agentskills-core
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
@@ -138,6 +139,13 @@ jobs:
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: dist/agentskills-fs
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-git
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-git
           attestations: true
           skip-existing: true
 

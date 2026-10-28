@@ -60,6 +60,24 @@ type = "directory"
 url = "packages/providers/agentskills-fs"
 
 [[package]]
+name = "agentskills-git"
+version = "0.7.0"
+description = "Git-backed provider for reproducible Agent Skills sources (https://agentskills.io)"
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+agentskills-core = ">=0.7.0,<1.0"
+agentskills-fs = ">=0.7.0,<1.0"
+
+[package.source]
+type = "directory"
+url = "packages/providers/agentskills-git"
+
+[[package]]
 name = "agentskills-http"
 version = "0.7.0"
 description = "HTTP-based skill providers for the Agent Skills format (https://agentskills.io)"
@@ -2162,4 +2180,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "1bd32e45e3fc43c9b488715e8129244ab0ed41db12189d584b64da0ec7db5452"
+content-hash = "d98c8882c088f13ced90f086b84009a5bf9d8765ebab1a0c7b4975428a7d1af3"

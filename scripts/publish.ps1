@@ -5,8 +5,10 @@
 .DESCRIPTION
     Builds and publishes packages in the correct order:
       1. agentskills-core (no internal deps)
-      2. agentskills-fs, agentskills-http (depend on core)
-    3. agentskills-mcp-server (depends on core)
+            2. agentskills-adapters, agentskills-fs, agentskills-http
+            3. agentskills-git (depends on core and agentskills-fs)
+            4. agentskills-retrieval, agentskills-tools, agentskills-testing
+            5. agentskills-mcp-server (depends on core and optional providers)
 
 .PARAMETER TestPyPI
     Publish to TestPyPI instead of PyPI.
@@ -31,8 +33,13 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 
 $packages = @(
     "packages/core/agentskills-core",
+    "packages/adapters/agentskills-adapters",
     "packages/providers/agentskills-fs",
+    "packages/providers/agentskills-git",
     "packages/providers/agentskills-http",
+    "packages/retrieval/agentskills-retrieval",
+    "packages/tools/agentskills-tools",
+    "packages/testing/agentskills-testing",
     "packages/integrations/agentskills-mcp-server"
 )
 
