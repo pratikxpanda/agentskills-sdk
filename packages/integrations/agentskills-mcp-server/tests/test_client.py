@@ -17,6 +17,7 @@ from agentskills_mcp_server import (
     McpSkillReference,
     McpSkillsClient,
     McpSkillsClientError,
+    McpSkillsCollection,
     create_mcp_server,
 )
 
@@ -41,11 +42,11 @@ def _manifest(uri: str = "skill://alpha/SKILL.md") -> dict[str, object]:
     }
 
 
-def _write_skill(root: Path, skill_id: str) -> Skill:
+def _write_skill(root: Path, skill_id: str, body: str = "# Body") -> Skill:
     skill_dir = root / skill_id
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_bytes(
-        f"---\nname: {skill_id}\ndescription: A remote skill.\n---\n\n# Body\n".encode()
+        f"---\nname: {skill_id}\ndescription: A remote skill.\n---\n\n{body}\n".encode()
     )
     assets = skill_dir / "assets"
     assets.mkdir()
@@ -54,6 +55,63 @@ def _write_skill(root: Path, skill_id: str) -> Skill:
 
 
 class TestMcpSkillsClient:
+    async def test_given_same_uri_from_two_origins_then_composes_by_identity(
+        self, tmp_path: Path
+    ) -> None:
+        source_a = tmp_path / "source-a"
+        source_b = tmp_path / "source-b"
+        source_a.mkdir()
+        source_b.mkdir()
+        server_a = await create_mcp_server(
+            [_write_skill(source_a, "alpha", "# From A")], origin="publisher-a"
+        )
+        server_b = await create_mcp_server(
+            [_write_skill(source_b, "alpha", "# From B")], origin="publisher-b"
+        )
+
+        async with Client(server_a) as session_a, Client(server_b) as session_b:
+            collection = McpSkillsCollection(
+                [
+                    McpSkillsClient(session_a.session, origin="publisher-a"),
+                    McpSkillsClient(session_b.session, origin="publisher-b"),
+                ]
+            )
+            references = await collection.list_skills()
+            assert [reference.identity.origin for reference in references] == [
+                "publisher-a",
+                "publisher-b",
+            ]
+            assert references[0].identity.uri == references[1].identity.uri
+
+            first = await collection.get_skill(references[0].identity)
+            second = await collection.get_skill(references[1].identity)
+
+            assert b"# From A" in await collection.read_resource(first, first.identity.uri)
+            assert b"# From B" in await collection.read_resource(second, second.identity.uri)
+
+    def test_given_duplicate_origin_clients_when_composed_then_rejects_ambiguity(self) -> None:
+        session = _FakeSession([])
+
+        with pytest.raises(ValueError, match="origins must be unique"):
+            McpSkillsCollection(
+                [
+                    McpSkillsClient(session, origin="same"),
+                    McpSkillsClient(session, origin="same"),
+                ]
+            )
+
+    async def test_given_unknown_origin_identity_when_composed_lookup_then_rejects_origin(self):
+        collection = McpSkillsCollection([])
+        reference = McpSkillReference(
+            McpSkillIdentity("missing-origin", "skill://alpha/SKILL.md"),
+            _manifest(),
+        )
+
+        with pytest.raises(McpSkillsClientError, match="unknown MCP origin"):
+            await collection.get_skill(reference.identity)
+        with pytest.raises(McpSkillsClientError, match="unknown MCP origin"):
+            await collection.read_resource(reference, reference.identity.uri)
+
     def test_given_empty_origin_when_initialized_then_rejects_origin(self) -> None:
         with pytest.raises(ValueError, match="origin must not be empty"):
             McpSkillsClient(_FakeSession([]), origin="")
