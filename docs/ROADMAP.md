@@ -303,15 +303,17 @@ user-invoked `use-skill` prompt shortcut is also implemented. It does not grant 
 Server-side federation and loop-prevention criteria remain open.
 
 The Azure Blob provider is implemented with the async Blob SDK and `DefaultAzureCredential`. It
-supports skill discovery, resource listing, and complete raw-file reads. OCI Distribution remains
-the outstanding provider candidate.
+supports skill discovery, resource listing, and complete raw-file reads. The OCI Distribution
+provider stores one skill per tag with each canonical file as an individually fetched,
+digest-checked layer. ORAS supplies registry auth and TLS controls. Hosts continue to verify
+publisher signatures through core trust policies after capturing a full skill.
 
 | Item | Theme | Notes |
 | --- | --- | --- |
 | Git provider with reproducible resolution | Distribution | Resolve refs to immutable commits, support subdirectory selection and a bounded local cache, and record origin and content digests. Do not run repository hooks or skill scripts. This is the first additional provider priority. |
 | Skill lockfile and offline verification | Trust / DX | Record source, resolved revision, and per-file digests so CI and agents use the same content. Add drift detection and explicit update/rollback workflows. Reuse extension manifests rather than inventing a second skill format. This is local tooling, not an archive transport extension. Initial CLI workflow is implemented; acceptance criteria remain open. |
 | Framework-neutral MCP consumption and composition | Interoperability | Client and origin-preserving collection helpers are implemented using the official client SDK. They preserve originating server plus URI, on-demand reads, verification, cache isolation, and caller-owned approval without rehosting content. No framework lifecycle adapters. Server-side federation and loop-prevention criteria remain open. |
-| Object storage and OCI sources | Distribution | Azure Blob Storage is implemented with the async SDK and native credential chain. Add further sources only with demonstrated demand. OCI Distribution should reuse existing artifact signing and registry controls. All sources must preserve the same manifest and progressive-disclosure contracts. |
+| Object storage and OCI sources | Distribution | Azure Blob Storage and OCI Distribution providers are implemented. The OCI package uses ORAS registry auth/TLS and per-file digest checks. Add further sources only with demonstrated demand. All sources must preserve the same manifest and progressive-disclosure contracts. |
 | Optional MCP prompt shortcuts | DX | An opt-in, user-invoked `use-skill` URI prompt is implemented for hosts that support prompts. It does not replace Skills discovery or grant permissions. Further prompt workflows remain contingent on tested demand. |
 
 SQL providers and a Node/TypeScript port are deferred pending demand that MCP cannot satisfy.
