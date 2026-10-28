@@ -13,6 +13,7 @@ agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
 agentskills-git = { path = "packages/providers/agentskills-git", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
 agentskills-azure-blob = { path = "packages/providers/agentskills-azure-blob", develop = true }
+agentskills-oci = { path = "packages/providers/agentskills-oci", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
 agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
 agentskills-tools = { path = "packages/tools/agentskills-tools", develop = true }
@@ -51,6 +52,7 @@ source_pkgs = [
     "agentskills_git",
     "agentskills_http",
     "agentskills_azure_blob",
+    "agentskills_oci",
     "agentskills_mcp_server",
     "agentskills_retrieval",
     "agentskills_tools",
@@ -87,4 +89,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_git", "agentskills_http", "agentskills_azure_blob", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_git", "agentskills_http", "agentskills_azure_blob", "agentskills_oci", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]

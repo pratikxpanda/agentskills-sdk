@@ -18,6 +18,7 @@ nav:
       - Git provider: packages/git.md
       - HTTP provider: packages/http.md
       - Azure Blob provider: packages/azure-blob.md
+      - OCI provider: packages/oci.md
       - MCP server integration: packages/mcp-server.md
       - Skill selection: packages/retrieval.md
       - CLI tooling: packages/tools.md

@@ -3104,7 +3104,48 @@ idna = ">=2.0"
 multidict = ">=4.0"
 propcache = ">=0.2.1"
 
+[[package]]
+name = "agentskills-oci"
+version = "0.7.0"
+description = "OCI registry provider for the Agent Skills format (https://agentskills.io)"
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+agentskills-core = ">=0.7.0,<1.0"
+oras = ">=0.2.43,<0.3"
+requests = ">=2.31,<3.0"
+
+[package.source]
+type = "directory"
+url = "packages/providers/agentskills-oci"
+
+[[package]]
+name = "oras"
+version = "0.2.43"
+description = "OCI Registry as Storage Python SDK"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "oras-0.2.43-py3-none-any.whl", hash = "sha256:bf295b1cfb5017f579c35c3394c7a71707f6aff463cb6699d5d191a6d8b56ea6"},
+    {file = "oras-0.2.43.tar.gz", hash = "sha256:761f2b518fce50e5e9482975363ff0230f63fc65f84c09510fbcc301782a047c"},
+]
+
+[package.dependencies]
+jsonschema = "*"
+requests = "*"
+
+[package.extras]
+all = ["boto3 (>=1.33.0)", "docker (==5.0.1)", "jsonschema", "pytest (>=4.6.2)", "requests"]
+docker = ["docker (==5.0.1)"]
+ecr = ["boto3 (>=1.33.0)"]
+tests = ["pytest (>=4.6.2)"]
+
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "06ee0e0202a274b16ff5405e57141429bfda7e559702db7ccfade24d0a53925a"
+content-hash = "0c34789b63abcb602024f4196727e6b8763d33e4f25bb3fd48f86a9a9d4cdc61"
