@@ -144,6 +144,7 @@ class GitSkillProvider(SkillProvider):
         subdirectory: str = ".",
         max_cache_bytes: int = DEFAULT_MAX_CACHE_BYTES,
         max_total_cache_bytes: int = DEFAULT_MAX_TOTAL_CACHE_BYTES,
+        refresh: bool = False,
     ) -> None:
         if not repository:
             raise ValueError("repository must not be empty")
@@ -170,6 +171,8 @@ class GitSkillProvider(SkillProvider):
         self._resolved_commit: str | None = None
         self._lease_finalizer: weakref.finalize | None = None
         identity = "\0".join((repository, ref, relative.as_posix()))
+        if refresh:
+            identity += "\0refresh\0" + uuid.uuid4().hex
         self._cache_path = self.cache_dir / hashlib.sha256(identity.encode()).hexdigest()
 
     @property
