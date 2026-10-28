@@ -447,7 +447,7 @@ class TestServe:
     def test_check_does_not_start_transport(self, write_skill, skills_root, monkeypatch, capsys):
         write_skill("alpha")
 
-        async def build(root, locations, *, name, max_file_bytes):
+        async def build(root, locations, *, name, max_file_bytes, skill_prompt_shortcuts=False):
             return object()
 
         monkeypatch.setattr("agentskills_tools.cli.build_server", build)
@@ -469,7 +469,7 @@ class TestServe:
             def run(self, *, transport):
                 started["transport"] = transport
 
-        async def build(root, locations, *, name, max_file_bytes):
+        async def build(root, locations, *, name, max_file_bytes, skill_prompt_shortcuts=False):
             assert name == "Native test"
             assert max_file_bytes == 1024
             return FakeServer()
@@ -502,7 +502,7 @@ class TestServe:
             def run(self, transport: str) -> None:
                 started["transport"] = transport
 
-        async def build(root, locations, *, name, max_file_bytes):
+        async def build(root, locations, *, name, max_file_bytes, skill_prompt_shortcuts=False):
             return _FakeServer()
 
         monkeypatch.setattr("agentskills_tools.cli.build_server", build)
@@ -510,6 +510,26 @@ class TestServe:
         assert main(["serve", str(skills_root), "--transport", "streamable-http"]) == 0
         assert started == {"transport": "streamable-http"}
         assert "Serving 1 skill " in capsys.readouterr().err
+
+    def test_skill_prompt_flag_is_forwarded_to_builder(
+        self, write_skill, skills_root, monkeypatch, capsys
+    ):
+        write_skill("alpha")
+        enabled: list[bool] = []
+
+        class FakeServer:
+            def run(self, *, transport):
+                pass
+
+        async def build(root, locations, *, name, max_file_bytes, skill_prompt_shortcuts=False):
+            enabled.append(skill_prompt_shortcuts)
+            return FakeServer()
+
+        monkeypatch.setattr("agentskills_tools.cli.build_server", build)
+
+        assert main(["serve", str(skills_root), "--skill-prompts"]) == 0
+        assert enabled == [True]
+        capsys.readouterr()
 
     def test_invalid_skill_exits_two(self, write_skill, skills_root, capsys):
         write_skill("alpha", "---\nname: alpha\n---\n\nbody")

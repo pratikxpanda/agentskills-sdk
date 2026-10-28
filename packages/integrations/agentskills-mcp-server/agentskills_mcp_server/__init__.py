@@ -8,6 +8,8 @@ Protocol <https://modelcontextprotocol.io>`_ Skills extension, providing:
   registry or raw skill handles. No tools or catalog resources are served.
 * :class:`McpSkillsClient` -- consumes native Skills through a caller-owned MCP
   client session without registering or eagerly reading skill bodies.
+* Optional ``skill_prompt_shortcuts`` -- exposes one user-invoked ``use-skill``
+  prompt without granting tools or execution permissions.
 * CLI entry-point (``python -m agentskills_mcp_server --config server.json``)
   for zero-code server startup.
 

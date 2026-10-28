@@ -22,8 +22,9 @@ class TestBuildNativeServer:
         server = object()
         module = types.ModuleType("agentskills_mcp_server")
 
-        async def build(skills, *, name):
+        async def build(skills, *, name, skill_prompt_shortcuts=False):
             assert name == "Native test"
+            assert skill_prompt_shortcuts is False
             assert [skill.get_id() for skill in skills] == ["alpha"]
             assert await skills[0].read_file("SKILL.md") == expected
             return server
@@ -35,6 +36,29 @@ class TestBuildNativeServer:
             await build_server(skills_root, [SkillLocation("alpha", path)], name="Native test")
             is server
         )
+
+    async def test_passes_opt_in_prompt_shortcuts_to_native_builder(
+        self, write_skill, skills_root, monkeypatch
+    ):
+        path = write_skill("alpha")
+        module = types.ModuleType("agentskills_mcp_server")
+        calls = []
+
+        async def build(skills, *, name, skill_prompt_shortcuts=False):
+            calls.append(skill_prompt_shortcuts)
+            return object()
+
+        module.create_mcp_server = build
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
+
+        await build_server(
+            skills_root,
+            [SkillLocation("alpha", path)],
+            name="Native test",
+            skill_prompt_shortcuts=True,
+        )
+
+        assert calls == [True]
 
     async def test_missing_native_support_has_install_guidance(
         self, write_skill, skills_root, monkeypatch
@@ -55,7 +79,7 @@ class TestBuildNativeServer:
         path = write_skill("alpha")
         module = types.ModuleType("agentskills_mcp_server")
 
-        async def build(skills, *, name):
+        async def build(skills, *, name, skill_prompt_shortcuts=False):
             raise error
 
         module.create_mcp_server = build
