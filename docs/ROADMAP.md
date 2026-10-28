@@ -286,6 +286,9 @@ only specified fields, and `skills/list` and `skills/get` stay limited to protoc
 Expand sources and composition after MCP interoperability is proven. These are candidates,
 ordered by expected value rather than a commitment to add every provider.
 
+Implementation has started on the Git provider. Its cache eviction, total cache bound, content
+digest reporting, and acceptance criteria remain under development.
+
 | Item | Theme | Notes |
 | --- | --- | --- |
 | Git provider with reproducible resolution | Distribution | Resolve refs to immutable commits, support subdirectory selection and a bounded local cache, and record origin and content digests. Do not run repository hooks or skill scripts. This is the first additional provider priority. |

@@ -1,12 +1,13 @@
 # Working in this repository
 
-Poetry monorepo. Eight maintained packages, versioned and released together.
+Poetry monorepo. Eight released packages, versioned together. `agentskills-git` is under development for v0.8.
 
 | Path | Package |
 | --- | --- |
 | `packages/core/agentskills-core` | Registry, `SkillProvider` ABC, spec validation, snapshots, trust, policy, refresh. Only required dependency is `pyyaml`. |
 | `packages/adapters/agentskills-adapters` | Import common agent instruction formats as native skills |
 | `packages/providers/agentskills-fs` | Local filesystem provider |
+| `packages/providers/agentskills-git` | Git provider, v0.8 work in progress |
 | `packages/providers/agentskills-http` | Static HTTP / CDN provider |
 | `packages/integrations/agentskills-mcp-server` | Native MCP Skills server, MCP SDK 2.2+ |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers |
@@ -84,12 +85,13 @@ that task fails for reasons unrelated to your change.
 
 ## Traps worth knowing
 
-- **A new package must be registered in eight places.** Root `pyproject.toml` (path
-  dependency, `[tool.coverage.run] source_pkgs`, `[tool.ruff.lint.isort]
-  known-first-party`), `scripts/dev.py` `COVERAGE_FLOORS`, both `bump-version` scripts,
-  `scripts/check_release_version.py`, and the build loop plus a publish step in
-  `.github/workflows/publish.yml`. Miss the last one and the package silently never ships.
-  `scripts/check_declared_dependencies.py` has its own list too, so nine.
+- **A new package must be registered across the workspace.** Add its path, coverage source,
+  and first-party import name to root `pyproject.toml`; add its floor to `scripts/dev.py`;
+  add its manifest to both version bump scripts and the release-version and declared-dependency
+  checks; add it to `publish.yml` and both `scripts/publish` lists in dependency order; and
+  install it in both docs workflow jobs. Add its API page to `mkdocs.yml`, plus a README and
+  package-table entry. Missing any one of these can leave the package untested, undocumented,
+  or absent from a release.
 - **A package can import what it never declared and nothing will notice**, because every
   package is installed into one shared virtualenv here. `agentskills-tools` imported `yaml`
   without declaring `pyyaml` for a whole milestone, riding on the copy `agentskills-core`

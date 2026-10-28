@@ -13,8 +13,13 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 PACKAGES=(
     "packages/core/agentskills-core"
+    "packages/adapters/agentskills-adapters"
     "packages/providers/agentskills-fs"
+    "packages/providers/agentskills-git"
     "packages/providers/agentskills-http"
+    "packages/retrieval/agentskills-retrieval"
+    "packages/tools/agentskills-tools"
+    "packages/testing/agentskills-testing"
     "packages/integrations/agentskills-mcp-server"
 )
 

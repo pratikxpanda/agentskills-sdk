@@ -18,6 +18,7 @@ PYPROJECT_FILES=(
     "packages/core/agentskills-core/pyproject.toml"
     "packages/adapters/agentskills-adapters/pyproject.toml"
     "packages/providers/agentskills-fs/pyproject.toml"
+    "packages/providers/agentskills-git/pyproject.toml"
     "packages/providers/agentskills-http/pyproject.toml"
     "packages/integrations/agentskills-mcp-server/pyproject.toml"
     "packages/retrieval/agentskills-retrieval/pyproject.toml"

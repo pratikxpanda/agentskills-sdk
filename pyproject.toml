@@ -10,6 +10,7 @@ python = ">=3.12,<4.0"
 agentskills-core = { path = "packages/core/agentskills-core", develop = true, extras = ["verification", "telemetry"] }
 agentskills-adapters = { path = "packages/adapters/agentskills-adapters", develop = true }
 agentskills-fs = { path = "packages/providers/agentskills-fs", develop = true }
+agentskills-git = { path = "packages/providers/agentskills-git", develop = true }
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
 agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
 agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
@@ -42,6 +43,7 @@ source_pkgs = [
     "agentskills_core",
     "agentskills_adapters",
     "agentskills_fs",
+    "agentskills_git",
     "agentskills_http",
     "agentskills_mcp_server",
     "agentskills_retrieval",
@@ -79,4 +81,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_http", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_git", "agentskills_http", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]
