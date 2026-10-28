@@ -176,3 +176,46 @@ class McpSkillsClient:
         ):
             raise McpSkillsClientError("Skills response entry is not a complete native manifest")
         return McpSkillReference(McpSkillIdentity(self.origin, uri), deepcopy(manifest))
+
+
+class McpSkillsCollection:
+    """Compose discovery from several MCP origins without rehosting content.
+
+    Each client must have a unique caller-assigned origin. The collection
+    preserves that origin alongside the canonical URI, performs no shared
+    caching, and delegates resource reads to the originating session. It
+    never serves an MCP endpoint itself, so composition cannot create a
+    forwarding loop. Hosts remain responsible for approval and selection.
+
+    Args:
+        clients: Independent clients, one per remote origin.
+
+    Raises:
+        ValueError: If clients repeat an origin.
+    """
+
+    def __init__(self, clients: list[McpSkillsClient]) -> None:
+        self._clients = {client.origin: client for client in clients}
+        if len(self._clients) != len(clients):
+            raise ValueError("MCP Skills collection origins must be unique")
+
+    async def list_skills(self) -> list[McpSkillReference]:
+        """List skills from each origin, preserving distinct identities."""
+        references = []
+        for origin in sorted(self._clients):
+            references.extend(await self._clients[origin].list_skills())
+        return sorted(references, key=lambda skill: (skill.identity.origin, skill.identity.uri))
+
+    async def get_skill(self, identity: McpSkillIdentity) -> McpSkillReference:
+        """Look up a skill through the client identified by its origin."""
+        client = self._clients.get(identity.origin)
+        if client is None:
+            raise McpSkillsClientError("skill identity refers to an unknown MCP origin")
+        return await client.get_skill(identity.uri)
+
+    async def read_resource(self, skill: McpSkillReference, uri: str) -> bytes:
+        """Read a resource through the originating client session."""
+        client = self._clients.get(skill.identity.origin)
+        if client is None:
+            raise McpSkillsClientError("skill identity refers to an unknown MCP origin")
+        return await client.read_resource(skill, uri)
