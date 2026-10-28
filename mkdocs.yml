@@ -40,6 +40,7 @@ nav:
   - Skills Directory: SKILLS-DIRECTORY.md
   - Issue plans:
       - Overview: issues/README.md
+      - v0.8 Portable Distribution: issues/v0.8.md
       - v0.6 MCP-First Skills: issues/v0.6.md
       - v0.5 Agent Effectiveness: issues/v0.5.md
       - v0.4 Developer Experience: issues/v0.4.md

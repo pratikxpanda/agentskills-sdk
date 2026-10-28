@@ -283,24 +283,26 @@ only specified fields, and `skills/list` and `skills/get` stay limited to protoc
 
 ## Later: v0.8 "Portable Distribution"
 
-Expand sources and composition after MCP interoperability is proven. These are candidates,
-ordered by expected value rather than a commitment to add every provider.
+Expand sources and composition after MCP interoperability is proven. Release scope and acceptance
+criteria are defined in the [v0.8 specification](issues/v0.8.md). Additional sources remain
+demand-gated.
 
-Implementation has started on the Git provider. It resolves refs to commit SHAs, uses the core
-snapshot API for per-file digests, and bounds the cache with LRU eviction. Cross-process cache
-coordination is implemented with file locks and leases. Release acceptance criteria remain under
-development.
+The Git provider resolves refs to commit SHAs, uses the core snapshot API for per-file digests,
+and bounds the cache with LRU eviction. Cross-process cache coordination uses file locks and
+leases.
 
 The tools CLI can create and update a Git lockfile and verify a local checkout offline against the
 resolved commit and canonical file manifests. Verification reads Git objects without fetching,
 checks the worktree is clean, and detects ignored or untracked files. Rollback uses the prior
-lockfile revision in version control.
+lockfile revision in version control. The create, update, and offline verification criteria are
+defined in the [v0.8 specification](issues/v0.8.md).
 
 The MCP package provides an origin-bound client helper for paginated Skills discovery, direct
 lookup, and on-demand digest-verified reads, plus a client-side collection across origins. It does
 not own selection, approval, transport, session lifecycle, or server-side forwarding. An opt-in,
 user-invoked `use-skill` prompt shortcut is also implemented. It does not grant tool permissions.
-Server-side federation remains out of scope pending separate criteria.
+Server-side federation is excluded from v0.8. The client-side collection does not rehost or forward
+content, so it cannot create a forwarding loop. See the [v0.8 specification](issues/v0.8.md).
 
 The Azure Blob provider is implemented with the async Blob SDK and `DefaultAzureCredential`. It
 supports skill discovery, resource listing, and complete raw-file reads. The OCI Distribution
