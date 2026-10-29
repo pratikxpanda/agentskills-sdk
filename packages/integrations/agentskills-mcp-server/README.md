@@ -77,6 +77,20 @@ the manifest's size and SHA-256 digest. The client does not implement `SkillProv
 remote content into a `SkillRegistry`, since registration validates by reading bodies eagerly.
 It also keeps no shared response cache, so separate server origins remain isolated.
 
+## Prompt Shortcut
+
+Hosts that support MCP prompts can opt in to one user-invoked `use-skill` prompt. It requires the
+canonical `skill://` URI and reads the current published snapshot when requested. It is disabled
+by default and does not grant tool permissions:
+
+```python
+server = await create_mcp_server(skills, skill_prompt_shortcuts=True)
+```
+
+Set `"skill_prompt_shortcuts": true` in server config or pass `--skill-prompts` to
+`agentskills serve`. The host remains responsible for prompt approval and whether the returned
+skill content is used.
+
 ## Configuration
 
 ```json

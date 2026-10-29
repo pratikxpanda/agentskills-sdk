@@ -274,6 +274,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="Agent Skills",
         help="Display name advertised by the server.",
     )
+    serve.add_argument(
+        "--skill-prompts",
+        action="store_true",
+        help="Register an explicit use-skill MCP prompt shortcut.",
+    )
 
     lock = subparsers.add_parser(
         "lock",
@@ -507,7 +512,13 @@ def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     root, locations = discover(args.path)
     server = asyncio.run(
-        build_server(root, locations, name=args.name, max_file_bytes=args.max_file_bytes)
+        build_server(
+            root,
+            locations,
+            name=args.name,
+            max_file_bytes=args.max_file_bytes,
+            skill_prompt_shortcuts=args.skill_prompts,
+        )
     )
     if args.check:
         print(f"Publication ready: {len(locations)} skills in native mode.", file=out)

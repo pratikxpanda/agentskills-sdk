@@ -292,8 +292,15 @@ coordination is implemented with file locks and leases. Release acceptance crite
 development.
 
 The tools CLI can create and update a Git lockfile and verify a local checkout offline against the
-resolved commit and canonical file manifests. Rollback uses the prior lockfile revision in version
-control.
+resolved commit and canonical file manifests. Verification reads Git objects without fetching,
+checks the worktree is clean, and detects ignored or untracked files. Rollback uses the prior
+lockfile revision in version control.
+
+The MCP package provides an origin-bound client helper for paginated Skills discovery, direct
+lookup, and on-demand digest-verified reads. It does not own selection, approval, transport, or
+session lifecycle. An opt-in, user-invoked `use-skill` prompt shortcut is also implemented. It does
+not grant tool permissions. Server-to-server federation and loop prevention still need acceptance
+criteria.
 
 | Item | Theme | Notes |
 | --- | --- | --- |
@@ -301,7 +308,7 @@ control.
 | Skill lockfile and offline verification | Trust / DX | Record source, resolved revision, and per-file digests so CI and agents use the same content. Add drift detection and explicit update/rollback workflows. Reuse extension manifests rather than inventing a second skill format. This is local tooling, not an archive transport extension. |
 | Framework-neutral MCP consumption and composition | Interoperability | The origin-bound client helper is implemented using the official client SDK. Preserve originating server plus URI, on-demand reads, digest verification, cache isolation, and caller-owned approval. Avoid eager `register_all` content validation on discovery. No framework lifecycle adapters. Server-side federation remains out of scope pending separate criteria. |
 | Object storage and OCI sources | Distribution | Add only with demonstrated demand. Object stores should reuse native credential chains. OCI should reuse existing artifact signing and registry controls. Both must preserve the same manifest and progressive-disclosure contracts. |
-| Optional MCP prompt shortcuts | DX | User-invoked workflows for hosts that support prompts. Add only where they improve a tested workflow, without replacing Skills discovery or bypassing approval and provenance. |
+| Optional MCP prompt shortcuts | DX | An opt-in, user-invoked `use-skill` URI prompt is implemented for hosts that support prompts. It does not replace Skills discovery or grant permissions. Further prompt workflows remain contingent on tested demand. |
 
 SQL providers and a Node/TypeScript port are deferred pending demand that MCP cannot satisfy.
 New OpenAI Agents SDK, Pydantic AI, Semantic Kernel, LlamaIndex, and CrewAI native adapters are

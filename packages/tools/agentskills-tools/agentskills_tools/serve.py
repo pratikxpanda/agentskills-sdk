@@ -22,6 +22,7 @@ async def build_server(
     *,
     name: str,
     max_file_bytes: int = DEFAULT_SNAPSHOT_MAX_BYTES,
+    skill_prompt_shortcuts: bool = False,
 ) -> Any:
     """Build the real native publication, including catalog-wide consistency checks.
 
@@ -38,7 +39,9 @@ async def build_server(
     try:
         provider = LocalFileSystemSkillProvider(root, max_file_bytes=max_file_bytes)
         skills = [Skill(location.skill_id, provider) for location in locations]
-        return await create_mcp_server(skills, name=name)
+        return await create_mcp_server(
+            skills, name=name, skill_prompt_shortcuts=skill_prompt_shortcuts
+        )
     except (AgentSkillsError, OSError, ValueError) as exc:
         raise CliError(
             f"cannot publish native skills: {exc}\n"
