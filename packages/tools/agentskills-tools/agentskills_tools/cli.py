@@ -54,6 +54,12 @@ from agentskills_tools.inspection import (
     render_native_inspection_text,
 )
 from agentskills_tools.lint import DEFAULT_BODY_TOKEN_BUDGET, lint_locations
+from agentskills_tools.lockfile import (
+    DEFAULT_GIT_CACHE_DIR,
+    LockVerificationError,
+    create_or_update_lock,
+    verify_lock,
+)
 from agentskills_tools.render import (
     SCHEMA_VERSION,
     exit_code,
@@ -269,6 +275,53 @@ def build_parser() -> argparse.ArgumentParser:
         help="Display name advertised by the server.",
     )
 
+    lock = subparsers.add_parser(
+        "lock",
+        parents=[common],
+        help="Pin Git-hosted skills and verify them offline.",
+    )
+    lock_actions = lock.add_subparsers(dest="lock_action", required=True)
+    for action in ("create", "update"):
+        lock_source = lock_actions.add_parser(
+            action,
+            parents=[common],
+            help=(
+                "Create a new source lock."
+                if action == "create"
+                else "Update an existing source lock."
+            ),
+        )
+        lock_source.add_argument("repository", help="Git URL or local repository path.")
+        lock_source.add_argument("--ref", required=True, help="Branch, tag, or commit to resolve.")
+        lock_source.add_argument(
+            "--lockfile",
+            type=Path,
+            default=Path("agentskills.lock.json"),
+            help="Lockfile path (default: agentskills.lock.json).",
+        )
+        lock_source.add_argument(
+            "--subdirectory",
+            default=".",
+            help="Repository-relative directory containing skills.",
+        )
+        lock_source.add_argument(
+            "--cache-dir",
+            type=Path,
+            default=DEFAULT_GIT_CACHE_DIR,
+            help=f"Git checkout cache (default: {DEFAULT_GIT_CACHE_DIR}).",
+        )
+
+    lock_verify = lock_actions.add_parser(
+        "verify", parents=[common], help="Verify a local checkout against a lockfile offline."
+    )
+    lock_verify.add_argument("lockfile", type=Path, help="Lockfile to verify.")
+    lock_verify.add_argument(
+        "--checkout",
+        type=Path,
+        required=True,
+        help="Local Git checkout at the locked revision.",
+    )
+
     return parser
 
 
@@ -469,6 +522,36 @@ def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
     return EXIT_OK
 
 
+def _run_lock(args: argparse.Namespace, out: TextIO) -> int:
+    if args.lock_action == "verify":
+        try:
+            count = asyncio.run(verify_lock(args.lockfile, args.checkout))
+        except LockVerificationError as exc:
+            print(f"error: lock verification failed: {exc}", file=sys.stderr)
+            return EXIT_FINDINGS
+        print(f"Verified {plural(count, 'skill')} against {args.lockfile} offline.", file=out)
+        return EXIT_OK
+
+    lock = asyncio.run(
+        create_or_update_lock(
+            args.repository,
+            args.ref,
+            args.lockfile,
+            cache_dir=args.cache_dir,
+            subdirectory=args.subdirectory,
+            update=args.lock_action == "update",
+        )
+    )
+    action = "Updated" if args.lock_action == "update" else "Created"
+    source = lock["source"]
+    print(
+        f"{action} lock for {plural(len(lock['skills']), 'skill')} at "
+        f"{source['revision'][:12]} in {args.lockfile}",
+        file=out,
+    )
+    return EXIT_OK
+
+
 _COMMANDS = {
     "init": _run_init,
     "validate": _run_validate,
@@ -476,6 +559,7 @@ _COMMANDS = {
     "inspect": _run_inspect,
     "eval": _run_eval,
     "serve": _run_serve,
+    "lock": _run_lock,
 }
 
 
