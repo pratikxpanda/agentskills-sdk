@@ -291,6 +291,10 @@ snapshot API for per-file digests, and bounds the cache with LRU eviction. Cross
 coordination is implemented with file locks and leases. Release acceptance criteria remain under
 development.
 
+The tools CLI can create and update a Git lockfile and verify a local checkout offline against the
+resolved commit and canonical file manifests. Rollback uses the prior lockfile revision in version
+control.
+
 | Item | Theme | Notes |
 | --- | --- | --- |
 | Git provider with reproducible resolution | Distribution | Resolve refs to immutable commits, support subdirectory selection and a bounded local cache, and record origin and content digests. Do not run repository hooks or skill scripts. This is the first additional provider priority. |

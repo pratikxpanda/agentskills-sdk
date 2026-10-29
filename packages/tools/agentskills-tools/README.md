@@ -1,6 +1,6 @@
 # agentskills-tools
 
-Command line tools for authoring and validating [Agent Skills](https://agentskills.io).
+Command line tools for authoring, validating, and pinning [Agent Skills](https://agentskills.io).
 
 Part of the [Agent Skills SDK](https://github.com/pratikxpanda/agentskills-sdk).
 
@@ -30,6 +30,31 @@ one containing `SKILL.md`, or the one containing directories that do.
 | `agentskills inspect <path>` | Show what an agent would actually receive, and what it costs. |
 | `agentskills eval <path>` | Measure what difference a skill makes. |
 | `agentskills serve <path>` | Run an MCP server over a folder of skills. |
+| `agentskills lock <action>` | Pin Git source revisions and verify a local checkout offline. |
+
+### `lock`
+
+Git lock commands are under development for v0.8.0 and are not available in the published v0.7.0 package.
+
+Create a lock from a Git source, then verify a local clone without network access:
+
+```bash
+agentskills lock create https://github.com/acme/skills.git --ref main --subdirectory skills
+agentskills lock verify agentskills.lock.json --checkout ./skills-checkout
+```
+
+The lock records a credential-free source identity, requested ref, resolved commit, and canonical
+per-file SHA-256 manifests. `verify` checks the checkout's origin, committed revision, skill set,
+and raw Git blob contents without fetching. The locked subdirectory must have a clean working tree.
+
+Update an existing lock from the same source explicitly:
+
+```bash
+agentskills lock update https://github.com/acme/skills.git --ref main --subdirectory skills
+```
+
+To roll back, restore the previous lockfile revision from version control, then run `lock verify`
+against the corresponding checkout. `create` refuses to overwrite an existing lockfile.
 
 ### `init`
 
