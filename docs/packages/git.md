@@ -3,9 +3,8 @@ title: Git Provider
 description: Read Agent Skills from a Git repository at a resolved commit.
 ---
 
-The Git provider is under development for v0.8 and is not yet published. It resolves a configured
-ref to a commit on first access and serves skills from that checkout. Git must be installed and
-available on `PATH`.
+Added in v0.8.0, the Git provider resolves a configured ref to a commit on first access and
+serves skills from that checkout. Git must be installed and available on `PATH`.
 
 The selected repository directory must contain skill directories directly beneath it. Use
 `subdirectory` when skills live below the repository root.
@@ -39,8 +38,8 @@ snapshot = await capture_skill(registry.get_skill("incident-response"))
 
 Each checkout defaults to a 256 MiB limit. The cache defaults to 1 GiB total and evicts the
 least-recently-used inactive checkout when it needs space. Active providers in the current process
-and other processes sharing the cache are protected by lease locks. Release acceptance criteria
-remain open work for this milestone.
+and other processes sharing the cache are protected by lease locks. See the
+[v0.8 acceptance criteria](../issues/v0.8.md#git-provider).
 
 ::: agentskills_git.GitSkillProvider
     options:

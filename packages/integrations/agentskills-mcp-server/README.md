@@ -1,10 +1,13 @@
-# agentskills-mcp-server
+---
+title: agentskills-mcp-server
+description: Native MCP Skills publication and origin-preserving client helpers.
+---
 
 Serve the official MCP Skills extension with immutable, lossless resources.
 
 ## Native Skills Only
 
-Version 0.7 requires MCP SDK `>=2.2,<3`. It serves the official
+The native Skills API requires MCP SDK `>=2.2,<3`. It serves the official
 `io.modelcontextprotocol/skills` extension on protocol `2026-07-28` through
 `skills/list`, `skills/get`, and canonical `skill://` resources. Clients on older
 protocol revisions see the same `skill://` files as ordinary resources and cannot

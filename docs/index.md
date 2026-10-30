@@ -11,13 +11,16 @@ A Python SDK for discovering, retrieving, and serving
 - Native Skills publication for compatible MCP hosts
 - Publisher verification, content policy, refresh, and network controls
 - Provider and registry concepts behind progressive disclosure
+- Git, Azure Blob, and OCI sources with offline lock verification for Git
+- Origin-preserving MCP client consumption and composition
 - Per-package API reference generated from docstrings
 - Project roadmap and architecture decisions (ADRs)
 
 ## Install
 
-v0.7.0 is native-only. Review the [breaking changes](mcp-migration.md) before
-upgrading from v0.6.
+v0.8 adds portable distribution and origin-preserving MCP clients while retaining native-only
+delivery. See the [v0.8 specification](issues/v0.8.md) for scope and release gates. Review the
+[breaking changes](mcp-migration.md) before upgrading from v0.6.
 
 ```bash
 pip install "agentskills-mcp-server[fs]"

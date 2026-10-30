@@ -18,13 +18,13 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 | [v0.5: Agent Effectiveness](./v0.5.md) | 6 | Shipped |
 | [v0.6: MCP-First Skills](./v0.6.md) | 7 | Included in v0.6.0. Deployment validation remains explicitly deferred. |
 | v0.7: Trust & Operability | 7 | Included in v0.7.0. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#v07-trust-operability). |
-| v0.8: Portable Distribution | 5 | Git provider, lockfile CLI, MCP client helper, and prompt shortcut are implemented in progress; remaining priorities are candidates. Acceptance criteria are not finalized. See the [roadmap](../ROADMAP.md#later-v08-portable-distribution). |
+| [v0.8: Portable Distribution](./v0.8.md) | 5 | Git, lockfile, MCP client/composition, prompt, Azure Blob, and OCI acceptance criteria. Additional sources remain demand-gated. |
 | v1.0: Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
-A milestone only gets a file once its items are concrete enough to have acceptance criteria.
-The later ones are deliberately still one-liners on the roadmap. The v0.3 to v0.6 files are
-historical records. They describe packages and APIs, such as the LangChain and Agent
-Framework integrations, that v0.7 removed.
+A milestone gets a specification once its items are concrete enough to have acceptance criteria.
+The later ones remain one-liners on the roadmap. The v0.3 to v0.6 files are historical records.
+They describe packages and APIs, such as the LangChain and Agent Framework integrations, that
+v0.7 removed.
 
 ## Relationship to GitHub Issues
 

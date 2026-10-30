@@ -1,4 +1,7 @@
-# agentskills-git
+---
+title: agentskills-git
+description: Read Agent Skills from Git repositories at immutable commits.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-git)](https://pypi.org/project/agentskills-git/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
@@ -6,10 +9,10 @@
 Read Agent Skills from a Git repository at a ref resolved to an immutable commit. The provider
 uses Git and delegates skill reads to `agentskills-fs`.
 
-## Status
+## Availability
 
-This package is under development for v0.8. It is not published on PyPI. The current implementation
-resolves a branch, tag, or commit on first access and keeps using that commit from its local cache.
+Added in v0.8.0, this provider resolves a branch, tag, or commit on first access and keeps using
+that commit from its local cache.
 It exposes the repository and resolved commit for source identity, and supports a repository
 subdirectory containing skill directories.
 
@@ -17,7 +20,7 @@ subdirectory containing skill directories.
 
 Python 3.12 or newer and the Git command-line executable must be available on `PATH`.
 
-## Planned usage
+## Usage
 
 ```python
 from pathlib import Path

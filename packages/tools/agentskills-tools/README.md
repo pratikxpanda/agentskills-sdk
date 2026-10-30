@@ -1,4 +1,7 @@
-# agentskills-tools
+---
+title: agentskills-tools
+description: Command line tools for authoring, validating, and pinning Agent Skills.
+---
 
 Command line tools for authoring, validating, and pinning [Agent Skills](https://agentskills.io).
 
@@ -34,7 +37,7 @@ one containing `SKILL.md`, or the one containing directories that do.
 
 ### `lock`
 
-Git lock commands are under development for v0.8.0 and are not available in the published v0.7.0 package.
+Git lock commands require `agentskills-tools` v0.8.0 or newer.
 
 Create a lock from a Git source, then verify a local clone without network access:
 
