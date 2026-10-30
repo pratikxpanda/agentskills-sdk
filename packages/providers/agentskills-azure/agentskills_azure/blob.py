@@ -9,7 +9,6 @@ from azure.core.credentials_async import AsyncTokenCredential
 from azure.core.exceptions import AzureError
 from azure.core.exceptions import ResourceNotFoundError as AzureResourceNotFoundError
 from azure.identity.aio import DefaultAzureCredential
-from azure.storage.blob.aio import BlobServiceClient
 
 from agentskills_core import (
     RESOURCE_KINDS,
@@ -19,6 +18,11 @@ from agentskills_core import (
     SkillProvider,
     split_frontmatter,
 )
+
+try:
+    from azure.storage.blob.aio import BlobServiceClient
+except ModuleNotFoundError as exc:
+    raise ImportError("Install 'agentskills-azure[blob]' to use AzureBlobSkillProvider.") from exc
 
 DEFAULT_MAX_FILE_BYTES = 10 * 1024 * 1024
 SKILL_FILE_NAME = "SKILL.md"

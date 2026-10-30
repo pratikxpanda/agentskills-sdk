@@ -304,7 +304,9 @@ user-invoked `use-skill` prompt shortcut is also implemented. It does not grant 
 Server-side federation is excluded from v0.8. The client-side collection does not rehost or forward
 content, so it cannot create a forwarding loop. See the [v0.8 specification](issues/v0.8.md).
 
-The Azure Blob provider is implemented with the async Blob SDK and `DefaultAzureCredential`. It
+The `agentskills-azure` package provides Blob Storage and Azure Files SMB shares through its
+optional `blob` and `files` extras, using async SDKs and `DefaultAzureCredential`. Files access
+requires explicit backup intent and Azure RBAC authorization. The package
 supports skill discovery, resource listing, and complete raw-file reads. The OCI Distribution
 provider stores one skill per tag with each canonical file as an individually fetched,
 digest-checked layer. ORAS supplies registry auth and TLS controls. Hosts continue to verify

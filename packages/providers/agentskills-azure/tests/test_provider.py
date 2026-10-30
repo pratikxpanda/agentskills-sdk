@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from collections.abc import AsyncIterator
 from types import SimpleNamespace
 
 import pytest
 from azure.core.exceptions import AzureError
 
-from agentskills_azure_blob import AzureBlobSkillProvider
+from agentskills_azure.blob import AzureBlobSkillProvider
 from agentskills_core import AgentSkillsError, ResourceNotFoundError, SkillNotFoundError
 from agentskills_testing import (
     ASSET_BYTES,
@@ -20,6 +22,50 @@ from agentskills_testing import (
     build_skill,
     render_skill_md,
 )
+
+
+class TestAzurePackage:
+    def test_given_missing_files_extra_when_importing_files_then_explains_install(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; sys.modules['azure.storage.fileshare.aio'] = None; "
+                "from agentskills_azure.files import AzureFilesSkillProvider",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode != 0 and "agentskills-azure[files]" in result.stderr
+
+    def test_given_missing_blob_extra_when_importing_namespace_then_succeeds(self) -> None:
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; sys.modules['azure.storage.blob.aio'] = None; "
+                "import agentskills_azure; "
+                "assert 'agentskills_azure.blob' not in sys.modules",
+            ],
+            check=True,
+        )
+
+    def test_given_missing_blob_extra_when_importing_blob_then_explains_install(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; sys.modules['azure.storage.blob.aio'] = None; "
+                "from agentskills_azure.blob import AzureBlobSkillProvider",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode != 0 and "agentskills-azure[blob]" in result.stderr
 
 
 class _Downloader:
@@ -95,15 +141,15 @@ def _provider(
     service = _Service(container)
     default_credential = _Credential()
     monkeypatch.setattr(
-        "agentskills_azure_blob.provider.BlobServiceClient",
+        "agentskills_azure.blob.BlobServiceClient",
         lambda *_args, **_kwargs: service,
     )
     monkeypatch.setattr(
-        "agentskills_azure_blob.provider.DefaultAzureCredential",
+        "agentskills_azure.blob.DefaultAzureCredential",
         lambda: default_credential,
     )
     monkeypatch.setattr(
-        "agentskills_azure_blob.provider.AzureResourceNotFoundError",
+        "agentskills_azure.blob.AzureResourceNotFoundError",
         _MissingBlobError,
     )
     return AzureBlobSkillProvider(

@@ -37,7 +37,7 @@ $packages = @(
     "packages/providers/agentskills-fs",
     "packages/providers/agentskills-git",
     "packages/providers/agentskills-http",
-    "packages/providers/agentskills-azure-blob",
+    "packages/providers/agentskills-azure",
     "packages/providers/agentskills-oci",
     "packages/retrieval/agentskills-retrieval",
     "packages/tools/agentskills-tools",

@@ -2135,9 +2135,9 @@ h11 = ">=0.8"
 standard = ["colorama (>=0.4) ; sys_platform == \"win32\"", "httptools (>=0.6.3)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "uvloop (>=0.15.1) ; sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\"", "watchfiles (>=0.13)", "websockets (>=10.4)"]
 
 [[package]]
-name = "agentskills-azure-blob"
+name = "agentskills-azure"
 version = "0.8.0"
-description = "Azure Blob Storage provider for the Agent Skills format (https://agentskills.io)"
+description = "Azure-backed providers for the Agent Skills format (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
@@ -2151,9 +2151,20 @@ azure-identity = ">=1.19,<2.0"
 [package.dependencies.azure-storage-blob]
 version = ">=12.23,<13.0"
 extras = ["aio"]
+optional = true
+
+[package.dependencies.azure-storage-file-share]
+version = ">=12.23,<13.0"
+extras = ["aio"]
+optional = true
+
+[package.extras]
+blob = ["azure-storage-blob[aio] (>=12.23,<13.0)"]
+files = ["azure-storage-file-share[aio] (>=12.23,<13.0)"]
+
 [package.source]
 type = "directory"
-url = "packages/providers/agentskills-azure-blob"
+url = "packages/providers/agentskills-azure"
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -3145,7 +3156,29 @@ docker = ["docker (==5.0.1)"]
 ecr = ["boto3 (>=1.33.0)"]
 tests = ["pytest (>=4.6.2)"]
 
+[[package]]
+name = "azure-storage-file-share"
+version = "12.27.1"
+description = "Microsoft Corporation Azure Storage File Share Client Library for Python"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "azure_storage_file_share-12.27.1-py3-none-any.whl", hash = "sha256:5705389913344049d2f7bc63e11080143f3a7d87d89051b699176b5848716470"},
+    {file = "azure_storage_file_share-12.27.1.tar.gz", hash = "sha256:bc970feb3b8fa4e381944de516ccea697d93e20867840775e4dc06fc915d0af1"},
+]
+
+[package.dependencies]
+azure-core = ">=1.38.3"
+cryptography = ">=2.1.4"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.6.0"
+
+[package.extras]
+aio = ["azure-core[aio] (>=1.38.3)"]
+ext-checksums = ["azure-storage-extensions (>=0.1.0,<1.0.0)"]
+
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "0c34789b63abcb602024f4196727e6b8763d33e4f25bb3fd48f86a9a9d4cdc61"
+content-hash = "f96fe3a3554ca808b3400f8d3e166feea4ba085f5f8e97b25f86d24e66e5f338"
