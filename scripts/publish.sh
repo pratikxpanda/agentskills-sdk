@@ -18,6 +18,7 @@ PACKAGES=(
     "packages/providers/agentskills-git"
     "packages/providers/agentskills-http"
     "packages/providers/agentskills-azure-blob"
+    "packages/providers/agentskills-oci"
     "packages/retrieval/agentskills-retrieval"
     "packages/tools/agentskills-tools"
     "packages/testing/agentskills-testing"

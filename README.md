@@ -25,6 +25,7 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-git`](packages/providers/agentskills-git/README.md) | **Provider**: read skills from a Git repository at a resolved commit. | Under development for v0.8 | |
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | **Provider**: read skills from a static HTTP server or CDN. | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-http?label=)](https://pepy.tech/project/agentskills-http) |
 | [`agentskills-azure-blob`](packages/providers/agentskills-azure-blob/README.md) | **Provider**: read skills from Azure Blob Storage using the Azure credential chain. | Under development for v0.8 | |
+| [`agentskills-oci`](packages/providers/agentskills-oci/README.md) | **Provider**: read digest-verified skill files from OCI Distribution artifacts. | Under development for v0.8 | |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration**: serve native MCP Skills with complete manifests and lossless resources. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
 | [`agentskills-retrieval`](packages/retrieval/agentskills-retrieval/README.md) | **Selection**: rank a large registry against a query so the prompt carries the few skills that matter, not all of them. | [![PyPI](https://img.shields.io/pypi/v/agentskills-retrieval?label=)](https://pypi.org/project/agentskills-retrieval/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-retrieval?label=)](https://pepy.tech/project/agentskills-retrieval) |
 | [`agentskills-tools`](packages/tools/agentskills-tools/README.md) | **Tooling**: the `agentskills` command to scaffold, validate, lint, inspect, and lock skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-tools?label=)](https://pypi.org/project/agentskills-tools/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-tools?label=)](https://pepy.tech/project/agentskills-tools) |
@@ -42,8 +43,8 @@ If you *write* skills rather than consume them, you want `agentskills-tools` ins
 ## How It Works
 
 v0.7.0 is the current release: native-only MCP delivery on SDK 2.2+ and
-protocol 2026-07-28, with eight published packages. The Git and Azure Blob
-providers are in development for v0.8.
+protocol 2026-07-28, with eight published packages. The Git, Azure Blob, and
+OCI providers are in development for v0.8.
 Review the [breaking changes](docs/mcp-migration.md) before upgrading from v0.6.
 Publisher verification, content policy, controlled refresh,
 and network hardening are described in the
