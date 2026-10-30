@@ -1,4 +1,7 @@
-# CLI Tooling (`agentskills-tools`)
+---
+title: CLI Tooling
+description: Scaffold, validate, inspect, pin, and serve Agent Skills.
+---
 
 Scaffold, validate, lint, inspect, evaluate, lock, and serve skills.
 
@@ -14,4 +17,4 @@ The `lock` command records a Git source, resolved commit, and canonical per-file
 `agentskills lock verify` against a local clone to check the pinned commit and content offline.
 Use `agentskills lock update` to resolve a new revision from the same source. Roll back by
 restoring an earlier lockfile from version control and verifying it against that revision. These
-commands are under development for v0.8.0 and are not in the published v0.7.0 package.
+commands require `agentskills-tools` v0.8.0 or newer.

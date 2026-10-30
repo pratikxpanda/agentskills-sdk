@@ -281,7 +281,7 @@ only specified fields, and `skills/list` and `skills/get` stay limited to protoc
 
 ---
 
-## Later: v0.8 "Portable Distribution"
+## v0.8: Portable Distribution
 
 Expand sources and composition after MCP interoperability is proven. Release scope and acceptance
 criteria are defined in the [v0.8 specification](issues/v0.8.md). Additional sources remain

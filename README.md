@@ -1,4 +1,7 @@
-# Agent Skills SDK
+---
+title: Agent Skills SDK
+description: Python packages for portable skill distribution and native MCP delivery.
+---
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-brightgreen.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
@@ -9,7 +12,7 @@
 
 **Agent Skills** is an [open format](https://agentskills.io/specification) for giving AI agents new capabilities and expertise. Originally developed by Anthropic, the format is now supported by Claude Code, Cursor, GitHub, VS Code, Gemini CLI, and many others.
 
-This project helps you **integrate skills into your own agents**. Retrieve skills from the filesystem, Azure Blob Storage, a static HTTP host, or your own provider, validate them against the spec, and publish them to MCP hosts through the official Skills extension.
+This project helps you **integrate skills into your own agents**. Retrieve skills from the filesystem, Git, Azure Blob Storage, OCI artifacts, a static HTTP host, or your own provider, validate them against the spec, and publish them to MCP hosts through the official Skills extension.
 
 > **Note:** Requires Python 3.12 or newer. Tested against 3.12, 3.13, and 3.14.
 
@@ -22,10 +25,10 @@ This project helps you **integrate skills into your own agents**. Retrieve skill
 | [`agentskills-core`](packages/core/agentskills-core/README.md) | The registry, the provider interface, and spec validation. Every other package depends on it. | [![PyPI](https://img.shields.io/pypi/v/agentskills-core?label=)](https://pypi.org/project/agentskills-core/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-core?label=)](https://pepy.tech/project/agentskills-core) |
 | [`agentskills-adapters`](packages/adapters/agentskills-adapters/README.md) | **Adapter**: import AGENTS.md, Copilot instructions, Cursor rules, and Claude skills as native Skill objects. | [![PyPI](https://img.shields.io/pypi/v/agentskills-adapters?label=)](https://pypi.org/project/agentskills-adapters/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-adapters?label=)](https://pepy.tech/project/agentskills-adapters) |
 | [`agentskills-fs`](packages/providers/agentskills-fs/README.md) | **Provider**: read skills from a local directory. | [![PyPI](https://img.shields.io/pypi/v/agentskills-fs?label=)](https://pypi.org/project/agentskills-fs/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-fs?label=)](https://pepy.tech/project/agentskills-fs) |
-| [`agentskills-git`](packages/providers/agentskills-git/README.md) | **Provider**: read skills from a Git repository at a resolved commit. | Under development for v0.8 | |
+| [`agentskills-git`](packages/providers/agentskills-git/README.md) | **Provider**: read skills from a Git repository at a resolved commit. | New in v0.8.0 | |
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | **Provider**: read skills from a static HTTP server or CDN. | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-http?label=)](https://pepy.tech/project/agentskills-http) |
-| [`agentskills-azure-blob`](packages/providers/agentskills-azure-blob/README.md) | **Provider**: read skills from Azure Blob Storage using the Azure credential chain. | Under development for v0.8 | |
-| [`agentskills-oci`](packages/providers/agentskills-oci/README.md) | **Provider**: read digest-verified skill files from OCI Distribution artifacts. | Under development for v0.8 | |
+| [`agentskills-azure-blob`](packages/providers/agentskills-azure-blob/README.md) | **Provider**: read skills from Azure Blob Storage using the Azure credential chain. | New in v0.8.0 | |
+| [`agentskills-oci`](packages/providers/agentskills-oci/README.md) | **Provider**: read digest-verified skill files from OCI Distribution artifacts. | New in v0.8.0 | |
 | [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **Integration**: serve native MCP Skills with complete manifests and lossless resources. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
 | [`agentskills-retrieval`](packages/retrieval/agentskills-retrieval/README.md) | **Selection**: rank a large registry against a query so the prompt carries the few skills that matter, not all of them. | [![PyPI](https://img.shields.io/pypi/v/agentskills-retrieval?label=)](https://pypi.org/project/agentskills-retrieval/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-retrieval?label=)](https://pepy.tech/project/agentskills-retrieval) |
 | [`agentskills-tools`](packages/tools/agentskills-tools/README.md) | **Tooling**: the `agentskills` command to scaffold, validate, lint, inspect, and lock skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-tools?label=)](https://pypi.org/project/agentskills-tools/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-tools?label=)](https://pepy.tech/project/agentskills-tools) |
@@ -42,15 +45,16 @@ If you *write* skills rather than consume them, you want `agentskills-tools` ins
 
 ## How It Works
 
-v0.7.0 is the current release: native-only MCP delivery on SDK 2.2+ and
-protocol 2026-07-28, with eight published packages. The Git, Azure Blob, and
-OCI providers are in development for v0.8.
+v0.8.0 adds Git, Azure Blob, and OCI sources, Git lockfiles with offline verification,
+and origin-preserving MCP consumption and composition across eleven lockstep packages.
+Native MCP delivery requires SDK 2.2+ and protocol 2026-07-28. See the
+[v0.8 acceptance specification](docs/issues/v0.8.md) for scope and release gates.
 Review the [breaking changes](docs/mcp-migration.md) before upgrading from v0.6.
 Publisher verification, content policy, controlled refresh,
 and network hardening are described in the
 [trust and operability guide](docs/trust-and-operability.md).
 
-1. Capture complete immutable file sets from filesystem or manifested HTTP sources.
+1. Capture complete immutable file sets from filesystem, Git, HTTP, Azure Blob, or OCI sources.
 2. Discover metadata and manifests with `skills/list`, or look up a URI with `skills/get`.
 3. Read original files through canonical `skill://` resources only when needed.
 
@@ -211,7 +215,7 @@ agentskills inspect ./skills --cost
 agentskills lock create https://github.com/acme/skills.git --ref main
 ```
 
-Git lock commands are under development for v0.8.0 and are not available in the published v0.7.0 CLI.
+Git lock commands require `agentskills-tools` v0.8.0 or newer.
 
 See [packages/tools/agentskills-tools/README.md](packages/tools/agentskills-tools/README.md)
 for full command and JSON schema details.
