@@ -36,10 +36,21 @@ jobs:
       - name: Lint
         run: poetry run ruff check packages/ examples/
 
+      - name: Check CI helper scripts
+        run: |
+          poetry run ruff check scripts/check_package_artifacts.py scripts/check_documentation_examples.py
+          poetry run ruff format --check scripts/check_package_artifacts.py scripts/check_documentation_examples.py
+
       # Every package shares one virtualenv here, so a missing declaration is
       # invisible until somebody installs a single package from PyPI.
       - name: Check declared dependencies
         run: poetry run python scripts/check_declared_dependencies.py
+
+      - name: Check release version alignment
+        run: poetry run python scripts/check_release_version.py
+
+      - name: Check lock freshness
+        run: poetry check --lock
 
       # pip-audit reports on everything in the virtualenv, pip included, so a
       # vulnerability in the pip the venv was seeded with fails the job.
@@ -100,6 +111,30 @@ jobs:
 
       - name: Run tests
         run: poetry run pytest packages/ -v
+
+      - name: Check documentation examples
+        run: poetry run python scripts/check_documentation_examples.py
+
+  artifacts:
+    name: Installed artifacts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Install build tooling
+        run: python -m pip install poetry
+
+      - name: Check installed artifacts and commands
+        run: python scripts/check_package_artifacts.py
 
   coverage:
     name: Coverage
@@ -176,7 +211,7 @@ jobs:
           AGENTSKILLS_TEST_MCPC: ${{ runner.temp }}/mcpc/node_modules/@apify/mcpc/bin/mcpc
         run: >-
           poetry run pytest
-          packages/integrations/agentskills-mcp-server/tests/test_config.py -k mcpc -v
+          packages/integrations/agentskills-mcp-extension/tests/test_config.py -k mcpc -v
 
       - name: Run tests
         run: poetry run pytest packages/ -v

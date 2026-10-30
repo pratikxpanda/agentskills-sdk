@@ -1,7 +1,31 @@
 ---
 title: MCP Migration
-description: Breaking changes and migration boundaries for the native-only v0.7 release.
+description: MCP package naming, native-only API changes, and host migration boundaries.
 ---
+
+## v0.8 Package Rename
+
+The integration remains under `packages/integrations` and is renamed to reflect both server
+publication and client consumption.
+
+| Surface | Previous name | v0.8 name |
+| --- | --- | --- |
+| Distribution | `agentskills-mcp-server` | `agentskills-mcp-extension` |
+| Python namespace | `agentskills_mcp_server` | `agentskills_mcp_extension` |
+| Package-specific command | `agentskills-mcp-server` | `agentskills-mcp` |
+
+Install the replacement distribution and update imports and host subprocess configuration:
+
+```bash
+pip install "agentskills-mcp-extension[fs]"
+agentskills-mcp --config server.json --check
+```
+
+The main `agentskills` CLI and its `serve` command are unchanged. `agentskills-tools[serve]`
+selects the replacement integration. The old import namespace and console command are not
+retained as compatibility aliases. Older published distributions remain available on PyPI.
+Update module-specific logging filters from `agentskills.mcp_server` to
+`agentskills.mcp_extension`. The root `agentskills` logger is unchanged.
 
 ## Additional v0.7 Controls
 
@@ -85,7 +109,7 @@ support for retired integrations.
 ```python
 from agentskills_core import Skill
 from agentskills_fs import LocalFileSystemSkillProvider
-from agentskills_mcp_server import create_mcp_server
+from agentskills_mcp_extension import create_mcp_server
 
 provider = LocalFileSystemSkillProvider("./skills")
 server = await create_mcp_server([Skill("incident-response", provider)])

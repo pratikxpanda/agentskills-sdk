@@ -10,19 +10,19 @@ The SDK is split into focused packages.
 - `agentskills-core` for registry and validation
 - One provider (`agentskills-fs` or `agentskills-http`); `agentskills-git` is under
   development for v0.8
-- `agentskills-mcp-server` for native Skills delivery to a conforming host
+- `agentskills-mcp-extension` for native Skills delivery to a conforming host
 
 Install the native MCP server with the filesystem provider:
 
 ```bash
-pip install "agentskills-mcp-server[fs]"
+pip install "agentskills-mcp-extension[fs]"
 ```
 
 ## Publish Skills
 
 ```bash
-python -m agentskills_mcp_server --config examples/server-fs.json --check
-python -m agentskills_mcp_server --config examples/server-fs.json
+agentskills-mcp --config examples/server-fs.json --check
+agentskills-mcp --config examples/server-fs.json
 ```
 
 The server requires MCP SDK 2.2+ and protocol 2026-07-28. A host must support the
@@ -63,4 +63,4 @@ agentskills validate ./skills
 agentskills lint ./skills
 ```
 
-For publication options, see the [MCP server](packages/mcp-server.md).
+For publication options, see the [MCP server](packages/mcp-extension.md).

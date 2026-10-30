@@ -1,4 +1,7 @@
-# Core (`agentskills-core`)
+---
+title: Core
+description: Provider contracts, skill registration, validation, snapshots, and publication controls.
+---
 
 Registry, provider contract, validation, and shared exceptions.
 
@@ -7,6 +10,11 @@ pip install agentskills-core
 pip install "agentskills-core[verification]"   # Ed25519 signature verification
 pip install "agentskills-core[telemetry]"      # OpenTelemetry export
 ```
+
+Core is storage-agnostic. Install a provider separately to read files or remote sources. Start
+with the [runnable filesystem-backed example](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/core/agentskills-core/README.md#quick-start)
+before using the APIs below. Registration reads and validates skill metadata and bodies. It
+does not inject prompts or start an MCP server.
 
 ::: agentskills_core
     options:

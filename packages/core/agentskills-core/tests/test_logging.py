@@ -18,7 +18,7 @@ class TestGetLogger:
             ("agentskills_core.registry", "agentskills.core.registry"),
             ("agentskills_fs.local", "agentskills.fs.local"),
             ("agentskills_http.static", "agentskills.http.static"),
-            ("agentskills_mcp_server.config", "agentskills.mcp_server.config"),
+            ("agentskills_mcp_extension.config", "agentskills.mcp_extension.config"),
         ],
     )
     def test_rewrites_distribution_prefix(self, module, expected):

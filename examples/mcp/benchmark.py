@@ -224,7 +224,7 @@ async def measure_native(root: Path, identifiers: list[str]) -> dict[str, Any]:
     """Measure native discovery and progressive reads with an official client."""
     from mcp import Client
 
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     provider = CountingProvider(root)
     started = perf_counter()

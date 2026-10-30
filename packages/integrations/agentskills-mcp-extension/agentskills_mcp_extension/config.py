@@ -1,7 +1,7 @@
 """Pydantic configuration models for Agent Skills MCP servers.
 
 This module defines the declarative configuration schema used by
-the CLI (``python -m agentskills_mcp_server --config server.json``).
+the CLI (``agentskills-mcp --config server.json``).
 
 String values may contain ``${VAR}`` placeholders that are resolved
 from environment variables at load time.  Unset variables resolve to

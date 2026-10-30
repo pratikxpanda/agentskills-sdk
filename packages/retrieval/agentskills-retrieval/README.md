@@ -1,11 +1,16 @@
-# agentskills-retrieval
+---
+title: agentskills-retrieval
+description: Host-controlled skill selection using lexical or embedding-based ranking.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-retrieval)](https://pypi.org/project/agentskills-retrieval/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/pratikxpanda/agentskills-sdk/blob/main/LICENSE)
 
 Query-time skill selection for the [Agent Skills](https://agentskills.io) SDK.
 
-The skills catalog is injected into the system prompt on **every turn**, so its cost is linear in the number of registered skills. Two things get worse as a registry grows, not one: the token bill, and the accuracy of the model's choice. A fifty-skill registry is both more expensive *and* worse at picking the right skill.
+For hosts that place a registry catalog in model context, selecting a smaller set can reduce
+metadata volume. This package ranks skills against a query. It does not inject prompts or
+activate skills, and ranking quality depends on your corpus and query.
 
 `get_skills_catalog()` already accepts `include`, `exclude`, `tags` and `max_chars`, but every one of them requires the caller to know the answer in advance, and `max_chars` drops entries from the end, which is arbitrary with respect to relevance. This package narrows the catalog by *what was asked*.
 
@@ -19,16 +24,39 @@ There are no dependencies beyond `agentskills-core`. The default selector is pur
 
 ## Usage
 
-```python
-from agentskills_retrieval import LexicalSelector, build_selected_catalog
+The example uses a filesystem registry, so install that provider too:
 
-selector = LexicalSelector(registry)
-catalog = await build_selected_catalog(
-    registry, selector, "the checkout API is returning 503s"
-)
+```bash
+pip install agentskills-retrieval agentskills-fs
 ```
 
-Or drive the two halves yourself, which is the whole integration surface:
+Prepare valid skill folders beneath `./skills` as shown in the
+[filesystem guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-fs/README.md#usage).
+
+```python
+import asyncio
+from pathlib import Path
+
+from agentskills_core import SkillRegistry
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_retrieval import LexicalSelector, build_selected_catalog
+
+
+async def main() -> None:
+    registry = SkillRegistry()
+    await registry.register_all(LocalFileSystemSkillProvider(Path("./skills")))
+    selector = LexicalSelector(registry)
+    catalog = await build_selected_catalog(
+        registry, selector, "the checkout API is returning 503s"
+    )
+    print(catalog)
+
+
+asyncio.run(main())
+```
+
+The remaining async snippets belong inside a function with a registered `registry` and
+configured `selector`. To inspect a selection before rendering it:
 
 ```python
 selection = await selector.select("the checkout API is returning 503s", limit=5)
@@ -52,22 +80,38 @@ catalog = await registry.get_skills_catalog(
 
 ### Embedders
 
-No embedding SDK is a dependency of anything here. The contract is one method:
+No embedding SDK is installed by this package. An embedder supplies a stable `embedder_id`
+and an async `embed(texts)` method returning one numeric vector per text.
+For an OpenAI-backed implementation, install `openai`, configure `OPENAI_API_KEY` outside your
+code, and pass an owned client. Embedding requests can incur charges:
 
 ```python
+from collections.abc import Sequence
+
+from openai import AsyncOpenAI
+
+from agentskills_retrieval import EmbeddingSelector, build_selected_catalog
+
+
 class OpenAIEmbedder:
     embedder_id = "text-embedding-3-small"
 
-    async def embed(self, texts):
-        reply = await client.embeddings.create(model=self.embedder_id, input=list(texts))
+    def __init__(self, client: AsyncOpenAI) -> None:
+        self.client = client
+
+    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        reply = await self.client.embeddings.create(model=self.embedder_id, input=list(texts))
         return [item.embedding for item in reply.data]
+
+
+async def select_with_embeddings(registry, query: str) -> str:
+    async with AsyncOpenAI() as client:
+        selector = EmbeddingSelector(registry, OpenAIEmbedder(client))
+        return await build_selected_catalog(registry, selector, query)
 ```
 
-```python
-from agentskills_retrieval import EmbeddingSelector
-
-selector = EmbeddingSelector(registry, OpenAIEmbedder())
-```
+Call `await select_with_embeddings(registry, query)` from your async host after registering
+skills. The host supplies the query, credentials, consent, and network policy.
 
 `load_embedder("myapp.embedders:build")` resolves the same thing from a dotted path when the name comes from configuration, mirroring how the eval harness resolves chat models.
 
@@ -75,15 +119,17 @@ selector = EmbeddingSelector(registry, OpenAIEmbedder())
 
 Skill vectors are cached by content hash, so re-registering an unchanged skill is free and editing one invalidates only itself. `embedder_id` is part of every cache key, because two models' vectors are not comparable and a cache that mixes them silently returns nonsense.
 
-The default cache is an in-process dict. Persistence is a two-method protocol: a hosted registry should not re-embed its corpus every time a process starts:
+The default cache is in memory. An explicit reusable instance is available:
 
 ```python
-class RedisEmbeddingCache:
-    def get(self, key: str) -> list[float] | None: ...
-    def set(self, key: str, vector: list[float]) -> None: ...
+from agentskills_retrieval import InMemoryEmbeddingCache
 
-selector = EmbeddingSelector(registry, embedder, cache=RedisEmbeddingCache())
+cache = InMemoryEmbeddingCache()
 ```
+
+Pass it with `EmbeddingSelector(registry, embedder, cache=cache)` while the embedder's client
+is open. A persistent implementation must provide `get(key)` and `set(key, vector)` according
+to the `EmbeddingCache` protocol. No Redis client or persistent cache is bundled.
 
 ## `when_not_to_use` is a penalty, not a match
 

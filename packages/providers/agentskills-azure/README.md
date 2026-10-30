@@ -20,16 +20,26 @@ Install only `agentskills-azure[blob]` or `agentskills-azure[files]` when you ne
 Read Agent Skills from Azure Blob Storage with the asynchronous Azure SDK. The
 provider uses `DefaultAzureCredential` by default, discovers skills from
 `SKILL.md` blobs, and preserves original file bytes for complete manifests.
+Each skill is a directory beneath the configured prefix, for example
+`published/incident-response/SKILL.md`. Upload valid skill content before running the example.
+Authenticate for local development with `az login`, or configure a managed identity in Azure.
+Replace the account URL and container name with yours.
 
 ```python
+import asyncio
+
 from agentskills_azure.blob import AzureBlobSkillProvider
 
-async with AzureBlobSkillProvider(
-    "https://account.blob.core.windows.net",
-    "skills",
-    prefix="published/",
-) as provider:
-    skill_ids = await provider.discover()
+
+async def main() -> None:
+    async with AzureBlobSkillProvider(
+        "https://account.blob.core.windows.net", "skills", prefix="published/"
+    ) as provider:
+        print(await provider.discover())
+        print(await provider.get_body("incident-response"))
+
+
+asyncio.run(main())
 ```
 
 Pass an asynchronous Azure credential to `credential` when the application
@@ -39,17 +49,27 @@ needed to read the selected container.
 ## Azure Files
 
 Use the async FileREST SDK to read skill directories from an SMB share without mounting it:
+create the share and upload `published/incident-response/SKILL.md` first. The same Azure
+credential-chain setup applies, but FileREST token authentication has different permissions.
 
 ```python
+import asyncio
+
 from agentskills_azure.files import AzureFilesSkillProvider
 
-async with AzureFilesSkillProvider(
-    "https://account.file.core.windows.net",
-    "skills",
-    prefix="published/",
-    token_intent="backup",
-) as provider:
-    skill_ids = await provider.discover()
+
+async def main() -> None:
+    async with AzureFilesSkillProvider(
+        "https://account.file.core.windows.net",
+        "skills",
+        prefix="published/",
+        token_intent="backup",
+    ) as provider:
+        print(await provider.discover())
+        print(await provider.read_file("incident-response", "SKILL.md"))
+
+
+asyncio.run(main())
 ```
 
 Token authentication requires the explicit `token_intent="backup"` opt-in. FileREST backup

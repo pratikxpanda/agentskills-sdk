@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "agentskills-mcp-server"
+name = "agentskills-mcp-extension"
 version = "0.8.0"
-description = "Serve the official MCP Skills extension with lossless resources (https://agentskills.io)"
+description = "Publish and consume the official MCP Skills extension (https://agentskills.io)"
 license = "MIT"
 authors = ["Pratik Panda"]
 readme = "README.md"
 homepage = "https://agentskills.io"
 repository = "https://github.com/pratikxpanda/agentskills-sdk"
-packages = [{include = "agentskills_mcp_server"}]
+packages = [{include = "agentskills_mcp_extension"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -30,7 +30,7 @@ fs = ["agentskills-fs"]
 http = ["agentskills-http"]
 
 [tool.poetry.scripts]
-agentskills-mcp-server = "agentskills_mcp_server.__main__:main"
+agentskills-mcp = "agentskills_mcp_extension.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]

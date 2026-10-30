@@ -23,7 +23,7 @@ delivery. See the [v0.8 specification](issues/v0.8.md) for scope and release gat
 [breaking changes](mcp-migration.md) before upgrading from v0.6.
 
 ```bash
-pip install "agentskills-mcp-server[fs]"
+pip install "agentskills-mcp-extension[fs]"
 ```
 
 Or install the authoring CLI:
@@ -34,7 +34,7 @@ pip install agentskills-tools
 
 ## Quick start
 
-Publish the sample skills with `python -m agentskills_mcp_server --config
+Publish the sample skills with `agentskills-mcp --config
 examples/server-fs.json`. A conforming Skills host is required for activation.
 The following framework-neutral APIs remain available for custom hosts:
 

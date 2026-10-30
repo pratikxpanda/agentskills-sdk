@@ -1,4 +1,7 @@
-# agentskills-testing
+---
+title: agentskills-testing
+description: Provider conformance suites, in-memory test doubles, and pytest fixtures.
+---
 
 Conformance suite and test doubles for [Agent Skills](https://agentskills.io) providers.
 
@@ -16,21 +19,40 @@ pip install agentskills-testing
 ## Conformance suite
 
 Subclass `ProviderConformanceSuite`, supply a `provider` fixture, and pytest
-collects the entire provider contract against your implementation:
+collects the provider contract. Save this runnable example as `tests/test_provider.py`:
 
 ```python
 import pytest
 
-from agentskills_testing import ProviderConformanceSuite
+from agentskills_testing import (
+    ASSET_BYTES,
+    ASSET_NAME,
+    REFERENCE_BYTES,
+    REFERENCE_NAME,
+    SCRIPT_BYTES,
+    SCRIPT_NAME,
+    SKILL_ID,
+    InMemorySkillProvider,
+    ProviderConformanceSuite,
+    build_skill,
+)
 
-from my_package import MyProvider
 
-
-class TestMyProvider(ProviderConformanceSuite):
+class TestProvider(ProviderConformanceSuite):
     @pytest.fixture
-    def provider(self):
-        return MyProvider(...)
+    def provider(self) -> InMemorySkillProvider:
+        skill = build_skill(
+            SKILL_ID,
+            references={REFERENCE_NAME: REFERENCE_BYTES},
+            scripts={SCRIPT_NAME: SCRIPT_BYTES},
+            assets={ASSET_NAME: ASSET_BYTES},
+        )
+        return InMemorySkillProvider({SKILL_ID: skill})
 ```
+
+Run `python -m pytest tests/test_provider.py -q`. For your own backend, populate it with the
+same names and bytes below, then replace the fixture's provider construction. Use a yield
+fixture and close clients after the yield when your provider owns network resources.
 
 ### Fixture contract
 
@@ -86,14 +108,44 @@ bound, and demanding one would assert a filesystem's constraints against a dict.
 It **is** required of any provider that reads bytes it did not author: from
 disk, from a network, from anywhere a caller can grow without asking.
 
+For a concrete bounded-provider example, also install `agentskills-fs`:
+
 ```python
-from agentskills_testing import ContentLimitConformanceSuite
+from pathlib import Path
+
+import pytest
+
+from agentskills_fs import LocalFileSystemSkillProvider
+from agentskills_testing import (
+  ASSET_BYTES,
+  ASSET_NAME,
+  REFERENCE_BYTES,
+  REFERENCE_NAME,
+  SCRIPT_BYTES,
+  SCRIPT_NAME,
+  SKILL_ID,
+  ContentLimitConformanceSuite,
+  build_skill,
+  render_skill_md,
+)
 
 
-class TestMyProviderLimits(ContentLimitConformanceSuite):
-    @pytest.fixture
-    def limited_provider(self):
-        return MyProvider(..., max_bytes=8)
+class TestProviderLimits(ContentLimitConformanceSuite):
+  @pytest.fixture
+  def limited_provider(self, tmp_path: Path) -> LocalFileSystemSkillProvider:
+    directory = tmp_path / SKILL_ID
+    directory.mkdir()
+    (directory / "SKILL.md").write_text(
+      render_skill_md(build_skill(SKILL_ID)), encoding="utf-8"
+    )
+    for kind, name, data in (
+      ("references", REFERENCE_NAME, REFERENCE_BYTES),
+      ("scripts", SCRIPT_NAME, SCRIPT_BYTES),
+      ("assets", ASSET_NAME, ASSET_BYTES),
+    ):
+      (directory / kind).mkdir()
+      (directory / kind / name).write_bytes(data)
+    return LocalFileSystemSkillProvider(tmp_path, max_file_bytes=8)
 ```
 
 The fixture holds the same skill, with a limit small enough that the skill
@@ -106,22 +158,25 @@ passes the conformance suite above. Prefer it to an `AsyncMock`: a mock agrees
 with whatever the test asserts, including the assertions that are wrong.
 
 ```python
+import asyncio
+
 from agentskills_core import SkillRegistry
 from agentskills_testing import InMemorySkillProvider, build_skill
 
-provider = InMemorySkillProvider(
-    {
-        "incident-response": build_skill(
-            "incident-response",
-            description="Diagnose and mitigate a production incident.",
-            body="# Incident Response\n\nPage the on-call engineer.\n",
-            references={"severity-levels.md": b"SEV1 is customer-visible.\n"},
-        )
-    }
-)
 
-registry = SkillRegistry()
-await registry.register_all(provider)
+async def main() -> None:
+  provider = InMemorySkillProvider({
+    "incident-response": build_skill(
+      "incident-response",
+      references={"severity-levels.md": b"SEV1 is customer-visible.\n"},
+    )
+  })
+  registry = SkillRegistry()
+  await registry.register_all(provider)
+  print(await registry.get_skill("incident-response").get_body())
+
+
+asyncio.run(main())
 ```
 
 A string value is taken as the body, for the common case where the content does
@@ -153,6 +208,10 @@ import and no `conftest.py` entry:
 | `skill_registry` | A `SkillRegistry` with that skill already registered |
 
 ```python
+import pytest
+
+
+@pytest.mark.asyncio
 async def test_my_agent(skill_registry):
     catalog = await skill_registry.get_skills_catalog()
     assert "incident-response" in catalog

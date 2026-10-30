@@ -8,8 +8,8 @@ import pytest
 from pydantic import ValidationError
 
 from agentskills_core import ResourceNotFoundError, SkillProvider, SkillRegistry
-from agentskills_mcp_server import create_mcp_server
-from agentskills_mcp_server.config import (
+from agentskills_mcp_extension import create_mcp_server
+from agentskills_mcp_extension.config import (
     SUPPORTED_PROVIDERS,
     ServerConfig,
     SkillConfig,
@@ -330,7 +330,12 @@ class TestConfigDrivenServer:
                     "mcpServers": {
                         "native": {
                             "command": sys.executable,
-                            "args": ["-m", "agentskills_mcp_server", "--config", str(server_path)],
+                            "args": [
+                                "-m",
+                                "agentskills_mcp_extension",
+                                "--config",
+                                str(server_path),
+                            ],
                             "env": {"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
                             "protocolVersion": "2026-07-28",
                         }
@@ -395,7 +400,7 @@ class TestConfigDrivenServer:
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
             command=sys.executable,
-            args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+            args=["-m", "agentskills_mcp_extension", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
         async with (
@@ -430,7 +435,7 @@ class TestConfigDrivenServer:
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
         parameters = StdioServerParameters(
             command=sys.executable,
-            args=["-m", "agentskills_mcp_server", "--config", str(config_path)],
+            args=["-m", "agentskills_mcp_extension", "--config", str(config_path)],
             env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
         )
         async with (
@@ -666,7 +671,7 @@ class TestResolveEnvVars:
         monkeypatch.delenv("MISSING_VAR", raising=False)
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="agentskills.mcp_server.config"):
+        with caplog.at_level(logging.WARNING, logger="agentskills.mcp_extension.config"):
             resolve_env_vars("${MISSING_VAR}")
         assert "MISSING_VAR" in caplog.text
 
@@ -683,7 +688,7 @@ def test_given_detached_proof_config_when_published_then_verified():
 
     from agentskills_core.snapshots import SkillFile, SkillSnapshot
     from agentskills_core.trust import signature_payload
-    from agentskills_mcp_server.config import TrustConfig
+    from agentskills_mcp_extension.config import TrustConfig
 
     snapshot = SkillSnapshot(
         "alpha", (SkillFile("SKILL.md", b"---\nname: alpha\ndescription: Test\n---\nBody"),)
@@ -717,7 +722,7 @@ class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
     def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys):
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         config_file = tmp_path / "check.json"
         config_file.write_text(
@@ -741,8 +746,10 @@ class TestCLI:
             return object()
 
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
-            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+            patch(
+                "sys.argv", ["agentskills_mcp_extension", "--config", str(config_file), "--check"]
+            ),
+            patch("agentskills_mcp_extension.__main__.asyncio") as mock_asyncio,
         ):
             mock_asyncio.run.side_effect = build
             main()
@@ -761,7 +768,7 @@ class TestCLI:
     @pytest.mark.parametrize("invalid", [False, True])
     def test_check_closes_provider(self, tmp_path, capsys, invalid):
         from agentskills_fs import LocalFileSystemSkillProvider
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         _write_skill(tmp_path, "example")
         if invalid:
@@ -785,9 +792,11 @@ class TestCLI:
             encoding="utf-8",
         )
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file), "--check"]),
             patch(
-                "agentskills_mcp_server.config._resolve_provider",
+                "sys.argv", ["agentskills_mcp_extension", "--config", str(config_file), "--check"]
+            ),
+            patch(
+                "agentskills_mcp_extension.config._resolve_provider",
                 return_value=ClosingProvider(tmp_path),
             ),
         ):
@@ -804,21 +813,36 @@ class TestCLI:
         else:
             assert json.loads(output)["status"] == "ready"
 
+    def test_given_help_when_invoked_then_shows_short_command(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from agentskills_mcp_extension.__main__ import main
+
+        monkeypatch.setattr("sys.argv", ["agentskills-mcp", "--help"])
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        assert exc_info.value.code == 0
+        assert "usage: agentskills-mcp " in capsys.readouterr().out
+
     def test_argparse_requires_config(self):
         """CLI exits with error when --config is missing."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
-        with patch("sys.argv", ["agentskills_mcp_server"]), pytest.raises(SystemExit) as exc_info:
+        with (
+            patch("sys.argv", ["agentskills_mcp_extension"]),
+            pytest.raises(SystemExit) as exc_info,
+        ):
             main()
         assert exc_info.value.code == 2  # argparse exit code for missing args
 
     def test_missing_config_file_exits(self, tmp_path):
         """CLI exits with error for a non-existent config file."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         missing = str(tmp_path / "nonexistent.json")
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", missing]),
+            patch("sys.argv", ["agentskills_mcp_extension", "--config", missing]),
             pytest.raises(SystemExit) as exc_info,
         ):
             main()
@@ -826,19 +850,19 @@ class TestCLI:
 
     def test_invalid_json_config_raises(self, tmp_path):
         """CLI fails gracefully on invalid JSON."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         config_file = tmp_path / "bad.json"
         config_file.write_text("{invalid json", encoding="utf-8")
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
+            patch("sys.argv", ["agentskills_mcp_extension", "--config", str(config_file)]),
             pytest.raises((json.JSONDecodeError, SystemExit)),
         ):
             main()
 
     def test_json_config_loads(self, tmp_path):
         """CLI loads valid JSON config and calls server.run()."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         _write_skill(tmp_path, "cli-skill")
         config_file = tmp_path / "server.json"
@@ -864,8 +888,8 @@ class TestCLI:
             return type("MockServer", (), {"run": lambda self, **kw: None})()
 
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
-            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+            patch("sys.argv", ["agentskills_mcp_extension", "--config", str(config_file)]),
+            patch("agentskills_mcp_extension.__main__.asyncio") as mock_asyncio,
         ):
             mock_asyncio.run.side_effect = _fake_asyncio_run
             main()
@@ -873,7 +897,7 @@ class TestCLI:
 
     def test_yaml_config_loads(self, tmp_path):
         """CLI loads valid YAML config and calls server.run()."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         _write_skill(tmp_path, "yaml-skill")
         config_file = tmp_path / "server.yaml"
@@ -893,8 +917,8 @@ class TestCLI:
             return type("MockServer", (), {"run": lambda self, **kw: None})()
 
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
-            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+            patch("sys.argv", ["agentskills_mcp_extension", "--config", str(config_file)]),
+            patch("agentskills_mcp_extension.__main__.asyncio") as mock_asyncio,
         ):
             mock_asyncio.run.side_effect = _fake_asyncio_run
             main()
@@ -916,7 +940,7 @@ class TestCLI:
 
     def test_env_vars_resolved_in_json_config(self, tmp_path, monkeypatch):
         """CLI resolves ${VAR} placeholders in JSON config before building."""
-        from agentskills_mcp_server.__main__ import main
+        from agentskills_mcp_extension.__main__ import main
 
         monkeypatch.setenv("SKILL_ROOT", str(tmp_path))
         _write_skill(tmp_path, "env-skill")
@@ -942,8 +966,8 @@ class TestCLI:
             return type("MockServer", (), {"run": lambda self, **kw: None})()
 
         with (
-            patch("sys.argv", ["agentskills_mcp_server", "--config", str(config_file)]),
-            patch("agentskills_mcp_server.__main__.asyncio") as mock_asyncio,
+            patch("sys.argv", ["agentskills_mcp_extension", "--config", str(config_file)]),
+            patch("agentskills_mcp_extension.__main__.asyncio") as mock_asyncio,
         ):
             mock_asyncio.run.side_effect = _fake_asyncio_run
             main()

@@ -1,4 +1,7 @@
-# Development
+---
+title: Development
+description: Local setup, validation commands, and release checks for the SDK workspace.
+---
 
 > Part of the [Agent Skills SDK](index.md).
 
@@ -33,11 +36,37 @@ poetry run pytest packages/providers/agentskills-git -v
 poetry run pytest packages/providers/agentskills-http -v
 poetry run pytest packages/providers/agentskills-azure -v
 poetry run pytest packages/providers/agentskills-oci -v
-poetry run pytest packages/integrations/agentskills-mcp-server -v
+poetry run pytest packages/integrations/agentskills-mcp-extension -v
 poetry run pytest packages/retrieval/agentskills-retrieval -v
 poetry run pytest packages/tools/agentskills-tools -v
 poetry run pytest packages/testing/agentskills-testing -v
 ```
+
+### Documentation Examples
+
+```bash
+poetry run python scripts/check_documentation_examples.py
+```
+
+This compiles Python snippets in every package README and executes selected local quick starts
+and the testing guide's fixtures in temporary directories. The root quick start runs with MCP
+imports blocked. It makes no cloud or model calls. PR CI runs the same check in the Python matrix.
+
+### Installed Artifacts
+
+```bash
+poetry run python scripts/check_package_artifacts.py
+```
+
+This builds all wheel/sdist pairs in temporary directories, checks package identities and typing
+markers, and installs the wheels with their declared dependencies into a new isolated virtualenv.
+It runs `pip check`, `agentskills-mcp --help`, local MCP preflight, the Python module entry point,
+and `agentskills serve --check` without the checkout on `PYTHONPATH`. It never publishes packages
+or alters the project virtualenv. Dependency installation needs access to a package index. PR CI
+runs this check on Linux and Windows.
+
+PR CI also checks all package versions and sibling dependency floors with
+`scripts/check_release_version.py` and verifies lock freshness with `poetry check --lock`.
 
 ### Coverage
 
@@ -332,7 +361,7 @@ This is worth knowing before adding a package, or publishing to any new index.
 | `packages/providers/agentskills-fs` | Load skills from the local filesystem |
 | `packages/providers/agentskills-git` | Load skills from a Git revision pinned to its resolved commit (v0.8 work in progress) |
 | `packages/providers/agentskills-http` | Load skills from a static HTTP server, with public-network-only defaults |
-| `packages/integrations/agentskills-mcp-server` | Native MCP Skills server with complete manifests and lossless resources |
+| `packages/integrations/agentskills-mcp-extension` | Native MCP Skills server with complete manifests and lossless resources |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers (`agentskills-retrieval` on PyPI) |
 | `packages/tools/agentskills-tools` | The `agentskills` command: `init`, `validate`, `lint`, `inspect`, `serve` |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, and pytest fixtures |

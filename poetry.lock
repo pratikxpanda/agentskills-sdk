@@ -98,9 +98,9 @@ type = "directory"
 url = "packages/providers/agentskills-http"
 
 [[package]]
-name = "agentskills-mcp-server"
+name = "agentskills-mcp-extension"
 version = "0.8.0"
-description = "Serve the official MCP Skills extension with lossless resources (https://agentskills.io)"
+description = "Publish and consume the official MCP Skills extension (https://agentskills.io)"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
@@ -118,7 +118,7 @@ http = ["agentskills-http (>=0.8.0,<1.0)"]
 
 [package.source]
 type = "directory"
-url = "packages/integrations/agentskills-mcp-server"
+url = "packages/integrations/agentskills-mcp-extension"
 
 [[package]]
 name = "agentskills-retrieval"
@@ -175,7 +175,7 @@ agentskills-git = ">=0.8.0,<1.0"
 pyyaml = ">=6.0,<7.0"
 
 [package.extras]
-serve = ["agentskills-mcp-server (>=0.8.0,<1.0)"]
+serve = ["agentskills-mcp-extension (>=0.8.0,<1.0)"]
 
 [package.source]
 type = "directory"
@@ -3181,4 +3181,4 @@ ext-checksums = ["azure-storage-extensions (>=0.1.0,<1.0.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "f96fe3a3554ca808b3400f8d3e166feea4ba085f5f8e97b25f86d24e66e5f338"
+content-hash = "2afd304dc0567d2504577c496ce751b900813524a147cfab99a864357786dc01"

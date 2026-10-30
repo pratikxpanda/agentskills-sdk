@@ -218,7 +218,7 @@ class TestNativeInspect:
         write_skill("alpha")
         write_skill("beta")
         monkeypatch.setitem(sys.modules, "mcp", None)
-        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", None)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension", None)
 
         code = main(["inspect", str(skills_root), "--native", "--format", "json"])
 

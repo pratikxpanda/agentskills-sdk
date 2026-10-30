@@ -19,7 +19,7 @@ nav:
       - HTTP provider: packages/http.md
       - Azure providers: packages/azure.md
       - OCI provider: packages/oci.md
-      - MCP server integration: packages/mcp-server.md
+      - MCP Skills extension: packages/mcp-extension.md
       - Skill selection: packages/retrieval.md
       - CLI tooling: packages/tools.md
       - Testing toolkit: packages/testing.md

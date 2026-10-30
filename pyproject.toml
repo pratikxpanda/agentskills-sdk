@@ -14,7 +14,7 @@ agentskills-git = { path = "packages/providers/agentskills-git", develop = true 
 agentskills-http = { path = "packages/providers/agentskills-http", develop = true }
 agentskills-azure = { path = "packages/providers/agentskills-azure", develop = true, extras = ["blob", "files"] }
 agentskills-oci = { path = "packages/providers/agentskills-oci", develop = true }
-agentskills-mcp-server = { path = "packages/integrations/agentskills-mcp-server", develop = true }
+agentskills-mcp-extension = { path = "packages/integrations/agentskills-mcp-extension", develop = true }
 agentskills-retrieval = { path = "packages/retrieval/agentskills-retrieval", develop = true }
 agentskills-tools = { path = "packages/tools/agentskills-tools", develop = true }
 agentskills-testing = { path = "packages/testing/agentskills-testing", develop = true }
@@ -31,6 +31,7 @@ respx = ">=0.22"
 ruff = ">=0.4"
 pip-audit = ">=2.7"
 pytest-cov = ">=7.0"
+markdown-it-py = ">=3.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -53,7 +54,7 @@ source_pkgs = [
     "agentskills_http",
     "agentskills_azure",
     "agentskills_oci",
-    "agentskills_mcp_server",
+    "agentskills_mcp_extension",
     "agentskills_retrieval",
     "agentskills_tools",
     "agentskills_testing",
@@ -89,4 +90,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_git", "agentskills_http", "agentskills_azure", "agentskills_oci", "agentskills_mcp_server", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]
+known-first-party = ["agentskills_core", "agentskills_adapters", "agentskills_fs", "agentskills_git", "agentskills_http", "agentskills_azure", "agentskills_oci", "agentskills_mcp_extension", "agentskills_retrieval", "agentskills_tools", "agentskills_testing"]

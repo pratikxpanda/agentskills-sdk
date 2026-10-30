@@ -4,11 +4,10 @@
 
 .DESCRIPTION
     Builds and publishes packages in the correct order:
-      1. agentskills-core (no internal deps)
-            2. agentskills-adapters, agentskills-fs, agentskills-http
-            3. agentskills-git (depends on core and agentskills-fs)
-            4. agentskills-retrieval, agentskills-tools, agentskills-testing
-            5. agentskills-mcp-server (depends on core and optional providers)
+    1. agentskills-core
+    2. adapters and providers (filesystem before Git)
+    3. agentskills-mcp-extension
+    4. retrieval, tools, and testing
 
 .PARAMETER TestPyPI
     Publish to TestPyPI instead of PyPI.
@@ -39,10 +38,10 @@ $packages = @(
     "packages/providers/agentskills-http",
     "packages/providers/agentskills-azure",
     "packages/providers/agentskills-oci",
+    "packages/integrations/agentskills-mcp-extension",
     "packages/retrieval/agentskills-retrieval",
     "packages/tools/agentskills-tools",
-    "packages/testing/agentskills-testing",
-    "packages/integrations/agentskills-mcp-server"
+    "packages/testing/agentskills-testing"
 )
 
 $publishArgs = @()

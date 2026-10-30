@@ -20,7 +20,7 @@ class TestBuildNativeServer:
         )
         expected = (path / "SKILL.md").read_bytes()
         server = object()
-        module = types.ModuleType("agentskills_mcp_server")
+        module = types.ModuleType("agentskills_mcp_extension")
 
         async def build(skills, *, name, skill_prompt_shortcuts=False):
             assert name == "Native test"
@@ -30,7 +30,7 @@ class TestBuildNativeServer:
             return server
 
         module.create_mcp_server = build
-        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension", module)
 
         assert (
             await build_server(skills_root, [SkillLocation("alpha", path)], name="Native test")
@@ -41,7 +41,7 @@ class TestBuildNativeServer:
         self, write_skill, skills_root, monkeypatch
     ):
         path = write_skill("alpha")
-        module = types.ModuleType("agentskills_mcp_server")
+        module = types.ModuleType("agentskills_mcp_extension")
         calls = []
 
         async def build(skills, *, name, skill_prompt_shortcuts=False):
@@ -49,7 +49,7 @@ class TestBuildNativeServer:
             return object()
 
         module.create_mcp_server = build
-        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension", module)
 
         await build_server(
             skills_root,
@@ -64,7 +64,7 @@ class TestBuildNativeServer:
         self, write_skill, skills_root, monkeypatch
     ):
         path = write_skill("alpha")
-        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", None)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension", None)
 
         with pytest.raises(CliError, match=r"MCP SDK 2\.2.*agentskills-tools\[serve\]"):
             await build_server(skills_root, [SkillLocation("alpha", path)], name="Test")
@@ -77,13 +77,13 @@ class TestBuildNativeServer:
         self, write_skill, skills_root, monkeypatch, error
     ):
         path = write_skill("alpha")
-        module = types.ModuleType("agentskills_mcp_server")
+        module = types.ModuleType("agentskills_mcp_extension")
 
         async def build(skills, *, name, skill_prompt_shortcuts=False):
             raise error
 
         module.create_mcp_server = build
-        monkeypatch.setitem(sys.modules, "agentskills_mcp_server", module)
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension", module)
 
         with pytest.raises(CliError, match="agentskills inspect PATH --native"):
             await build_server(skills_root, [SkillLocation("alpha", path)], name="Test")

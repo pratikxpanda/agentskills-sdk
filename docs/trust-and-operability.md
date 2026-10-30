@@ -21,7 +21,7 @@ Install `agentskills-core[verification]` for Ed25519 verification through
 `cryptography`. Core still imports without that extra.
 
 ```bash
-pip install "agentskills-core[verification,telemetry]" "agentskills-mcp-server[fs]"
+pip install "agentskills-core[verification,telemetry]" "agentskills-mcp-extension[fs]"
 ```
 
 Publisher tooling captures an immutable complete source and signs

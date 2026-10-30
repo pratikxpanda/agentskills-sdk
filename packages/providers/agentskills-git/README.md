@@ -9,36 +9,51 @@ description: Read Agent Skills from Git repositories at immutable commits.
 Read Agent Skills from a Git repository at a ref resolved to an immutable commit. The provider
 uses Git and delegates skill reads to `agentskills-fs`.
 
-## Availability
+## Install
 
-Added in v0.8.0, this provider resolves a branch, tag, or commit on first access and keeps using
-that commit from its local cache.
-It exposes the repository and resolved commit for source identity, and supports a repository
-subdirectory containing skill directories.
-
-## Requirements
+```bash
+pip install agentskills-git
+```
 
 Python 3.12 or newer and the Git command-line executable must be available on `PATH`.
+The configured repository must already contain valid skill directories. Set `subdirectory`
+when they are beneath a folder such as `skills/` rather than the repository root.
 
 ## Usage
 
 ```python
+import asyncio
 from pathlib import Path
 
-from agentskills_core import SkillRegistry
+from agentskills_core import SkillRegistry, capture_skill
 from agentskills_git import GitSkillProvider
 
-provider = GitSkillProvider(
-    "https://github.com/example/skills.git",
-    "main",
-    Path(".cache/agent-skills"),
-    subdirectory="skills",
-)
-registry = SkillRegistry()
-await registry.register_all(provider)
 
-print(provider.resolved_commit)
+async def main() -> None:
+    provider = GitSkillProvider(
+        "https://github.com/example/skills.git",
+        "main",
+        Path(".cache/agent-skills"),
+        subdirectory="skills",
+    )
+    registry = SkillRegistry()
+    await registry.register_all(provider)
+    print(provider.resolved_commit)
+
+    snapshot = await capture_skill(registry.get_skill("incident-response"))
+    for file in snapshot.files:
+        print(file.path, file.digest)
+
+
+asyncio.run(main())
 ```
+
+Replace the repository URL, ref, and skill ID with your source. The directory layout matches
+the [filesystem provider](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-fs/README.md#expected-directory-layout).
+A branch or tag is resolved on first access. That provider instance continues to use the same
+commit even when the remote ref moves. Construct a new provider with `refresh=True` to fetch
+the ref again. The provider holds a cache lease for its lifetime and releases it through its
+finalizer. There is no public `close` or `aclose` method.
 
 ## Security and limits
 
@@ -48,15 +63,5 @@ configurable size limit per checkout (`max_cache_bytes`, 256 MiB by default) and
 limit (`max_total_cache_bytes`). Least-recently-used inactive checkouts are evicted to stay within
 the total limit. File locks protect active checkouts across processes. Remote authentication uses Git's supported transport
 mechanisms, except credentials from global Git configuration are not loaded by this provider.
-
-Use the shared core snapshot API to capture original files and their SHA-256 digests:
-
-```python
-from agentskills_core import capture_skill
-
-snapshot = await capture_skill(registry.get_skill("incident-response"))
-for file in snapshot.files:
-    print(file.path, file.digest)
-```
 
 Broader Git host compatibility is still being tested.

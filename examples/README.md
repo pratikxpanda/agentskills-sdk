@@ -4,11 +4,11 @@ Native MCP Skills publication and model-free discovery benchmarks.
 
 ## Native Publication
 
-Run from the repository root after `pip install "agentskills-mcp-server[fs]"`:
+Run from the repository root after `pip install "agentskills-mcp-extension[fs]"`:
 
 ```bash
-python -m agentskills_mcp_server --config examples/server-fs.json --check
-python -m agentskills_mcp_server --config examples/server-fs.json
+agentskills-mcp --config examples/server-fs.json --check
+agentskills-mcp --config examples/server-fs.json
 ```
 
 The sample uses the `incident-response` skill under `examples/skills/`. The tools

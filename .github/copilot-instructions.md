@@ -1,15 +1,17 @@
 # Working in this repository
 
-Poetry monorepo. Eight released packages, versioned together. `agentskills-git` is under development for v0.8.
+Poetry monorepo. Eleven packages, versioned together.
 
 | Path | Package |
 | --- | --- |
 | `packages/core/agentskills-core` | Registry, `SkillProvider` ABC, spec validation, snapshots, trust, policy, refresh. Only required dependency is `pyyaml`. |
 | `packages/adapters/agentskills-adapters` | Import common agent instruction formats as native skills |
 | `packages/providers/agentskills-fs` | Local filesystem provider |
-| `packages/providers/agentskills-git` | Git provider, v0.8 work in progress |
+| `packages/providers/agentskills-git` | Commit-pinned Git provider |
 | `packages/providers/agentskills-http` | Static HTTP / CDN provider |
-| `packages/integrations/agentskills-mcp-server` | Native MCP Skills server, MCP SDK 2.2+ |
+| `packages/providers/agentskills-azure` | Azure Blob and Files providers with service-specific extras |
+| `packages/providers/agentskills-oci` | Digest-verified OCI artifact provider |
+| `packages/integrations/agentskills-mcp-extension` | Native MCP Skills server, client, and composition, MCP SDK 2.2+ |
 | `packages/retrieval/agentskills-retrieval` | Query-time skill selection: BM25 and embedding rankers |
 | `packages/tools/agentskills-tools` | `agentskills` command: init, validate, lint, inspect, serve |
 | `packages/testing/agentskills-testing` | Provider conformance suite, `InMemorySkillProvider`, pytest fixtures |
