@@ -81,6 +81,7 @@ jobs:
             packages/providers/agentskills-fs \
             packages/providers/agentskills-git \
             packages/providers/agentskills-http \
+            packages/providers/agentskills-azure-blob \
             packages/integrations/agentskills-mcp-server \
             packages/retrieval/agentskills-retrieval \
             packages/tools/agentskills-tools \
@@ -153,6 +154,13 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: dist/agentskills-http
+          attestations: true
+          skip-existing: true
+
+      - name: agentskills-azure-blob
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/agentskills-azure-blob
           attestations: true
           skip-existing: true
 
