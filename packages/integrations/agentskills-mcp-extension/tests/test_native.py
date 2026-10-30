@@ -34,10 +34,10 @@ async def _revision(client, uri: str) -> str:
 async def test_given_public_factory_when_connected_then_only_native_skills_are_served():
     from mcp import Client
 
-    import agentskills_mcp_server
+    import agentskills_mcp_extension
 
-    assert not hasattr(agentskills_mcp_server, "AgentSkillsMcpContextProvider")
-    server = await agentskills_mcp_server.create_mcp_server([])
+    assert not hasattr(agentskills_mcp_extension, "AgentSkillsMcpContextProvider")
+    server = await agentskills_mcp_extension.create_mcp_server([])
     async with Client(server) as client:
         assert client.server_capabilities.extensions == {"io.modelcontextprotocol/skills": {}}
         assert not (await client.list_tools()).tools
@@ -47,7 +47,7 @@ async def test_given_public_factory_when_connected_then_only_native_skills_are_s
 async def test_given_refresh_when_source_changes_then_manifest_and_bytes_change_together(tmp_path):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     skills = [_skill(tmp_path, name) for name in ("alpha", "beta")]
     events = []
@@ -97,7 +97,7 @@ async def test_given_verified_source_when_outage_then_stale_is_visible_and_revoc
         VerificationError,
         signature_payload,
     )
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     skill = _skill(tmp_path, "alpha")
     snapshot = await capture_skill(skill)
@@ -126,7 +126,7 @@ async def test_given_verified_source_when_outage_then_stale_is_visible_and_revoc
 
 
 async def test_given_remote_helper_without_auth_when_built_then_rejected():
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     server = await create_mcp_server([])
     with pytest.raises(ValueError, match="authorization"):
@@ -142,7 +142,7 @@ async def test_given_known_change_before_outage_when_refreshed_then_stale_is_for
     tmp_path, monkeypatch, change
 ):
     from agentskills_core import ProviderUnavailableError, SkillUnavailableError
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     skills = [_skill(tmp_path, name) for name in ("alpha", "beta")]
     (tmp_path / "alpha" / "extra.bin").write_bytes(b"extra")
@@ -172,7 +172,7 @@ async def test_given_authorized_http_app_when_origin_or_host_is_invalid_then_rej
     from mcp.server.auth.provider import AccessToken
     from mcp.server.auth.settings import AuthSettings
 
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     class Verifier:
         async def verify_token(self, token):
@@ -219,7 +219,7 @@ async def test_given_authorized_http_app_when_origin_or_host_is_invalid_then_rej
 async def test_native_discovery_lookup_and_original_bytes(tmp_path):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     root = tmp_path / "example"
     root.mkdir()
@@ -269,7 +269,7 @@ def _skill(root: Path, skill_id: str, *, name: str | None = None) -> Skill:
 async def test_pagination_and_direct_lookup_are_independent(tmp_path):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     skills = [_skill(tmp_path, name) for name in ("alpha", "beta", "gamma")]
     (tmp_path / "alpha" / "extra.txt").write_bytes(b"supporting file")
@@ -303,7 +303,7 @@ async def test_pagination_and_direct_lookup_are_independent(tmp_path):
 async def test_partial_or_empty_listing_still_allows_direct_lookup(tmp_path, listed_ids):
     from mcp import Client
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     server = await create_mcp_server(
         [_skill(tmp_path, name) for name in ("alpha", "beta")], listed_skill_ids=listed_ids
@@ -318,7 +318,7 @@ async def test_partial_or_empty_listing_still_allows_direct_lookup(tmp_path, lis
 async def test_nested_skills_share_exact_resources_without_duplicate_listing(tmp_path):
     from mcp import Client
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     parent = _skill(tmp_path, "parent")
     child = _skill(tmp_path / "parent", "child")
@@ -344,7 +344,7 @@ async def test_nested_skills_share_exact_resources_without_duplicate_listing(tmp
 
 
 async def test_conflicting_nested_capture_fails_before_serving(tmp_path):
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     parent = _skill(tmp_path, "parent")
     _skill(tmp_path / "parent", "child")
@@ -358,7 +358,7 @@ async def test_conflicting_nested_capture_fails_before_serving(tmp_path):
 
 @pytest.mark.parametrize("extra_parent", [False, True])
 async def test_nested_capture_membership_must_match(tmp_path, extra_parent):
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     parent = _skill(tmp_path, "parent")
     _skill(tmp_path / "parent", "child")
@@ -384,7 +384,7 @@ async def test_nested_capture_membership_must_match(tmp_path, extra_parent):
 async def test_text_is_delivered_as_text_only_when_lossless(tmp_path, name, data, as_text):
     from mcp import Client
 
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     skill = _skill(tmp_path, "alpha")
     (tmp_path / "alpha" / name).write_bytes(data)
@@ -404,7 +404,7 @@ async def test_text_is_delivered_as_text_only_when_lossless(tmp_path, name, data
 async def test_skill_entries_match_the_spec_shape(tmp_path):
     from mcp import Client
 
-    from agentskills_mcp_server import create_mcp_server
+    from agentskills_mcp_extension import create_mcp_server
 
     server = await create_mcp_server([_skill(tmp_path, "alpha")])
     async with Client(server) as client:
@@ -418,7 +418,7 @@ async def test_skill_entries_match_the_spec_shape(tmp_path):
 async def test_canonical_escaped_uris_are_exact_and_do_not_traverse(tmp_path):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     skill = _skill(tmp_path, "alias", name="\u00e9tude")
     (tmp_path / "alias" / "raw #%2F.bin").write_bytes(b"\x00\xff")
@@ -442,7 +442,7 @@ async def test_canonical_escaped_uris_are_exact_and_do_not_traverse(tmp_path):
 async def test_aliases_can_publish_same_name_at_distinct_uris(tmp_path):
     from mcp import Client
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     handles = [_skill(tmp_path, alias, name="shared") for alias in ("one", "two")]
     server = await create_mcp_server(handles)
@@ -467,14 +467,14 @@ async def test_aliases_can_publish_same_name_at_distinct_uris(tmp_path):
     ],
 )
 async def test_invalid_publication_options(options):
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     with pytest.raises(ValueError):
         await create_mcp_server(SkillRegistry(), **options)
 
 
 async def test_publication_bounds_and_lossless_requirement(tmp_path):
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     first = _skill(tmp_path, "first")
     second = _skill(tmp_path, "second")
@@ -495,7 +495,7 @@ async def test_publication_bounds_and_lossless_requirement(tmp_path):
 async def test_empty_registry_and_unsupported_directory_method():
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     server = await create_mcp_server(SkillRegistry())
     async with Client(server) as client:
@@ -514,7 +514,7 @@ async def test_empty_registry_and_unsupported_directory_method():
 async def test_invalid_method_params_use_protocol_errors(method, params):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     server = await create_mcp_server([])
     async with Client(server) as client:
@@ -526,7 +526,7 @@ async def test_invalid_method_params_use_protocol_errors(method, params):
 async def test_native_methods_reject_legacy_protocol_but_resources_remain_ordinary(tmp_path):
     from mcp import Client, MCPError
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     server = await create_mcp_server([_skill(tmp_path, "example")])
     async with Client(server, mode="legacy") as client:
@@ -538,10 +538,10 @@ async def test_native_methods_reject_legacy_protocol_but_resources_remain_ordina
 
 
 def test_native_builder_is_a_lazy_public_export():
-    import agentskills_mcp_server
-    from agentskills_mcp_server.native import create_mcp_server
+    import agentskills_mcp_extension
+    from agentskills_mcp_extension.native import create_mcp_server
 
-    assert agentskills_mcp_server.create_mcp_server is create_mcp_server
+    assert agentskills_mcp_extension.create_mcp_server is create_mcp_server
 
 
 @pytest.mark.parametrize("entrypoint", ["mcp", "tools"])
@@ -569,7 +569,7 @@ async def test_native_cli_stdio_roundtrip(tmp_path, entrypoint):
         arguments = ["-m", "agentskills_tools", "serve", str(tmp_path)]
         expected_uri = "skill://example/SKILL.md"
     else:
-        arguments = ["-m", "agentskills_mcp_server", "--config", str(config_path)]
+        arguments = ["-m", "agentskills_mcp_extension", "--config", str(config_path)]
         expected_uri = "skill://team/example/SKILL.md"
     parameters = StdioServerParameters(
         command=sys.executable,
@@ -614,7 +614,7 @@ async def _native_http_roundtrip(tmp_path, json_response, *, timeout=20):
     import uvicorn
     from mcp import Client
 
-    from agentskills_mcp_server.native import create_mcp_server
+    from agentskills_mcp_extension.native import create_mcp_server
 
     skill = _skill(tmp_path, "example")
     (tmp_path / "example" / "raw.bin").write_bytes(b"\x00\xff\r\n")
@@ -723,19 +723,21 @@ def test_native_cli_closes_owned_providers(tmp_path, monkeypatch, fails):
     import sys
     from unittest.mock import AsyncMock, MagicMock
 
-    import agentskills_mcp_server
-    from agentskills_mcp_server.__main__ import main
+    import agentskills_mcp_extension
+    from agentskills_mcp_extension.__main__ import main
 
     _skill(tmp_path, "example")
     provider = LocalFileSystemSkillProvider(tmp_path)
     close = AsyncMock()
     monkeypatch.setattr(provider, "aclose", close, raising=False)
-    monkeypatch.setattr("agentskills_mcp_server.config._resolve_provider", lambda *args: provider)
+    monkeypatch.setattr(
+        "agentskills_mcp_extension.config._resolve_provider", lambda *args: provider
+    )
     server = MagicMock()
     builder = AsyncMock(
         return_value=server, side_effect=ValueError("capture failed") if fails else None
     )
-    monkeypatch.setattr(agentskills_mcp_server, "create_mcp_server", builder)
+    monkeypatch.setattr(agentskills_mcp_extension, "create_mcp_server", builder)
     config_path = tmp_path / "config.json"
     config_path.write_text(
         json.dumps(

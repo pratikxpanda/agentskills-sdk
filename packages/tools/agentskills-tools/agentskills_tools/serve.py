@@ -30,7 +30,7 @@ async def build_server(
         CliError: If native MCP support is missing or publication fails.
     """
     try:
-        from agentskills_mcp_server import create_mcp_server
+        from agentskills_mcp_extension import create_mcp_server
     except ImportError as exc:
         raise CliError(
             "Native serving requires the MCP server extra and MCP SDK 2.2+. "

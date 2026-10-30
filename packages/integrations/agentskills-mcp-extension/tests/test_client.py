@@ -12,7 +12,7 @@ from mcp import Client
 
 from agentskills_core import Skill
 from agentskills_fs import LocalFileSystemSkillProvider
-from agentskills_mcp_server import (
+from agentskills_mcp_extension import (
     McpSkillIdentity,
     McpSkillReference,
     McpSkillsClient,

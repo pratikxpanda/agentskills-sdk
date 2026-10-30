@@ -3,38 +3,22 @@ title: Git Provider
 description: Read Agent Skills from a Git repository at a resolved commit.
 ---
 
-Added in v0.8.0, the Git provider resolves a configured ref to a commit on first access and
+The Git provider resolves a configured ref to a commit on first access and
 serves skills from that checkout. Git must be installed and available on `PATH`.
 
 The selected repository directory must contain skill directories directly beneath it. Use
 `subdirectory` when skills live below the repository root.
 
-```python
-from pathlib import Path
-
-from agentskills_core import SkillRegistry
-from agentskills_git import GitSkillProvider
-
-provider = GitSkillProvider(
-    "https://github.com/example/skills.git",
-    "main",
-    Path(".cache/agent-skills"),
-    subdirectory="skills",
-)
-registry = SkillRegistry()
-await registry.register_all(provider)
+```bash
+pip install agentskills-git
 ```
 
 The repository is available as `provider.repository`, and the resolved commit is available as
-`provider.resolved_commit` after the first provider operation. Use `capture_skill` to produce the
-shared core snapshot with per-file SHA-256 digests:
-
-```python
-from agentskills_core import capture_skill
-
-snapshot = await capture_skill(registry.get_skill("incident-response"))
-[(file.path, file.digest) for file in snapshot.files]
-```
+`provider.resolved_commit` after the first provider operation. The
+[package guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-git/README.md#usage)
+has a complete async registration and snapshot example. Create a new instance with
+`refresh=True` to refetch a mutable ref. There is no public close method; the cache lease is
+released by the provider's finalizer.
 
 Each checkout defaults to a 256 MiB limit. The cache defaults to 1 GiB total and evicts the
 least-recently-used inactive checkout when it needs space. Active providers in the current process

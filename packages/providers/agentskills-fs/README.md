@@ -1,4 +1,7 @@
-# agentskills-fs
+---
+title: agentskills-fs
+description: Read Agent Skills from a local directory with bounded, byte-preserving file access.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-fs)](https://pypi.org/project/agentskills-fs/)
@@ -23,7 +26,7 @@ skills/
 ├── incident-response/
 │   ├── SKILL.md              # YAML frontmatter + markdown body
 │   ├── references/           # supplementary docs (optional)
-│   ├── scripts/              # executable scripts (optional)
+│   ├── scripts/              # script files, never executed by the SDK (optional)
 │   └── assets/               # diagrams, data files (optional)
 └── another-skill/
     └── SKILL.md
@@ -31,23 +34,44 @@ skills/
 
 ## Usage
 
+Create `skills/incident-response/SKILL.md` before running the example:
+
+```markdown
+---
+name: incident-response
+description: Triage production incidents.
+---
+
+# Incident response
+
+Check service health and identify the affected deployment.
+```
+
 ```python
+import asyncio
 from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 
-provider = LocalFileSystemSkillProvider(Path("./skills"))
-registry = SkillRegistry()
-await registry.register_all(provider)  # every subdirectory holding a SKILL.md
 
-skill = registry.get_skill("incident-response")
-meta = await skill.get_metadata()
-body = await skill.get_body()
-script = await skill.get_script("page-oncall.sh")
+async def main() -> None:
+    provider = LocalFileSystemSkillProvider(Path("./skills"))
+    registry = SkillRegistry()
+    await registry.register_all(provider)
+
+    skill = registry.get_skill("incident-response")
+    print(await skill.get_metadata())
+    print(await skill.get_body())
+
+
+asyncio.run(main())
 ```
 
-Use `registry.register("incident-response", provider)` instead to take one named skill and ignore
-the rest of the folder.
+Use `await registry.register("incident-response", provider)` to register just one named skill.
+The provider has no network client to close. The remaining `await` snippets belong inside an
+async function with a `provider` created as above. Request scripts, assets, and references only
+when those files exist in the skill directory.
 
 Blocking file I/O runs in a worker thread, so a slow or networked filesystem does not stall other coroutines.
 

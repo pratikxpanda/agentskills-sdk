@@ -1,4 +1,7 @@
-# agentskills-http
+---
+title: agentskills-http
+description: Read skills from static HTTP hosts with explicit manifests and network controls.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-http)](https://pypi.org/project/agentskills-http/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-http)](https://pypi.org/project/agentskills-http/)
@@ -16,7 +19,7 @@ pip install agentskills-http
 
 Requires Python 3.12 or newer. Installs `agentskills-core`, `httpx`, `httpcore`, and `pyyaml`.
 
-v0.7 defaults to public-network destinations only. DNS answers are validated
+Connections default to public-network destinations only. DNS answers are validated
 at connection time and the connection is pinned to an approved IP. Redirects
 are rejected and environment proxies are not inherited. Internal hosts require
 `allow_private_network=True`. Use `require_tls=True` for production sources.
@@ -37,18 +40,33 @@ https://cdn.example.com/skills/
 
 ## Usage
 
+Publish a valid `SKILL.md` beneath each skill ID in the layout above. Replace the example
+URL and skill ID with yours. Reading a known skill does not require an `index.json`.
+
 ```python
+import asyncio
+
 from agentskills_core import SkillRegistry
 from agentskills_http import HTTPStaticFileSkillProvider
 
-async with HTTPStaticFileSkillProvider("https://cdn.example.com/skills") as provider:
+BASE = "https://cdn.example.com/skills"
+
+
+async def main() -> None:
+  async with HTTPStaticFileSkillProvider(BASE, require_tls=True) as provider:
     registry = SkillRegistry()
     await registry.register("incident-response", provider)
-
     skill = registry.get_skill("incident-response")
-    meta = await skill.get_metadata()
-    body = await skill.get_body()
+    print(await skill.get_metadata())
+    print(await skill.get_body())
+
+
+asyncio.run(main())
 ```
+
+The remaining async snippets belong inside an async function. `BASE` is your skill-root URL.
+Use the context manager above, or call `await provider.aclose()` in `finally`, for every
+provider you create. Create a registry before snippets that register discovered skills.
 
 ### Custom Headers
 
@@ -57,11 +75,14 @@ Pass authentication or other headers:
 ```python
 from agentskills_http import HTTPStaticFileSkillProvider
 
-provider = HTTPStaticFileSkillProvider(
+async with HTTPStaticFileSkillProvider(
     "https://cdn.example.com/skills",
     headers={"Authorization": "Bearer <token>"},
-)
+) as provider:
+  print(await provider.get_body("incident-response"))
 ```
+
+Replace `<token>` with a credential supplied by your deployment. Do not commit credentials.
 
 ### Bring Your Own Client
 
@@ -71,11 +92,11 @@ Supply a pre-configured `httpx.AsyncClient` for full control over timeouts, prox
 import httpx
 from agentskills_http import HTTPStaticFileSkillProvider
 
-client = httpx.AsyncClient(timeout=30, headers={"Authorization": "Bearer <token>"})
-provider = HTTPStaticFileSkillProvider(
-  "https://cdn.example.com/skills", client=client, allow_private_network=True
-)
-# caller is responsible for closing the client
+async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
+    async with HTTPStaticFileSkillProvider(
+        "https://cdn.example.com/skills", client=client, allow_private_network=True
+    ) as provider:
+        print(await provider.get_body("incident-response"))
 ```
 
 > **Note:** `client` and `headers` are mutually exclusive. Configure headers on the client directly when providing your own.
@@ -223,7 +244,7 @@ That sends `If-None-Match` / `If-Modified-Since` on every access and reuses the 
 | `401` / `403` | `AgentSkillsError` | No |
 | Other `4xx`, oversized responses, invalid `Content-Length` | `AgentSkillsError` | No |
 
-All exceptions inherit from `AgentSkillsError`. `ProviderUnavailableError` is a subclass of `SkillUnavailableError`, so existing handlers keep working. It is the only failure that verified stale serving in `agentskills-mcp-server` may cover.
+All exceptions inherit from `AgentSkillsError`. `ProviderUnavailableError` is a subclass of `SkillUnavailableError`, so existing handlers keep working. It is the only failure that verified stale serving in `agentskills-mcp-extension` may cover.
 
 The split between `SkillNotFoundError` and `SkillUnavailableError` is the point of the taxonomy: a `503` means the skill may well exist and the same request could succeed in a moment, whereas a `404` means it is gone. Collapsing both into "not found" turns a retryable blip into a permanent-looking failure, and nothing downstream can tell the difference.
 

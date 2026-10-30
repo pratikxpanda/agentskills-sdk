@@ -1,9 +1,9 @@
 ---
-title: agentskills-mcp-server
+title: agentskills-mcp-extension
 description: Native MCP Skills publication and origin-preserving client helpers.
 ---
 
-Serve the official MCP Skills extension with immutable, lossless resources.
+Publish and consume the official MCP Skills extension with immutable, lossless resources.
 
 ## Native Skills Only
 
@@ -17,7 +17,7 @@ call the Skills methods. See the
 ## Install
 
 ```bash
-pip install "agentskills-mcp-server[fs]"
+pip install "agentskills-mcp-extension[fs]"
 ```
 
 The `[http]` extra adds the HTTP provider. Publisher verification needs
@@ -27,13 +27,17 @@ when a host framework pins a different MCP SDK version.
 
 ## Serve a Folder
 
+Prepare `skills/incident-response/SKILL.md` with valid `name` and `description` frontmatter.
+The [filesystem guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-fs/README.md#usage)
+includes a complete sample skill. The Python example publishes that folder over stdio:
+
 ```python
 import asyncio
 from pathlib import Path
 
 from agentskills_core import Skill
 from agentskills_fs import LocalFileSystemSkillProvider
-from agentskills_mcp_server import create_mcp_server
+from agentskills_mcp_extension import create_mcp_server
 
 provider = LocalFileSystemSkillProvider(Path("./skills"))
 server = asyncio.run(create_mcp_server([Skill("incident-response", provider)]))
@@ -60,36 +64,62 @@ and authenticated remote HTTP deployment.
 
 ## Consume Skills
 
-Wrap an initialized official MCP client session to list manifests without reading skill bodies.
-Keep the session, transport, credentials, selection, and approval under host control:
+Save the configuration example below as `server.json` and prepare its filesystem skill folder.
+Activate the environment where this package is installed so `agentskills-mcp` is on `PATH`.
+This example uses the official SDK to start a stdio subprocess, create a session, and close it
+when finished. `McpSkillsClient` wraps that session and leaves transport ownership with the host:
 
 ```python
-from agentskills_mcp_server import McpSkillsClient
+import asyncio
+import os
 
-client = McpSkillsClient(session, origin="incident-runbooks")
-skills = await client.list_skills()
-skill = await client.get_skill(skills[0].identity.uri)
-body_resource = next(
-  item for item in skill.manifest["resources"] if item["uri"] == skill.identity.uri
-)
-body = await client.read_resource(skill, body_resource["uri"])
+from mcp import Client, StdioServerParameters
+
+from agentskills_mcp_extension import McpSkillsClient
+
+
+async def main() -> None:
+  parameters = StdioServerParameters(
+    command="agentskills-mcp",
+    args=["--config", "server.json"],
+    env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
+  )
+  async with Client(parameters) as connection:
+    client = McpSkillsClient(connection.session, origin="incident-runbooks")
+    skills = await client.list_skills()
+    if not skills:
+      print("No skills published")
+      return
+    skill = await client.get_skill(skills[0].identity.uri)
+    print(await client.read_resource(skill, skill.identity.uri))
+
+
+asyncio.run(main())
 ```
+
+The example forwards `PYTHONPATH` so a subprocess can find checkout-based packages. With the
+package installed in the selected Python environment, that `env` argument can be omitted.
 
 References retain both the supplied origin identity and canonical `skill://` URI. Reads verify
 the manifest's size and SHA-256 digest. The client does not implement `SkillProvider` or insert
 remote content into a `SkillRegistry`, since registration validates by reading bodies eagerly.
 It also keeps no shared response cache, so separate server origins remain isolated.
 
-Compose multiple sources on the client side when several servers use the same skill URI:
+To compose two sources, keep both SDK `Client` connections open using the pattern above and
+pass them to this helper. The caller creates and closes the connections:
 
 ```python
-from agentskills_mcp_server import McpSkillsCollection, McpSkillsClient
+from mcp import Client
 
-catalog = McpSkillsCollection([
-  McpSkillsClient(runbooks_session, origin="incident-runbooks"),
-  McpSkillsClient(security_session, origin="security-guides"),
-])
-references = await catalog.list_skills()
+from agentskills_mcp_extension import McpSkillReference, McpSkillsCollection, McpSkillsClient
+
+
+async def collect_skills(runbooks: Client, security: Client) -> list[McpSkillReference]:
+    catalog = McpSkillsCollection([
+        McpSkillsClient(runbooks.session, origin="incident-runbooks"),
+        McpSkillsClient(security.session, origin="security-guides"),
+    ])
+    return await catalog.list_skills()
 ```
 
 Identity remains `(origin, URI)`. The collection does not rehost or forward content, which avoids
@@ -105,9 +135,8 @@ by default and does not grant tool permissions:
 server = await create_mcp_server(skills, skill_prompt_shortcuts=True)
 ```
 
-Set `"skill_prompt_shortcuts": true` in server config or pass `--skill-prompts` to
-`agentskills serve`. The host remains responsible for prompt approval and whether the returned
-skill content is used.
+Set `"skill_prompt_shortcuts": true` in server config to enable the same prompt. The host
+remains responsible for prompt approval and whether the returned skill content is used.
 
 ## Configuration
 
@@ -121,9 +150,16 @@ skill content is used.
 ```
 
 ```bash
-python -m agentskills_mcp_server --config server.json --check
-python -m agentskills_mcp_server --config server.json
-python -m agentskills_mcp_server --config server.json --transport streamable-http
+agentskills-mcp --config server.json --check
+agentskills-mcp --config server.json
+agentskills-mcp --config server.json --transport streamable-http
+```
+
+The distribution installs the short `agentskills-mcp` command. The Python module entry point
+is equivalent when you need to select an interpreter explicitly:
+
+```bash
+python -m agentskills_mcp_extension --config server.json --check
 ```
 
 JSON and YAML are supported. `${VAR}` placeholders resolve from the environment.
@@ -155,16 +191,8 @@ advertised. Nested skills require explicit publication and separate host approva
 Listed subsets never restrict direct lookup of a published skill. Supply only
 skills authorized for the server audience.
 
-The tools CLI uses native publication by default:
-
-```bash
-agentskills inspect ./skills --native
-agentskills serve ./skills --check
-agentskills serve ./skills --transport stdio
-```
-
-`--check` verifies local construction, manifests, and provider readiness without
-listening. It does not certify transport, authentication, or host behavior.
+The package-specific `--check` option verifies local construction, manifests, and provider
+readiness without listening. It does not certify transport, authentication, or host behavior.
 
 ## Client Support and Boundaries
 

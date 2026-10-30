@@ -2,12 +2,14 @@
 
 Usage::
 
-    python -m agentskills_mcp_server --config server.json
-    python -m agentskills_mcp_server --config server.yaml
-    python -m agentskills_mcp_server --config server.json --transport streamable-http
+    agentskills-mcp --config server.json
+    agentskills-mcp --config server.yaml
+    agentskills-mcp --config server.json --transport streamable-http
+
+The equivalent Python module entry point is ``python -m agentskills_mcp_extension``.
 
 The config file is a JSON or YAML document conforming to
-:class:`~agentskills_mcp_server.config.ServerConfig`.
+:class:`~agentskills_mcp_extension.config.ServerConfig`.
 
 Example ``server.json``::
 
@@ -38,8 +40,8 @@ out of the config file.
 MCP client integration (stdio transport)::
 
     {
-        "command": "python",
-        "args": ["-m", "agentskills_mcp_server", "--config", "server.json"]
+        "command": "agentskills-mcp",
+        "args": ["--config", "server.json"]
     }
 
 MCP client integration (streamable-http transport)::
@@ -63,7 +65,7 @@ from pathlib import Path
 def main() -> None:
     """Parse CLI arguments, load config, and start the MCP server."""
     parser = argparse.ArgumentParser(
-        prog="agentskills_mcp_server",
+        prog="agentskills-mcp",
         description="Start an Agent Skills MCP server from a config file.",
     )
     parser.add_argument(
@@ -114,7 +116,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Resolve ${VAR} environment variable placeholders
     # ------------------------------------------------------------------
-    from agentskills_mcp_server.config import resolve_env_vars
+    from agentskills_mcp_extension.config import resolve_env_vars
 
     data = resolve_env_vars(data)
 
@@ -122,8 +124,8 @@ def main() -> None:
     # Build and run
     # ------------------------------------------------------------------
     from agentskills_core import Skill
-    from agentskills_mcp_server import create_mcp_server
-    from agentskills_mcp_server.config import ServerConfig, _resolve_provider
+    from agentskills_mcp_extension import create_mcp_server
+    from agentskills_mcp_extension.config import ServerConfig, _resolve_provider
 
     config = ServerConfig(**data)
 

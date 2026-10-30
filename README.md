@@ -1,6 +1,6 @@
 ---
 title: Agent Skills SDK
-description: Python packages for portable skill distribution and native MCP delivery.
+description: Python packages for sourcing, managing, and distributing Agent Skills.
 ---
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
@@ -12,7 +12,8 @@ description: Python packages for portable skill distribution and native MCP deli
 
 **Agent Skills** is an [open format](https://agentskills.io/specification) for giving AI agents new capabilities and expertise. Originally developed by Anthropic, the format is now supported by Claude Code, Cursor, GitHub, VS Code, Gemini CLI, and many others.
 
-This project helps you **integrate skills into your own agents**. Retrieve skills from the filesystem, Git, Azure Blob Storage, OCI artifacts, a static HTTP host, or your own provider, validate them against the spec, and publish them to MCP hosts through the official Skills extension.
+Read skills from local or remote sources through a common Python API. Use them directly in your
+application, or distribute them to compatible hosts through the optional MCP extension.
 
 > **Note:** Requires Python 3.12 or newer. Tested against 3.12, 3.13, and 3.14.
 
@@ -31,39 +32,25 @@ All packages are versioned together. Badges reflect published PyPI releases and 
 | [`agentskills-http`](packages/providers/agentskills-http/README.md) | **Provider**: read skills from a static HTTP server or CDN. | [![PyPI](https://img.shields.io/pypi/v/agentskills-http?label=)](https://pypi.org/project/agentskills-http/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-http?label=)](https://pepy.tech/project/agentskills-http) |
 | [`agentskills-azure`](packages/providers/agentskills-azure/README.md) | **Provider**: Azure Blob Storage and Azure Files SMB shares through the `[blob]` and `[files]` extras. | [![PyPI](https://img.shields.io/pypi/v/agentskills-azure?label=)](https://pypi.org/project/agentskills-azure/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-azure?label=)](https://pepy.tech/project/agentskills-azure) |
 | [`agentskills-oci`](packages/providers/agentskills-oci/README.md) | **Provider**: fetch skill files on demand from OCI artifacts and verify their digests. | [![PyPI](https://img.shields.io/pypi/v/agentskills-oci?label=)](https://pypi.org/project/agentskills-oci/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-oci?label=)](https://pepy.tech/project/agentskills-oci) |
-| [`agentskills-mcp-server`](packages/integrations/agentskills-mcp-server/README.md) | **MCP integration**: publish native Skills, consume remote skills, and compose clients across origins. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-server?label=)](https://pypi.org/project/agentskills-mcp-server/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-server?label=)](https://pepy.tech/project/agentskills-mcp-server) |
+| [`agentskills-mcp-extension`](packages/integrations/agentskills-mcp-extension/README.md) | **MCP integration**: publish native Skills, consume remote skills, and compose clients across origins. | [![PyPI](https://img.shields.io/pypi/v/agentskills-mcp-extension?label=)](https://pypi.org/project/agentskills-mcp-extension/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-mcp-extension?label=)](https://pepy.tech/project/agentskills-mcp-extension) |
 | [`agentskills-retrieval`](packages/retrieval/agentskills-retrieval/README.md) | **Selection**: rank skills for a query with BM25 or embedding-based retrieval. | [![PyPI](https://img.shields.io/pypi/v/agentskills-retrieval?label=)](https://pypi.org/project/agentskills-retrieval/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-retrieval?label=)](https://pepy.tech/project/agentskills-retrieval) |
 | [`agentskills-tools`](packages/tools/agentskills-tools/README.md) | **Tooling**: scaffold, validate, lint, inspect, evaluate, lock, and serve skills. | [![PyPI](https://img.shields.io/pypi/v/agentskills-tools?label=)](https://pypi.org/project/agentskills-tools/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-tools?label=)](https://pepy.tech/project/agentskills-tools) |
 | [`agentskills-testing`](packages/testing/agentskills-testing/README.md) | **Tooling**: provider conformance checks, pytest fixtures, and an in-memory provider. | [![PyPI](https://img.shields.io/pypi/v/agentskills-testing?label=)](https://pypi.org/project/agentskills-testing/) | [![Downloads](https://img.shields.io/pepy/dt/agentskills-testing?label=)](https://pepy.tech/project/agentskills-testing) |
 
-For native MCP publication, install the server with a provider:
-
-```bash
-pip install "agentskills-mcp-server[fs]"
-```
-
-For custom Python hosts, use `agentskills-core` with a provider. To author or validate skill
-folders, use `agentskills-tools`.
-
 ## How It Works
 
-Publish complete skill files through native MCP, or consume remote skills with the
-origin-bound client helpers. Native delivery requires MCP SDK 2.2+ and protocol 2026-07-28.
-The [distribution contracts](docs/issues/v0.8.md) cover Git locks, MCP composition, and cloud
-providers.
-Review the [breaking changes](docs/mcp-migration.md) before upgrading from v0.6.
-Publisher verification, content policy, controlled refresh,
-and network hardening are described in the
-[trust and operability guide](docs/trust-and-operability.md).
+The SDK separates skill sources from how applications consume them:
 
-1. Capture complete immutable file sets from filesystem, Git, HTTP, Azure Blob, or OCI sources.
-2. Discover metadata and manifests with `skills/list`, or look up a URI with `skills/get`.
-3. Read original files through canonical `skill://` resources only when needed.
+1. Providers read skill content from the filesystem, Git, HTTP, Azure, OCI, or your own backend.
+  Each provider implements the same interface, so application code can change sources without
+  changing how it reads a skill.
+2. Core provides `Skill` and `SkillRegistry` for registration, validation, and access to metadata,
+  instructions, and supporting files. Python applications can use these APIs directly.
+3. The optional MCP extension is a distribution layer. It publishes provider-backed skills to
+  remote MCP hosts and supplies clients for reading skills from other servers.
 
-Hosts own selection, digest verification, approval, context injection, and execution
-policy. A tools-only MCP client is not a native Skills host. Discovery never eagerly
-injects a skill, even when only one is available. Server-provided hashes establish
-byte consistency, not authorship or safety.
+Providers and core work without MCP. Your application decides which skill to select, when to
+load its content, and whether to use it. The SDK does not inject prompts or execute skill scripts.
 
 ## What a Skill Looks Like
 
@@ -86,107 +73,53 @@ my-skills/
 ```markdown
 ---
 name: incident-response
-description: Standard operating procedures for production incident management including severity classification, escalation paths, communication protocols, and postmortem processes.
+description: Triage and mitigate production incidents.
 ---
 
 # Incident Response
 
-This skill provides structured guidance for handling production incidents.
-
-## When to Declare an Incident
-
-- A production service is degraded or unavailable for users
-- Data integrity may be compromised
-...
+Check service health, identify the affected deployment, and assess customer impact.
 ```
 
 The `description` is part of discovery metadata. It helps hosts select a skill before loading
 its body. Describe the situations where the skill applies.
-
-### Versioning a skill
-
-`version` is an **optional** field. When present it must be a quoted [semver](https://semver.org)
-string, and it appears in the skill catalog so an agent can tell versions apart:
-
-```yaml
----
-name: incident-response
-description: Standard operating procedures for production incident management.
-version: "1.2.0"
----
-```
-
-Quote it. Unquoted YAML reads `1.0` as a number and `2024-01-15` as a date, and registration will
-reject both. An invalid version fails registration rather than being silently ignored: a version
-nobody can rely on is worse than none.
-
-`version` is **not** part of the upstream Agent Skills specification. It is supported here because
-pinning and drift detection are not possible without it; the field is being raised upstream rather
-than kept as a permanent proprietary extension.
 
 See [examples/skills/incident-response/](examples/skills/incident-response/) for a complete skill
 with references, scripts, and assets.
 
 ## Quick Start
 
+Install core and the filesystem provider. MCP is not required for this example:
+
+```bash
+pip install agentskills-core agentskills-fs
+```
+
+Create `my-skills/incident-response/SKILL.md` with the content shown above, then run:
+
 ```python
 import asyncio
 from pathlib import Path
+
 from agentskills_core import SkillRegistry
 from agentskills_fs import LocalFileSystemSkillProvider
 
-async def main():
+
+async def main() -> None:
+    provider = LocalFileSystemSkillProvider(Path("my-skills"))
     registry = SkillRegistry()
+    await registry.register_all(provider)
 
-    # Registers every skill folder under my-skills/, no IDs to hard-code.
-    await registry.register_all(LocalFileSystemSkillProvider(Path("my-skills")))
-
-    # What the agent sees on every turn: names, descriptions, and where each
-    # skill does and does not apply. Nothing more.
     print(await registry.get_skills_catalog(format="xml"))
-
-    # What it fetches only after deciding the skill is relevant.
     skill = registry.get_skill("incident-response")
     print(await skill.get_body())
+
 
 asyncio.run(main())
 ```
 
-These are framework-neutral core APIs for custom hosts. They are not MCP tools
-and do not inject content automatically. For native server setup and progressive
-file reads, see the [MCP server guide](packages/integrations/agentskills-mcp-server/README.md).
-
-For hosts that include a registry catalog in prompts, a larger registry means more metadata
-in context. Filter the catalog and limit its size:
-
-```python
-catalog = await registry.get_skills_catalog(
-    tags=["incident"],              # any-of match on metadata.tags
-    exclude=["deprecated-runbook"], # deny-list of skill IDs
-    max_chars=8000,                 # hard ceiling on the returned string
-)
-```
-
-`max_chars` drops whole entries from the end until the result fits, and says so in the output:
-the XML root gains `truncated`, `shown` and `total` attributes. A catalog that shrinks without
-saying so makes agent behaviour non-reproducible.
-
-A description says what a skill is for, and nothing about where it stops. Two optional
-frontmatter fields say the rest:
-
-```yaml
----
-name: incident-response
-description: Triage and mitigate production incidents.
-when_to_use:
-  - A production service is degraded or down
-when_not_to_use:
-  - Debugging a failing test locally
----
-```
-
-Both are capped at five entries of 200 characters and appear in the catalog by default.
-Pass `selection_hints=False` to leave them out.
+Registration validates the skill. The example prints its catalog metadata and reads its body
+through the common core API. It does not start a server or call a model.
 
 ## Documentation
 
@@ -196,30 +129,6 @@ Full guides and API docs are published at:
 
 The site includes package-by-package API reference generated from docstrings,
 plus roadmap and ADR pages.
-
-## More Guides
-
-- Trust and operability: [publisher verification, content policy, refresh, and network controls](docs/trust-and-operability.md)
-- Breaking changes in v0.7: [migration guide](docs/mcp-migration.md)
-- MCP server and client: [packages/integrations/agentskills-mcp-server/README.md](packages/integrations/agentskills-mcp-server/README.md)
-- Skill selection: [packages/retrieval/agentskills-retrieval/README.md](packages/retrieval/agentskills-retrieval/README.md)
-
-## Command Line
-
-For skill authoring:
-
-```bash
-pip install agentskills-tools
-agentskills validate ./skills
-agentskills lint ./skills
-agentskills inspect ./skills --cost
-agentskills lock create https://github.com/acme/skills.git --ref main
-```
-
-Git lock commands require `agentskills-tools` v0.8.0 or newer.
-
-See [packages/tools/agentskills-tools/README.md](packages/tools/agentskills-tools/README.md)
-for full command and JSON schema details.
 
 ## GitHub Action
 
@@ -239,12 +148,6 @@ jobs:
           path: ./skills
           fail-on-lint: false
 ```
-
-## Custom providers and testing
-
-- Provider contract and exceptions: `agentskills-core`
-- Conformance suite and in-memory provider: `agentskills-testing`
-- Development/test commands: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ## Security
 

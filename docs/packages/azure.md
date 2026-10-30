@@ -16,16 +16,8 @@ Grant the provider's Azure identity read access to the
 target container. The provider uses `DefaultAzureCredential` unless you pass an
 asynchronous credential explicitly.
 
-```python
-from agentskills_azure.blob import AzureBlobSkillProvider
-
-async with AzureBlobSkillProvider(
-    "https://account.blob.core.windows.net",
-    "skills",
-    prefix="published/",
-) as provider:
-    skill_ids = await provider.discover()
-```
+The [Blob quick start](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-azure/README.md#blob-storage)
+shows the required uploaded directory layout, authentication setup, and complete async usage.
 
 The provider supports discovery, resource listing, and complete raw-file access.
 Reads are bounded by `max_file_bytes`, and canonical paths are returned relative
@@ -37,17 +29,8 @@ to each skill directory.
 pip install "agentskills-azure[files]"
 ```
 
-```python
-from agentskills_azure.files import AzureFilesSkillProvider
-
-async with AzureFilesSkillProvider(
-    "https://account.file.core.windows.net",
-    "skills",
-    prefix="published/",
-    token_intent="backup",
-) as provider:
-    skill_ids = await provider.discover()
-```
+The [Files quick start](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-azure/README.md#azure-files)
+shows the SMB directory layout and complete async usage with explicit backup intent.
 
 The provider uses async FileREST access to SMB shares. Token credentials require the explicit
 `token_intent="backup"` opt-in, which bypasses file and directory ACLs subject to Azure RBAC.

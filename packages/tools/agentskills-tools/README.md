@@ -22,6 +22,15 @@ pip install "agentskills-tools[serve]"
 
 ## Commands
 
+For a complete local workflow, run these from the directory where you want `skills/` created:
+
+```bash
+agentskills init incident-response --path ./skills
+agentskills validate ./skills
+agentskills lint ./skills
+agentskills inspect ./skills --native
+```
+
 Every command takes either one skill folder or a folder of skill folders: the
 one containing `SKILL.md`, or the one containing directories that do.
 
@@ -112,9 +121,8 @@ Warnings do not fail the command unless `--strict` is passed.
 agentskills inspect ./skills/incident-response
 ```
 
-Prints the metadata, the resource list, the catalog entry the agent sees on
-every turn, and the body it loads on demand, each with an estimated token
-cost, so you can see the price before shipping.
+Prints metadata, available resources, a catalog entry, and the body with estimated token
+costs. These are inspection results, not evidence that a host injected or loaded the skill.
 
 #### Native manifest inspection
 
@@ -162,11 +170,9 @@ skills/incident-response  (incident-response)
 1 skill, 66 tokens charged every turn
 ```
 
-The right-hand column is the point. A catalog entry is injected on **every
-turn** whether or not the skill is ever used; a body is charged **once per
-load**; a reference is charged **only if the agent goes and reads it**. Authors
-reliably get this backwards, trimming a body while ignoring a description that
-costs a hundred tokens a turn forever.
+The report models a host that includes catalog metadata on each turn and loads bodies and
+resources on demand. Its `every turn` labels describe that cost model. Actual context placement,
+loading frequency, tokenizer, and billing depend on the host and model.
 
 Sections do not nest (a heading owns its own text up to the next heading of
 any level) so the parts sum to the body exactly. Depth shows in the indent
@@ -207,9 +213,9 @@ depends on the machine it ran on.
 
 ### `eval`
 
-A skill is a prompt, and nobody measures whether a given prompt makes an agent
-better. Authors ship on intuition, reviewers approve on prose quality, and
-editing a body can degrade task success with no signal anywhere.
+`eval` compares each configured case with and without a skill body. It requires a model client
+you provide and may make billable requests. A result measures your cases and model configuration,
+not general skill quality.
 
 Write cases beside the skill, in `evals/` inside the skill folder:
 
@@ -260,7 +266,8 @@ without it is not earning its tokens.
 `--model` takes `module:factory`, a dotted path to a zero-argument callable
 returning a client. Nothing in this project depends on a provider SDK, and a
 ten-line adapter is a smaller ask than an opinion about which vendor you should
-install:
+install. For the OpenAI example, install `openai` and configure `OPENAI_API_KEY` outside your
+code. Save the factory in an importable module such as `mypkg.evals`:
 
 ```python
 # mypkg/evals.py
@@ -271,23 +278,25 @@ from agentskills_tools.evals import ModelResponse
 class OpenAIModel:
     model_id = "gpt-4o"
 
-    def __init__(self) -> None:
-        self._client = AsyncOpenAI()
-
     async def complete(self, *, system: str, prompt: str) -> ModelResponse:
-        reply = await self._client.chat.completions.create(
-            model=self.model_id,
-            temperature=0,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
+      async with AsyncOpenAI() as client:
+        reply = await client.chat.completions.create(
+          model=self.model_id,
+          temperature=0,
+          messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+          ],
         )
         return ModelResponse(reply.choices[0].message.content or "")
 
 
 openai_client = OpenAIModel
 ```
+
+This example closes the SDK client after each request. Production adapters can manage a reused
+client explicitly. Install your factory module or put it on `PYTHONPATH` before using
+`--model mypkg.evals:openai_client`. No OpenAI calls are made by validation or package tests.
 
 `model_id` is part of every report and of the cache key, because a pass rate
 without the model that produced it is not a measurement. Set temperature to
@@ -311,16 +320,19 @@ turns that off; `--cache-dir` moves it.
 ### `serve`
 
 ```bash
+pip install "agentskills-tools[serve]"
+agentskills inspect ./skills --native
+agentskills serve ./skills --check
 agentskills serve ./skills --transport stdio
 ```
 
 Runs the MCP server over a folder of skills without hand-writing a config
 file. For anything beyond a single filesystem root (HTTP providers,
 per-skill options, environment placeholders) use
-[agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server)
+[agentskills-mcp-extension](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-extension)
 with a `server.json`.
 
-Version 0.7 serves native Skills only:
+Serving uses native Skills only:
 
 ```bash
 agentskills serve ./skills --check
@@ -339,10 +351,19 @@ to the per-skill limits above. Use `--max-file-bytes` to apply the same per-file
 bound as an earlier inspection. Use the config-driven server for other catalog
 limits, aliases, or HTTP providers.
 
+Enable the optional, user-invoked `use-skill` MCP prompt with:
+
+```bash
+agentskills serve ./skills --skill-prompts
+```
+
+The prompt is disabled by default, resolves a canonical skill URI, and grants no tool
+permissions. The host still owns approval and use of the returned content.
+
 The local HTTP endpoint is `http://127.0.0.1:8000/mcp`. Do not expose that listener
 directly to an untrusted network. Preflight does not exercise the chosen transport,
 authentication, or host behavior. See the
-[MCP deployment boundaries](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/integrations/agentskills-mcp-server/README.md#client-support-and-boundaries)
+[MCP deployment boundaries](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/integrations/agentskills-mcp-extension/README.md#client-support-and-boundaries)
 before publishing a remote endpoint.
 
 ## Exit codes

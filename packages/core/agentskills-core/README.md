@@ -1,4 +1,7 @@
-# agentskills-core
+---
+title: agentskills-core
+description: Provider contracts, skill registration, validation, snapshots, and publication policies.
+---
 
 [![PyPI](https://img.shields.io/pypi/v/agentskills-core)](https://pypi.org/project/agentskills-core/)
 [![Python 3.12 | 3.13](https://img.shields.io/pypi/pyversions/agentskills-core)](https://pypi.org/project/agentskills-core/)
@@ -62,6 +65,45 @@ Optional submodules, imported by path rather than from the package root:
 | `agentskills_core.telemetry` | `DisclosureEvent`, `emit_event`, and `OpenTelemetryObserver` |
 
 ## Usage
+
+### Quick Start
+
+This example uses the filesystem provider, which is a separate package:
+
+```bash
+pip install agentskills-core agentskills-fs
+```
+
+Create `skills/incident-response/SKILL.md` with valid `name` and `description` frontmatter.
+The [filesystem guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-fs/README.md#usage)
+includes the directory layout and a sample file.
+
+```python
+import asyncio
+from pathlib import Path
+
+from agentskills_core import SkillRegistry, capture_skill
+from agentskills_fs import LocalFileSystemSkillProvider
+
+
+async def main() -> None:
+  provider = LocalFileSystemSkillProvider(Path("./skills"))
+  registry = SkillRegistry()
+  await registry.register_all(provider)
+  print(await registry.get_skills_catalog(format="xml"))
+
+  skill = registry.get_skill("incident-response")
+  print(await skill.get_body())
+  snapshot = await capture_skill(skill)
+  print(snapshot.get_file("SKILL.md").data)
+
+
+asyncio.run(main())
+```
+
+The following API snippets belong inside an async function with a registered `registry` and
+`provider`, as above. Resource and section examples require those files and headings to exist.
+Core returns data to your application. It does not inject prompts, run scripts, or start MCP.
 
 ### Registering Skills
 
@@ -202,36 +244,39 @@ builder also enforces the native 512-file and 16 MiB file-set limits.
 
 This helper does not start a protocol server or establish host approval. Use
 `create_mcp_server` from
-[agentskills-mcp-server](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-server#native-skills-only)
+[agentskills-mcp-extension](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-extension#native-skills-only)
 for protocol delivery.
 
 ### Verifying, Transforming, and Refreshing Publications
 
 These optional modules sit between capture and delivery. They are what `create_mcp_server` uses, and they are available to any host that publishes skills.
 
+Supply a provider, a trusted publisher's raw Ed25519 public key, and a detached signature
+for that exact skill snapshot and origin. This helper does not generate keys or signatures:
+
 ```python
-from agentskills_core import Skill, capture_skill
-from agentskills_core.policy import ContentDecision, publish_snapshot
+from agentskills_core import Skill, SkillProvider, SkillSnapshot, capture_skill
+from agentskills_core.policy import publish_snapshot
 from agentskills_core.refresh import SnapshotCatalog
 from agentskills_core.trust import DetachedSignature, TrustPolicy
 
-trust = TrustPolicy("publisher:operations", {"release-key": public_key_bytes})
-proof = DetachedSignature("release-key", signature_bytes)
 
-def policy(snapshot):
-    return publish_snapshot(
-        snapshot,
-        trust=trust,
-        proof=proof,
-        hooks=[lambda file: ContentDecision()],  # reject, redact, or annotate here
-    )
+async def verified_catalog(
+  provider: SkillProvider, public_key_bytes: bytes, signature_bytes: bytes
+) -> SnapshotCatalog:
+  trust = TrustPolicy("publisher:operations", {"release-key": public_key_bytes})
+  proof = DetachedSignature("release-key", signature_bytes)
 
-async def load():
+  async def load() -> list[SkillSnapshot]:
     return [await capture_skill(Skill("incident-response", provider))]
 
-catalog = SnapshotCatalog(load, policy, max_stale_age=0)
-await catalog.refresh()      # stage everything, then swap atomically
-catalog.current.publications  # each has a delivered revision and source identity
+  catalog = SnapshotCatalog(
+    load,
+    lambda snapshot: publish_snapshot(snapshot, trust=trust, proof=proof),
+    max_stale_age=0,
+    )
+  await catalog.refresh()
+  return catalog
 ```
 
 `TrustPolicy.verify` checks a detached Ed25519 signature over the origin, skill ID, version, and a revision that covers every path and byte, so a renamed, added, removed, or changed file fails. It needs the `verification` extra. Hooks run after verification and before the manifest is built, so a redacted file gets a new revision while the source evidence is kept on `Publication.source_identity`. `SnapshotCatalog` replaces the whole catalog at once and never serves a stale snapshot unless `max_stale_age` is set and the failure is a `ProviderUnavailableError`.
@@ -283,11 +328,12 @@ Both are optional lists of at most five non-empty strings of at most 200 charact
 </skill>
 ```
 
-The limits exist because these fields are charged on every turn for every registered skill, the same as the description. Pass `selection_hints=False` to trade the accuracy back for tokens.
+The limits bound optional metadata in the catalog. Whether that catalog enters model context,
+and how often, is controlled by the host. Pass `selection_hints=False` to omit the hints.
 
 ### Narrowing and Capping the Catalog
 
-The catalog goes into every system prompt on every turn, so its size is a fixed cost per request. Five keyword arguments control it:
+For a host that places the catalog in model context, five keyword arguments control its size:
 
 ```python
 catalog = await registry.get_skills_catalog(
@@ -326,7 +372,8 @@ There is no catalog cache today. If one is added, its key must cover the format 
 
 ### Single-Skill Fast Path
 
-A catalog exists to let a model choose. With one skill there is nothing to choose, so the whole discovery apparatus, a catalog listing one entry, tool definitions, a block of usage instructions, and a model round trip while the agent fetches the body, is spent reaching content there was never a choice about.
+This opt-in helper is for custom Python hosts that choose to inline a single skill. Native MCP
+publication does not use it, and a single available skill never implies host approval.
 
 ```python
 from agentskills_core import resolve_fast_path
@@ -340,28 +387,17 @@ if fast_path is not None:
 
 Use the prompt in place of a catalog in your own host. It returns `None` (meaning "use the normal catalog path") unless the effective skill set is exactly one and its body fits under the ceiling.
 
-Resolution lives here rather than in each host because the decision is identical everywhere, and because the ceiling is the part that has to be tuned.
-
-**Narrowing counts.** `include=` applies an effective set, so a registry of fifty narrowed to one by a selector takes the same path as a registry that only ever held one:
+An explicit `include` list can narrow the effective set. With a configured retrieval selector
+and a host-provided `query`, use:
 
 ```python
-selection = await selector.select(registry, query)          # agentskills-retrieval
+selection = await selector.select(query)
 fast_path = await resolve_fast_path(registry, include=selection.skill_ids)
 ```
 
-**The ceiling is not a guess.** The normal path pays the catalog and usage instructions every turn (~500 tokens together) and the body once. The fast path pays a ~200-token wrapper and the body every turn. Over `T` turns the fast path wins while `body × (T − 1) < 300 × T`:
-
-| Conversation length | Fast path wins while body is |
-| --- | --- |
-| 1 turn | any size |
-| 2 turns | < 612 tokens |
-| 3 turns | < 459 tokens |
-| 10 turns | < 340 tokens |
-| 100 turns | < 309 tokens |
-
-A host knows the body size but not how many turns the conversation will run, so `DEFAULT_FAST_PATH_MAX_TOKENS` is 300, the value that needs no assumption about the latter. Raise it with `max_tokens=` if you know your conversations are short. Both refusals, too many skills and too large a body, are logged; silently switching prompt shape based on content size is how token bills become impossible to explain.
-
-**Resource tools stay.** `FAST_PATH_DROPPED_TOOLS` names the four section and body accessors (`get_skill_metadata`, `get_skill_body`, `get_skill_outline`, `get_skill_section`) that would re-fetch inlined content. A host that exposes tools by those names should drop them. References, scripts and assets are still genuinely progressive: a skill carrying a 2 MB dataset must not have it inlined because the skill count happened to be one.
+The default body ceiling is 300 estimated tokens. Set `max_tokens` explicitly when your host
+needs a different budget. The helper returns a decision and prompt text. The host still owns
+selection, approval, context placement, and any resource access.
 
 ### Skill Versions (optional, non-spec)
 
@@ -394,11 +430,16 @@ error message names the cause rather than reporting a bare type mismatch.
 Versions appear in both catalog formats when set, and are omitted entirely when not: unversioned
 skills cost no extra prompt tokens.
 
-> `version` is **not** part of the upstream Agent Skills specification. It is supported here
-> because consumers cannot pin, compare, or detect drift without it. The field is being raised
-> upstream rather than kept as a permanent proprietary extension.
+> `version` is an optional SDK extension, not part of the upstream Agent Skills specification.
+> It provides an application-level version label. Immutable Git commits and content digests
+> support reproducibility and drift detection independently of this field.
 
 ### Implementing a Custom Provider
+
+The following is an interface sketch, not an implemented database provider. Implement each
+method against your backend, returning original bytes for resources and the documented
+not-found exceptions. Verify the result with the
+[provider conformance suite](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/testing/agentskills-testing/README.md#conformance-suite).
 
 ```python
 from agentskills_core import SkillProvider
@@ -415,7 +456,7 @@ All methods are `async` so implementations backed by network I/O can be non-bloc
 
 ### Resource Discovery (optional capability)
 
-Some backends can enumerate a skill's resources; a static file host generally cannot. `list_resources()` is therefore an *optional* capability, paired with a declared flag ([ADR 0002](../../../docs/adr/0002-optional-provider-capabilities.md)):
+Some backends can enumerate a skill's resources; a static file host generally cannot. `list_resources()` is therefore an optional capability, paired with a declared flag ([ADR 0002](https://github.com/pratikxpanda/agentskills-sdk/blob/main/docs/adr/0002-optional-provider-capabilities.md)). In this interface sketch, replace the ellipses with lists of real filenames:
 
 ```python
 class DatabaseSkillProvider(SkillProvider):
@@ -442,7 +483,8 @@ Providers that support listing always return all three keys (`references`, `scri
 
 ### Skill Discovery (optional capability)
 
-The same pattern one level up: `discover()` returns the IDs of every skill the backend holds, so `register_all()` can take them all without being told any of them.
+`discover()` returns skill IDs so `register_all()` can enumerate a backend. In the following
+interface sketch, replace the ellipsis with your backend query:
 
 ```python
 class DatabaseSkillProvider(SkillProvider):

@@ -19,10 +19,10 @@ PACKAGES=(
     "packages/providers/agentskills-http"
     "packages/providers/agentskills-azure"
     "packages/providers/agentskills-oci"
+    "packages/integrations/agentskills-mcp-extension"
     "packages/retrieval/agentskills-retrieval"
     "packages/tools/agentskills-tools"
     "packages/testing/agentskills-testing"
-    "packages/integrations/agentskills-mcp-server"
 )
 
 TEST_PYPI=false

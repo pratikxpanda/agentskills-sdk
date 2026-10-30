@@ -7,7 +7,7 @@ from mcp import Client, MCPError
 
 from agentskills_core import Skill
 from agentskills_fs import LocalFileSystemSkillProvider
-from agentskills_mcp_server import create_mcp_server
+from agentskills_mcp_extension import create_mcp_server
 
 
 def _skill(root: Path, skill_id: str = "alpha") -> tuple[Skill, LocalFileSystemSkillProvider, Path]:

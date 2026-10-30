@@ -83,7 +83,7 @@ jobs:
             packages/providers/agentskills-http \
             packages/providers/agentskills-azure \
             packages/providers/agentskills-oci \
-            packages/integrations/agentskills-mcp-server \
+            packages/integrations/agentskills-mcp-extension \
             packages/retrieval/agentskills-retrieval \
             packages/tools/agentskills-tools \
             packages/testing/agentskills-testing
@@ -172,10 +172,10 @@ jobs:
           attestations: true
           skip-existing: true
 
-      - name: agentskills-mcp-server
+      - name: agentskills-mcp-extension
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
-          packages-dir: dist/agentskills-mcp-server
+          packages-dir: dist/agentskills-mcp-extension
           attestations: true
           skip-existing: true
 
