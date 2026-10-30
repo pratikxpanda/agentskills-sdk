@@ -77,6 +77,21 @@ the manifest's size and SHA-256 digest. The client does not implement `SkillProv
 remote content into a `SkillRegistry`, since registration validates by reading bodies eagerly.
 It also keeps no shared response cache, so separate server origins remain isolated.
 
+Compose multiple sources on the client side when several servers use the same skill URI:
+
+```python
+from agentskills_mcp_server import McpSkillsCollection, McpSkillsClient
+
+catalog = McpSkillsCollection([
+  McpSkillsClient(runbooks_session, origin="incident-runbooks"),
+  McpSkillsClient(security_session, origin="security-guides"),
+])
+references = await catalog.list_skills()
+```
+
+Identity remains `(origin, URI)`. The collection does not rehost or forward content, which avoids
+loops and keeps approval and session state with the application.
+
 ## Prompt Shortcut
 
 Hosts that support MCP prompts can opt in to one user-invoked `use-skill` prompt. It requires the

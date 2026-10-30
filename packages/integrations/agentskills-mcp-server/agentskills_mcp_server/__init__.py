@@ -37,6 +37,7 @@ from agentskills_mcp_server.client import (
     McpSkillReference,
     McpSkillsClient,
     McpSkillsClientError,
+    McpSkillsCollection,
 )
 from agentskills_mcp_server.native import create_mcp_server
 
@@ -45,5 +46,6 @@ __all__ = [
     "McpSkillReference",
     "McpSkillsClient",
     "McpSkillsClientError",
+    "McpSkillsCollection",
     "create_mcp_server",
 ]
