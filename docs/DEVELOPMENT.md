@@ -31,7 +31,7 @@ poetry run pytest packages/adapters/agentskills-adapters -v
 poetry run pytest packages/providers/agentskills-fs -v
 poetry run pytest packages/providers/agentskills-git -v
 poetry run pytest packages/providers/agentskills-http -v
-poetry run pytest packages/providers/agentskills-azure-blob -v
+poetry run pytest packages/providers/agentskills-azure -v
 poetry run pytest packages/providers/agentskills-oci -v
 poetry run pytest packages/integrations/agentskills-mcp-server -v
 poetry run pytest packages/retrieval/agentskills-retrieval -v

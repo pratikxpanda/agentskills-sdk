@@ -17,7 +17,7 @@ nav:
       - Filesystem provider: packages/fs.md
       - Git provider: packages/git.md
       - HTTP provider: packages/http.md
-      - Azure Blob provider: packages/azure-blob.md
+      - Azure providers: packages/azure.md
       - OCI provider: packages/oci.md
       - MCP server integration: packages/mcp-server.md
       - Skill selection: packages/retrieval.md
