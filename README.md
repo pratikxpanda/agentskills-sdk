@@ -1,7 +1,6 @@
----
-title: Agent Skills SDK
-description: Python packages for sourcing, managing, and distributing Agent Skills.
----
+# Agent Skills SDK
+
+Python packages for sourcing, managing, and distributing Agent Skills.
 
 [![CI](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-brightgreen.svg)](https://github.com/pratikxpanda/agentskills-sdk/actions/workflows/ci.yml)
@@ -129,25 +128,6 @@ Full guides and API docs are published at:
 
 The site includes package-by-package API reference generated from docstrings,
 plus roadmap and ADR pages.
-
-## GitHub Action
-
-If your skills live in GitHub, use the validation action:
-
-```yaml
-name: Skills
-on: [pull_request]
-
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: pratikxpanda/agentskills-sdk/actions/validate@v1
-        with:
-          path: ./skills
-          fail-on-lint: false
-```
 
 ## Security
 
