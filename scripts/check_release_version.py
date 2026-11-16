@@ -73,7 +73,9 @@ def _check_sibling_floors(version: str) -> list[str]:
     They ship in lockstep, so a floor below the release version lets pip
     resolve an older sibling against a newer dependent and fail at import.
     """
-    expected = f">={version},<1.0"
+    major, minor = (int(part) for part in version.split(".")[:2])
+    ceiling = f"0.{minor + 1}.0" if major == 0 else f"{major + 1}.0.0"
+    expected = f">={version},<{ceiling}"
     errors = []
     print()
     for package in DEPENDENTS:

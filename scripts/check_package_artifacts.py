@@ -17,6 +17,12 @@ from zipfile import ZipFile
 
 from check_release_version import PACKAGES, ROOT
 
+_EXPORTED_SUBMODULES = (
+    "agentskills_tools.cost",
+    "agentskills_tools.evals",
+    "agentskills_tools.lint",
+)
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the build-and-install smoke-check parser."""
@@ -39,17 +45,28 @@ def _verify_wheel(wheel: Path, manifest: dict, version: str) -> None:
         namespace = manifest["packages"][0]["include"]
         if f"{namespace}/py.typed" not in archive.namelist():
             raise ValueError(f"Typing marker missing: {wheel.name}")
-        if manifest["name"] == "agentskills-mcp-extension":
-            entry_path = next(
-                name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
-            )
-            entries = ConfigParser()
+        entry_paths = [
+            name for name in archive.namelist() if name.endswith(".dist-info/entry_points.txt")
+        ]
+        entries = ConfigParser()
+        for entry_path in entry_paths:
             entries.read_string(archive.read(entry_path).decode("utf-8"))
-            expected = {"agentskills-mcp": "agentskills_mcp_extension.__main__:main"}
-            if dict(entries["console_scripts"]) != expected:
-                raise ValueError("The MCP wheel must expose only the short agentskills-mcp command")
-            if any(name.startswith("agentskills_mcp_server/") for name in archive.namelist()):
-                raise ValueError("Legacy MCP namespace found in the wheel")
+        commands = (
+            dict(entries["console_scripts"]) if entries.has_section("console_scripts") else {}
+        )
+        if commands != manifest.get("scripts", {}):
+            raise ValueError(f"Console entry points differ from the manifest: {wheel.name}")
+        expected = (
+            {"agentskills": "agentskills_tools.__main__:main"}
+            if manifest["name"] == "agentskills-tools"
+            else {}
+        )
+        if commands != expected:
+            raise ValueError("Only agentskills-tools may install the agentskills console command")
+        if manifest["name"] == "agentskills-mcp-extension" and any(
+            name.startswith("agentskills_mcp_server/") for name in archive.namelist()
+        ):
+            raise ValueError("Legacy MCP namespace found in the wheel")
 
 
 def _check_artifacts(work: Path) -> None:
@@ -59,6 +76,7 @@ def _check_artifacts(work: Path) -> None:
     env = os.environ.copy()
     env["POETRY_VIRTUALENVS_CREATE"] = "false"
     wheels: list[Path] = []
+    namespaces: list[str] = []
     for package in PACKAGES:
         directory = ROOT / package
         manifest = tomllib.loads((directory / "pyproject.toml").read_text(encoding="utf-8"))[
@@ -71,6 +89,7 @@ def _check_artifacts(work: Path) -> None:
             raise ValueError(f"Expected exactly one wheel and sdist for {package}")
         _verify_wheel(built[0], manifest, version)
         wheels.extend(built)
+        namespaces.append(manifest["packages"][0]["include"])
 
     environment = work / "venv"
     venv.EnvBuilder(with_pip=True).create(environment)
@@ -101,6 +120,26 @@ def _check_artifacts(work: Path) -> None:
         [
             str(python),
             "-c",
+            "import importlib; "
+            f"modules = [importlib.import_module(name) for name in {namespaces!r}]; "
+            f"modules.extend(importlib.import_module(name) for name in {_EXPORTED_SUBMODULES!r}); "
+            "undeclared = [module.__name__ for module in modules "
+            "if module.__name__ != 'agentskills_azure' and not hasattr(module, '__all__')]; "
+            "assert not undeclared, undeclared; "
+            "missing = [(module.__name__, name) for module in modules "
+            "for name in getattr(module, '__all__', ()) if not hasattr(module, name)]; "
+            "assert not missing, missing; "
+            "assert all(len(getattr(module, '__all__', ())) == "
+            "len(set(getattr(module, '__all__', ()))) for module in modules); "
+            "print('Installed root and explicit submodule exports resolve without duplicates.')",
+        ],
+        work,
+        installed_env,
+    )
+    _run(
+        [
+            str(python),
+            "-c",
             "import importlib.util; from pathlib import Path; "
             "import agentskills_mcp_extension; "
             "assert Path(agentskills_mcp_extension.__file__).is_relative_to(Path.cwd()); "
@@ -126,10 +165,11 @@ def _check_artifacts(work: Path) -> None:
         encoding="utf-8",
     )
     suffix = ".exe" if os.name == "nt" else ""
-    mcp = scripts / f"agentskills-mcp{suffix}"
     tools = scripts / f"agentskills{suffix}"
+    if (scripts / f"agentskills-mcp{suffix}").exists():
+        raise ValueError("Removed agentskills-mcp command was installed")
     help_result = subprocess.run(
-        [str(mcp), "--help"],
+        [str(tools), "serve", "--help"],
         cwd=work,
         env=installed_env,
         capture_output=True,
@@ -137,15 +177,31 @@ def _check_artifacts(work: Path) -> None:
         check=True,
         timeout=30,
     )
-    if "usage: agentskills-mcp " not in help_result.stdout:
-        raise ValueError("Installed MCP help does not advertise the short command")
-    _run([str(mcp), "--config", str(config), "--check"], work, installed_env)
+    if (
+        "usage: agentskills serve " not in help_result.stdout
+        or "--config" not in help_result.stdout
+    ):
+        raise ValueError("Installed CLI help does not advertise config-driven serving")
+    _run([str(tools), "serve", "--config", str(config), "--check"], work, installed_env)
     _run(
         [str(python), "-m", "agentskills_mcp_extension", "--config", str(config), "--check"],
         work,
         installed_env,
     )
     _run([str(tools), "serve", str(ROOT / "examples/skills"), "--check"], work, installed_env)
+    _run(
+        [
+            str(python),
+            "-m",
+            "pytest",
+            str(ROOT / "packages/integrations/agentskills-mcp-extension/tests/test_client.py"),
+            str(ROOT / "packages/integrations/agentskills-mcp-extension/tests/test_native.py"),
+            "-q",
+            "--no-header",
+        ],
+        work,
+        installed_env,
+    )
     print(f"Verified {len(wheels)} wheel/sdist pairs and isolated installed commands.")
 
 

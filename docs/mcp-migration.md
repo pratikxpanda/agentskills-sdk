@@ -3,6 +3,41 @@ title: MCP Migration
 description: MCP package naming, native-only API changes, and host migration boundaries.
 ---
 
+## v0.9 Console Consolidation
+
+The 0.9 distributions now require siblings in the same minor release family. Upgrade the SDK
+packages you use together. For 0.9.0, the sibling range is `>=0.9.0,<0.10.0`. Mixing 0.8 and 0.9
+is not supported. See the [compatibility policy](compatibility.md) for future deprecation handling.
+
+Breaking change: the MCP distribution no longer installs `agentskills-mcp`. Only
+`agentskills-tools` installs the unified `agentskills` console command. Install the serving extra
+and replace the old command with:
+
+```bash
+pip install "agentskills-tools[serve]"
+agentskills serve --config server.json --check
+agentskills serve --config server.json
+```
+
+Update MCP host launch settings from `command: agentskills-mcp` with `args: [--config, server.json]`
+to `command: agentskills` with `args: [serve, --config, server.json]`. There is no console alias.
+The distribution name and Python imports remain `agentskills-mcp-extension` and
+`agentskills_mcp_extension`. MCP-only installations can continue using
+`python -m agentskills_mcp_extension --config server.json` without installing the tools package.
+
+Folder-based `agentskills serve ./skills` remains supported. Folder and config input are mutually
+exclusive. With `--config`, put name, file-limit, and prompt settings in the config instead of using
+`--name`, `--max-file-bytes`, or `--skill-prompts`. Transport and preflight flags work in both modes.
+
+### Provider Configuration
+
+The v0.9 resolver adds `git`, `azure-blob`, `azure-files`, and `oci` alongside `fs` and `http`.
+Their dependencies remain optional and are installed as separate provider packages. New provider
+options use strict JSON types and reject unknown keys and runtime credential/client objects.
+Azure Files requires `token_intent: "backup"` explicitly. Existing filesystem and HTTP option
+handling is unchanged. See the [provider configuration reference](packages/mcp-extension.md)
+for source prerequisites and the integration's package guide for complete option lists.
+
 ## v0.8 Package Rename
 
 The integration remains under `packages/integrations` and is renamed to reflect both server

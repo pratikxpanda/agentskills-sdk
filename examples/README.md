@@ -7,13 +7,15 @@ Native MCP Skills publication and model-free discovery benchmarks.
 Run from the repository root after `pip install "agentskills-mcp-extension[fs]"`:
 
 ```bash
-agentskills-mcp --config examples/server-fs.json --check
-agentskills-mcp --config examples/server-fs.json
+python -m agentskills_mcp_extension --config examples/server-fs.json --check
+python -m agentskills_mcp_extension --config examples/server-fs.json
 ```
 
 The sample uses the `incident-response` skill under `examples/skills/`. The tools
 CLI also supports `agentskills serve examples/skills --check` and
-`agentskills serve examples/skills` without a configuration file.
+`agentskills serve examples/skills` without a configuration file. Starting with v0.9,
+install `agentskills-tools[serve]` and use `agentskills serve --config examples/server-fs.json`
+for the same configured publication.
 
 The HTTP configuration requires a static host serving complete per-skill file
 manifests. Point its `base_url` at that host. A plain file server without those

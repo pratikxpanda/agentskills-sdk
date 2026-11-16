@@ -10,7 +10,7 @@ Protocol <https://modelcontextprotocol.io>`_ Skills extension, providing:
   client session without registering or eagerly reading skill bodies.
 * Optional ``skill_prompt_shortcuts`` -- exposes one user-invoked ``use-skill``
   prompt without granting tools or execution permissions.
-* CLI entry-point (``agentskills-mcp --config server.json``)
+* Module entry point (``python -m agentskills_mcp_extension --config server.json``)
   for zero-code server startup.
 
 Quick start (programmatic)::
@@ -23,9 +23,9 @@ Quick start (programmatic)::
     server = await create_mcp_server(registry, name="My Agent")
     server.run()  # stdio by default
 
-CLI::
+Module entry point::
 
-    agentskills-mcp --config server.json
+    python -m agentskills_mcp_extension --config server.json
 
 Install::
 

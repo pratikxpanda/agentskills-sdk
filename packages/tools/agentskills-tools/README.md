@@ -326,11 +326,27 @@ agentskills serve ./skills --check
 agentskills serve ./skills --transport stdio
 ```
 
-Runs the MCP server over a folder of skills without hand-writing a config
-file. For anything beyond a single filesystem root (HTTP providers,
-per-skill options, environment placeholders) use
-[agentskills-mcp-extension](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-extension)
-with a `server.json`.
+Runs the MCP server over a folder of skills without hand-writing a config file.
+Starting with v0.9, the same command accepts JSON or YAML server configuration for HTTP sources,
+per-skill options, aliases, and environment placeholders:
+
+```bash
+agentskills serve --config server.json --check
+agentskills serve --config server.json --transport stdio
+agentskills serve --config server.json --transport streamable-http
+```
+
+The configuration follows the
+[MCP schema](https://github.com/pratikxpanda/agentskills-sdk/tree/main/packages/integrations/agentskills-mcp-extension#configuration).
+Supply a folder path or `--config`, not both. With `--config`, set the server name, file limits,
+and prompt shortcuts in the configuration, not with `--name`, `--max-file-bytes`, or
+`--skill-prompts`. `--transport` and `--check` work with either source. Config preflight prints
+a JSON readiness report, while folder preflight retains its text report.
+
+Config-driven v0.9 publication supports `fs`, `http`, `git`, `azure-blob`, `azure-files`, and `oci`.
+Filesystem and Git are already tools dependencies. Install other source packages separately:
+`agentskills-http`, `agentskills-azure[blob]`, `agentskills-azure[files]`, or `agentskills-oci`.
+The `serve` extra installs the integration, not every provider's SDK.
 
 Serving uses native Skills only:
 

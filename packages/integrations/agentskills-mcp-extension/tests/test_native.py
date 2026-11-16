@@ -216,6 +216,90 @@ async def test_given_authorized_http_app_when_origin_or_host_is_invalid_then_rej
         ).status_code == 403
 
 
+@pytest.mark.parametrize(
+    ("token", "expected_status"),
+    [
+        (None, 401),
+        ("invalid", 401),
+        ("expired", 401),
+        ("wrong-audience", 401),
+        ("wrong-scope", 403),
+        ("accepted", 200),
+    ],
+)
+async def test_given_credentials_when_accessing_http_then_enforces_authorization(
+    token, expected_status
+):
+    import time
+
+    import httpx
+    from mcp.server.auth.provider import AccessToken
+    from mcp.server.auth.settings import AuthSettings
+
+    from agentskills_mcp_extension import create_mcp_server
+
+    class Verifier:
+        async def verify_token(self, value):
+            if value == "invalid":
+                return None
+            return AccessToken(
+                token=value,
+                client_id="test",
+                scopes=[] if value == "wrong-scope" else ["skills:read"],
+                expires_at=int(time.time()) + (-60 if value == "expired" else 3600),
+                resource=(
+                    "https://other.example/mcp"
+                    if value == "wrong-audience"
+                    else "https://skills.example/mcp"
+                ),
+            )
+
+    server = await create_mcp_server(
+        [],
+        auth=AuthSettings(
+            issuer_url="https://identity.example",
+            resource_server_url="https://skills.example/mcp",
+            required_scopes=["skills:read"],
+            validate_token_resource=True,
+        ),
+        token_verifier=Verifier(),
+    )
+    app = server.secure_http_app(
+        allowed_hosts=["skills.example"], allowed_origins=["https://host.example"]
+    )
+    headers = {
+        "Origin": "https://host.example",
+        "Accept": "application/json, text/event-stream",
+    }
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="https://skills.example"
+        ) as client,
+    ):
+        response = await client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2026-07-28",
+                    "capabilities": {},
+                    "clientInfo": {"name": "authorization-test", "version": "1"},
+                },
+            },
+            headers=headers,
+        )
+
+    assert response.status_code == expected_status
+    assert "SKILL.md" not in response.text
+    if token == "accepted":
+        assert "serverInfo" in response.text
+
+
 async def test_native_discovery_lookup_and_original_bytes(tmp_path):
     from mcp import Client, MCPError
 

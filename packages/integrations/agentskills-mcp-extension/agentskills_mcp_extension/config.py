@@ -1,7 +1,7 @@
 """Pydantic configuration models for Agent Skills MCP servers.
 
 This module defines the declarative configuration schema used by
-the CLI (``agentskills-mcp --config server.json``).
+config-driven serving (``agentskills serve --config server.json``).
 
 String values may contain ``${VAR}`` placeholders that are resolved
 from environment variables at load time.  Unset variables resolve to
@@ -37,7 +37,7 @@ import os
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -48,7 +48,50 @@ from agentskills_core.trust import DetachedSignature, TrustPolicy
 
 _logger = get_logger(__name__)
 
-SUPPORTED_PROVIDERS: frozenset[str] = frozenset({"fs", "http"})
+SUPPORTED_PROVIDERS: frozenset[str] = frozenset(
+    {"fs", "http", "git", "azure-blob", "azure-files", "oci"}
+)
+
+
+class _ProviderOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, strict=True)
+
+
+class _GitOptions(_ProviderOptions):
+    repository: str = Field(min_length=1)
+    ref: str = Field(min_length=1)
+    cache_dir: str = Field(min_length=1)
+    subdirectory: str = "."
+    max_cache_bytes: int = Field(256 * 1024 * 1024, ge=0)
+    max_total_cache_bytes: int = Field(1024 * 1024 * 1024, ge=0)
+    refresh: bool = False
+
+
+class _AzureBlobOptions(_ProviderOptions):
+    account_url: str = Field(min_length=1)
+    container_name: str = Field(min_length=1)
+    prefix: str = ""
+    max_file_bytes: int = Field(10 * 1024 * 1024, ge=0)
+
+
+class _AzureFilesOptions(_ProviderOptions):
+    account_url: str = Field(min_length=1)
+    share_name: str = Field(min_length=1)
+    token_intent: Literal["backup"]
+    prefix: str = ""
+    max_file_bytes: int = Field(10 * 1024 * 1024, ge=0)
+    max_files: int = Field(10_000, ge=1)
+    max_depth: int = Field(64, ge=0)
+
+
+class _OCIOptions(_ProviderOptions):
+    repository: str = Field(min_length=1)
+    insecure: bool = False
+    tls_verify: bool | str = True
+    auth_backend: str = "token"
+    max_files: int = Field(512, ge=1)
+    max_file_bytes: int = Field(10 * 1024 * 1024, ge=0)
+    max_total_bytes: int = Field(16 * 1024 * 1024, ge=0)
 
 
 def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvider:
@@ -89,6 +132,51 @@ def _resolve_provider(provider_type: str, options: dict[str, Any]) -> SkillProvi
         }
         filtered = {key: value for key, value in options.items() if key in safe_http_keys}
         return HTTPStaticFileSkillProvider(**filtered)
+
+    if provider_type == "git":
+        settings = _GitOptions(**options).model_dump(exclude_unset=True)
+        settings["cache_dir"] = Path(settings["cache_dir"])
+        try:
+            from agentskills_git import GitSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'git' requires agentskills-git. "
+                "Install it with: pip install agentskills-git"
+            ) from exc
+        return GitSkillProvider(**settings)
+
+    if provider_type == "azure-blob":
+        settings = _AzureBlobOptions(**options).model_dump(exclude_unset=True)
+        try:
+            from agentskills_azure.blob import AzureBlobSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'azure-blob' requires agentskills-azure[blob]. "
+                "Install it with: pip install 'agentskills-azure[blob]'"
+            ) from exc
+        return AzureBlobSkillProvider(**settings)
+
+    if provider_type == "azure-files":
+        settings = _AzureFilesOptions(**options).model_dump(exclude_unset=True)
+        try:
+            from agentskills_azure.files import AzureFilesSkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'azure-files' requires agentskills-azure[files]. "
+                "Install it with: pip install 'agentskills-azure[files]'"
+            ) from exc
+        return AzureFilesSkillProvider(**settings)
+
+    if provider_type == "oci":
+        settings = _OCIOptions(**options).model_dump(exclude_unset=True)
+        try:
+            from agentskills_oci import OCISkillProvider
+        except ImportError as exc:
+            raise ImportError(
+                "Provider 'oci' requires agentskills-oci. "
+                "Install it with: pip install agentskills-oci"
+            ) from exc
+        return OCISkillProvider(**settings)
 
     raise ValueError(
         f"Unknown provider type: {provider_type!r}. "
@@ -138,7 +226,9 @@ class SkillConfig(BaseModel):
 
     model_config = ConfigDict(hide_input_in_errors=True)
     id: str = Field(..., description="Skill identifier")
-    provider: str = Field(..., description="Provider type (e.g., 'fs', 'http')")
+    provider: str = Field(
+        ..., description="Provider type: fs, http, git, azure-blob, azure-files, or oci"
+    )
     options: dict[str, Any] = Field(
         default_factory=dict,
         description="Provider-specific options passed to the provider constructor",

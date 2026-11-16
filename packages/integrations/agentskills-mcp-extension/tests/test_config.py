@@ -1,6 +1,8 @@
 """Tests for config-driven MCP server creation."""
 
 import json
+import sys
+import types
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,6 +18,32 @@ from agentskills_mcp_extension.config import (
     _resolve_provider,
     resolve_env_vars,
 )
+
+_OPTIONAL_PROVIDER_CASES = [
+    (
+        "git",
+        "agentskills_git",
+        "GitSkillProvider",
+        {"repository": "https://example.com/skills.git", "ref": "main", "cache_dir": ".cache"},
+    ),
+    (
+        "azure-blob",
+        "agentskills_azure.blob",
+        "AzureBlobSkillProvider",
+        {"account_url": "https://example.blob.core.windows.net", "container_name": "skills"},
+    ),
+    (
+        "azure-files",
+        "agentskills_azure.files",
+        "AzureFilesSkillProvider",
+        {
+            "account_url": "https://example.file.core.windows.net",
+            "share_name": "skills",
+            "token_intent": "backup",
+        },
+    ),
+    ("oci", "agentskills_oci", "OCISkillProvider", {"repository": "ghcr.io/example/skills"}),
+]
 
 # ------------------------------------------------------------------
 # SkillConfig model
@@ -172,6 +200,95 @@ class TestServerConfig:
 
 
 class TestResolveProvider:
+    @pytest.mark.parametrize(
+        ("provider_type", "module_name", "class_name", "options"),
+        _OPTIONAL_PROVIDER_CASES,
+    )
+    def test_given_optional_provider_when_configured_then_constructed_lazily(
+        self, provider_type, module_name, class_name, options, monkeypatch
+    ):
+        constructed = []
+        expected = object()
+        module = types.ModuleType(module_name)
+
+        def construct(**settings):
+            constructed.append(settings)
+            return expected
+
+        setattr(module, class_name, construct)
+        monkeypatch.setitem(sys.modules, module_name, module)
+
+        assert _resolve_provider(provider_type, options) is expected
+        assert provider_type in SUPPORTED_PROVIDERS
+        expected_options = dict(options)
+        if provider_type == "git":
+            expected_options["cache_dir"] = Path(options["cache_dir"])
+        assert constructed == [expected_options]
+
+    @pytest.mark.parametrize(
+        ("provider_type", "module_name", "class_name", "options"), _OPTIONAL_PROVIDER_CASES
+    )
+    def test_given_missing_optional_package_when_configured_then_has_install_guidance(
+        self, provider_type, module_name, class_name, options, monkeypatch
+    ):
+        monkeypatch.setitem(sys.modules, module_name, None)
+        package = {
+            "git": "agentskills-git",
+            "azure-blob": "agentskills-azure[blob]",
+            "azure-files": "agentskills-azure[files]",
+            "oci": "agentskills-oci",
+        }[provider_type]
+
+        with pytest.raises(ImportError) as exc_info:
+            _resolve_provider(provider_type, options)
+
+        assert package in str(exc_info.value)
+        assert "pip install" in str(exc_info.value)
+
+    @pytest.mark.parametrize(
+        ("provider_type", "module_name", "class_name", "options"), _OPTIONAL_PROVIDER_CASES
+    )
+    @pytest.mark.parametrize("field", ["client", "credential", "unknown_option"])
+    def test_given_runtime_or_unknown_option_when_configured_then_rejected_without_value(
+        self, provider_type, module_name, class_name, options, field
+    ):
+        with pytest.raises(ValidationError) as exc_info:
+            _resolve_provider(provider_type, {**options, field: "private-value"})
+
+        assert field in str(exc_info.value)
+        assert "private-value" not in str(exc_info.value)
+
+    @pytest.mark.parametrize(
+        ("provider_type", "options"),
+        [
+            ("git", {"repository": "repo", "ref": "main", "cache_dir": ".", "refresh": "false"}),
+            (
+                "azure-blob",
+                {"account_url": "url", "container_name": "skills", "max_file_bytes": -1},
+            ),
+            ("azure-files", {"account_url": "url", "share_name": "skills"}),
+            (
+                "azure-files",
+                {"account_url": "url", "share_name": "skills", "token_intent": "read"},
+            ),
+            ("oci", {"repository": "ghcr.io/example/skills", "insecure": "false"}),
+            ("oci", {"repository": "ghcr.io/example/skills", "max_files": 0}),
+        ],
+    )
+    def test_given_invalid_provider_option_when_configured_then_rejected(
+        self, provider_type, options
+    ):
+        with pytest.raises(ValidationError):
+            _resolve_provider(provider_type, options)
+
+    def test_given_optional_packages_missing_when_resolving_fs_then_still_works(
+        self, tmp_path, monkeypatch
+    ):
+        for _, module_name, _, _ in _OPTIONAL_PROVIDER_CASES:
+            monkeypatch.setitem(sys.modules, module_name, None)
+
+        assert isinstance(_resolve_provider("fs", {"root": str(tmp_path)}), SkillProvider)
+
     async def test_native_http_file_manifest_and_size_limit(self):
         provider = _resolve_provider(
             "http",
@@ -721,6 +838,117 @@ def test_given_detached_proof_config_when_published_then_verified():
 class TestCLI:
     """Tests for the CLI entry point (__main__.py)."""
 
+    @pytest.mark.parametrize(
+        ("provider_type", "module_name", "class_name", "options"), _OPTIONAL_PROVIDER_CASES
+    )
+    @pytest.mark.parametrize("invalid", [False, True])
+    def test_given_optional_provider_when_captured_then_owned_clients_are_closed(
+        self,
+        provider_type,
+        module_name,
+        class_name,
+        options,
+        invalid,
+        tmp_path,
+        monkeypatch,
+        capsys,
+    ):
+        from agentskills_fs import LocalFileSystemSkillProvider
+        from agentskills_mcp_extension.__main__ import run_config
+
+        _write_skill(tmp_path, "example")
+        if invalid:
+            (tmp_path / "example" / "SKILL.md").write_text("no frontmatter", encoding="utf-8")
+        closed = []
+
+        class ClosingProvider(LocalFileSystemSkillProvider):
+            async def aclose(self):
+                closed.append(provider_type)
+
+        module = types.ModuleType(module_name)
+        setattr(module, class_name, lambda **settings: ClosingProvider(tmp_path))
+        monkeypatch.setitem(sys.modules, module_name, module)
+        config = tmp_path / "server.json"
+        config.write_text(
+            json.dumps(
+                {
+                    "name": "Optional provider",
+                    "skills": [{"id": "example", "provider": provider_type, "options": options}],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        if invalid:
+            with pytest.raises(ValueError):
+                run_config(config, check=True)
+        else:
+            run_config(config, check=True)
+
+        assert closed == [provider_type]
+        output = capsys.readouterr().out
+        if invalid:
+            assert output == ""
+        else:
+            assert json.loads(output)["providerTypes"] == [provider_type]
+
+    def test_given_local_git_config_when_checked_then_publishes_without_remote_network(
+        self, tmp_path, capsys
+    ):
+        import subprocess
+
+        from agentskills_mcp_extension.__main__ import run_config
+
+        repository = tmp_path / "repository"
+        repository.mkdir()
+        _write_skill(repository, "example")
+        for arguments in (
+            ["init", "-b", "main"],
+            ["add", "."],
+        ):
+            subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-m",
+                "Add test skill",
+            ],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+        config = tmp_path / "git.json"
+        config.write_text(
+            json.dumps(
+                {
+                    "name": "Git preflight",
+                    "skills": [
+                        {
+                            "id": "example",
+                            "provider": "git",
+                            "options": {
+                                "repository": str(repository),
+                                "ref": "main",
+                                "cache_dir": str(tmp_path / "cache"),
+                            },
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        run_config(config, check=True)
+
+        assert json.loads(capsys.readouterr().out)["providerTypes"] == ["git"]
+
     def test_check_reports_scope_without_starting_or_exposing_options(self, tmp_path, capsys):
         from agentskills_mcp_extension.__main__ import main
 
@@ -813,17 +1041,17 @@ class TestCLI:
         else:
             assert json.loads(output)["status"] == "ready"
 
-    def test_given_help_when_invoked_then_shows_short_command(
+    def test_given_help_when_invoked_then_shows_module_entry_point(
         self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         from agentskills_mcp_extension.__main__ import main
 
-        monkeypatch.setattr("sys.argv", ["agentskills-mcp", "--help"])
+        monkeypatch.setattr("sys.argv", ["agentskills_mcp_extension", "--help"])
         with pytest.raises(SystemExit) as exc_info:
             main()
 
         assert exc_info.value.code == 0
-        assert "usage: agentskills-mcp " in capsys.readouterr().out
+        assert "usage: python -m agentskills_mcp_extension " in capsys.readouterr().out
 
     def test_argparse_requires_config(self):
         """CLI exits with error when --config is missing."""

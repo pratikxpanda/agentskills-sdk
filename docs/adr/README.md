@@ -66,3 +66,4 @@ What we chose and the concrete rule.
 - [ADR 0009](0009-native-image-content.md): Native image content, opt-in (superseded in part)
 - [ADR 0010](0010-native-skills-only.md): Native Skills only, no legacy compatibility mode
 - [ADR 0011](0011-publication-trust-pipeline.md): Publication pipeline: verify, transform, refresh atomically
+- [ADR 0012](0012-pre-1-compatibility.md): Pre-1.0 sibling compatibility and deprecation window

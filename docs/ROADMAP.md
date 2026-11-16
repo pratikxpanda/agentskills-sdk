@@ -326,6 +326,27 @@ removed from the roadmap. Examples using those frameworks' MCP clients remain in
 
 ---
 
+## v0.9: Compatibility and Production Readiness
+
+Consolidate console ownership and complete declarative publication across the existing providers.
+Then audit the supported API and agree compatibility commitments before the v1.0 freeze. Detailed
+scope, acceptance criteria, and validation boundaries are in the [v0.9 specification](issues/v0.9.md).
+
+| Item | Scope |
+| --- | --- |
+| Unified serving CLI | Tools alone owns `agentskills`. Add `serve --config`, remove the MCP console executable, and retain module invocation. |
+| Provider-complete configuration | Add Git, Azure Blob, Azure Files, and OCI with lazy imports, validated options, explicit dependencies, and owned-client cleanup. |
+| Public API audit | Inventory exports, signatures, exceptions, configuration, CLI flags, and output schemas across all eleven packages. |
+| Compatibility policy | Agree deprecation and supported-version commitments with the maintainer before claiming API stability. |
+| Authenticated deployment validation | Exercise TLS, authorization, host/origin controls, and audience isolation in an authorized external environment. |
+| Host interoperability | Publish reproducible client examples and evidence separating native Skills support from basic MCP connectivity. |
+| Release verification | Preserve installed-artifact gates, document first-publication retries, and require explicit breaking-change notices. |
+
+Cloud deployment checks and identity provisioning are not implied by local tests. New providers,
+native framework adapters, and server-side federation remain outside this milestone.
+
+---
+
 ## v1.0: Stability
 
 | Item | Notes |

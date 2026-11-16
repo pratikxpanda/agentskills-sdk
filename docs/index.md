@@ -22,6 +22,11 @@ v0.8 adds portable distribution and origin-preserving MCP clients while retainin
 delivery. See the [v0.8 specification](issues/v0.8.md) for scope and release gates. Review the
 [breaking changes](mcp-migration.md) before upgrading from v0.6.
 
+The v0.9 development line adds a unified serving CLI, configuration for every existing provider,
+and the [same-minor compatibility policy](compatibility.md). Its
+[release checklist and remaining validation gates](issues/v0.9.md) distinguish local implementation
+from an approved, published release.
+
 ```bash
 pip install "agentskills-mcp-extension[fs]"
 ```
@@ -34,8 +39,9 @@ pip install agentskills-tools
 
 ## Quick start
 
-Publish the sample skills with `agentskills-mcp --config
-examples/server-fs.json`. A conforming Skills host is required for activation.
+Publish the sample skills with `python -m agentskills_mcp_extension --config
+examples/server-fs.json`. With `agentskills-tools[serve]` v0.9 or newer, use
+`agentskills serve --config examples/server-fs.json`. A conforming Skills host is required for activation.
 The following framework-neutral APIs remain available for custom hosts:
 
 ```python
