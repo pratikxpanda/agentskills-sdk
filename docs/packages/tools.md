@@ -23,7 +23,14 @@ agentskills inspect ./skills --native
 pip install "agentskills-tools[serve]"
 agentskills serve ./skills --check
 agentskills serve ./skills --transport stdio
+agentskills serve --config server.json --check
 ```
+
+Starting with v0.9, `--config` loads JSON or YAML using the MCP extension's configuration schema.
+Supply either a folder path or `--config`, not both. With `--config`, set the server name,
+file limits, and prompt shortcuts inside the configuration instead of using folder-only flags.
+`--transport` and `--check` work with either source. Config preflight prints the integration's
+JSON readiness report, while folder preflight retains its text report.
 
 The `serve` extra installs the MCP extension. `--check` validates local publication without
 opening a listener. It does not test authentication or host behavior. Add `--skill-prompts`

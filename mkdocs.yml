@@ -8,6 +8,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Concepts: concepts.md
+  - Compatibility and API Scope: compatibility.md
   - MCP Migration: mcp-migration.md
   - MCP Benchmarks: mcp-benchmarks.md
   - Trust and Operability: trust-and-operability.md
@@ -37,9 +38,11 @@ nav:
       - 0009 Native image content: adr/0009-native-image-content.md
       - 0010 Native Skills only: adr/0010-native-skills-only.md
       - 0011 Publication trust pipeline: adr/0011-publication-trust-pipeline.md
+      - 0012 Pre-1.0 compatibility: adr/0012-pre-1-compatibility.md
   - Skills Directory: SKILLS-DIRECTORY.md
   - Issue plans:
       - Overview: issues/README.md
+      - v0.9 Compatibility and Production Readiness: issues/v0.9.md
       - v0.8 Portable Distribution: issues/v0.8.md
       - v0.6 MCP-First Skills: issues/v0.6.md
       - v0.5 Agent Effectiveness: issues/v0.5.md

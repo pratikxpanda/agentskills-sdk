@@ -80,6 +80,13 @@ fi
 echo ""
 echo "  Version: $current_version -> $new_version"
 
+IFS='.' read -r new_major new_minor new_patch <<< "$new_version"
+if (( new_major == 0 )); then
+    dependency_ceiling="0.$((new_minor + 1)).0"
+else
+    dependency_ceiling="$((new_major + 1)).0.0"
+fi
+
 if $DRY_RUN; then
     echo ""
     echo "  [DRY RUN] The following files would be updated:"
@@ -94,7 +101,7 @@ else
         sed_args=(
             -E
             -e "s/version = \"$current_version\"/version = \"$new_version\"/"
-            -e "s/(agentskills-[a-z-]+ = \{?(version = )?)\">=[^\"]*\"/\1\">=$new_version,<1.0\"/"
+            -e "s/(agentskills-[a-z-]+ = \{?(version = )?)\">=[^\"]*\"/\1\">=$new_version,<$dependency_ceiling\"/"
         )
         if [[ "$(uname)" == "Darwin" ]]; then
             sed -i '' "${sed_args[@]}" "$file_path"

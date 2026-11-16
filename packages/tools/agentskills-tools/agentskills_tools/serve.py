@@ -8,12 +8,37 @@ The MCP server is an optional extra.  Importing it lazily keeps
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 from agentskills_core import AgentSkillsError, Skill
 from agentskills_core.snapshots import DEFAULT_SNAPSHOT_MAX_BYTES
 from agentskills_fs import LocalFileSystemSkillProvider
 from agentskills_tools.discovery import CliError, SkillLocation
+
+
+def serve_config(config_path: Path, *, transport: str, check: bool, out: TextIO) -> None:
+    """Serve a configuration through the optional MCP integration.
+
+    Args:
+        config_path: JSON or YAML server configuration path.
+        transport: Requested MCP transport.
+        check: Report readiness without starting a listener.
+        out: Stream for the readiness report.
+
+    Raises:
+        CliError: If MCP support is missing or the configuration cannot be published.
+    """
+    try:
+        from agentskills_mcp_extension.__main__ import run_config
+    except ImportError as exc:
+        raise CliError(
+            "Native serving requires the MCP server extra and MCP SDK 2.2+. "
+            "Install 'agentskills-tools[serve]' with 'mcp>=2.2,<3'."
+        ) from exc
+    try:
+        run_config(config_path, transport=transport, check=check, out=out)
+    except (AgentSkillsError, OSError, ValueError, TypeError, ImportError) as exc:
+        raise CliError(f"cannot publish configured skills: {exc}") from exc
 
 
 async def build_server(

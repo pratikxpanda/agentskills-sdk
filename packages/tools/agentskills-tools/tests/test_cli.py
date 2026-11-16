@@ -7,6 +7,7 @@ import logging
 import runpy
 import sys
 import types
+from io import StringIO
 from typing import ClassVar
 
 import pytest
@@ -444,6 +445,87 @@ class TestEval:
 
 
 class TestServe:
+    @pytest.mark.parametrize("arguments", [[], ["skills", "--config", "server.json"]])
+    def test_given_missing_or_conflicting_source_when_parsed_then_rejected(self, arguments):
+        with pytest.raises(SystemExit) as exc_info:
+            main(["serve", *arguments])
+
+        assert exc_info.value.code == 2
+
+    @pytest.mark.parametrize(
+        "arguments", [["--name", "Other"], ["--max-file-bytes", "1024"], ["--skill-prompts"]]
+    )
+    def test_given_folder_flags_with_config_when_serving_then_rejected(self, arguments, capsys):
+        assert main(["serve", "--config", "server.json", *arguments]) == 2
+        assert "Set these options in the server configuration" in capsys.readouterr().err
+
+    def test_given_config_when_serving_then_forwards_transport_and_output(
+        self, tmp_path, monkeypatch
+    ):
+        calls = []
+        config = tmp_path / "server.json"
+        output = StringIO()
+
+        def run_config(path, *, transport, check, out):
+            calls.append((path, transport, check, out))
+
+        monkeypatch.setattr("agentskills_mcp_extension.__main__.run_config", run_config)
+
+        arguments = ["serve", "--config", str(config), "--transport", "streamable-http"]
+        assert main(arguments, output) == 0
+        assert calls == [(config, "streamable-http", False, output)]
+
+    def test_given_missing_config_when_checked_then_exits_two(self, tmp_path, capsys):
+        assert main(["serve", "--config", str(tmp_path / "missing.json"), "--check"]) == 2
+        assert "cannot publish configured skills" in capsys.readouterr().err
+
+    @pytest.mark.parametrize(
+        ("filename", "content"),
+        [("bad.json", "{invalid"), ("bad.yaml", "name: [secret-value"), ("bad.json", "[]")],
+    )
+    def test_given_malformed_config_when_checked_then_exits_two(
+        self, filename, content, tmp_path, capsys
+    ):
+        config = tmp_path / filename
+        config.write_text(content, encoding="utf-8")
+
+        assert main(["serve", "--config", str(config), "--check"]) == 2
+        output = capsys.readouterr()
+        assert "cannot publish configured skills" in output.err
+        assert "secret-value" not in output.err
+        assert output.out == ""
+
+    def test_given_missing_mcp_when_configured_then_reports_install_guidance(
+        self, monkeypatch, capsys
+    ):
+        monkeypatch.setitem(sys.modules, "agentskills_mcp_extension.__main__", None)
+
+        assert main(["serve", "--config", "server.json", "--check"]) == 2
+        assert "agentskills-tools[serve]" in capsys.readouterr().err
+
+    def test_given_config_when_checked_then_reports_publication_readiness(
+        self, write_skill, skills_root, tmp_path, capsys
+    ):
+        write_skill("alpha")
+        config = tmp_path / "server.json"
+        config.write_text(
+            json.dumps(
+                {
+                    "name": "Configured server",
+                    "skills": [
+                        {"id": "alpha", "provider": "fs", "options": {"root": str(skills_root)}}
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        assert main(["serve", "--config", str(config), "--check"]) == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report["status"] == "ready"
+        assert report["skillCount"] == 1
+        assert report["transportTested"] is False
+
     def test_check_does_not_start_transport(self, write_skill, skills_root, monkeypatch, capsys):
         write_skill("alpha")
 

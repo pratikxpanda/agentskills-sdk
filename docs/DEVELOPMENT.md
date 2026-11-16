@@ -50,7 +50,8 @@ poetry run python scripts/check_documentation_examples.py
 
 This compiles Python snippets in every package README and executes selected local quick starts
 and the testing guide's fixtures in temporary directories. The root quick start runs with MCP
-imports blocked. It makes no cloud or model calls. PR CI runs the same check in the Python matrix.
+imports blocked. It also executes the native client example against a local stdio server.
+It makes no cloud or model calls. PR CI runs the same check in the Python matrix.
 
 ### Installed Artifacts
 
@@ -60,13 +61,65 @@ poetry run python scripts/check_package_artifacts.py
 
 This builds all wheel/sdist pairs in temporary directories, checks package identities and typing
 markers, and installs the wheels with their declared dependencies into a new isolated virtualenv.
-It runs `pip check`, `agentskills-mcp --help`, local MCP preflight, the Python module entry point,
-and `agentskills serve --check` without the checkout on `PYTHONPATH`. It never publishes packages
+It runs `pip check`, `agentskills serve --help`, config-driven preflight, the MCP module entry point,
+and folder-based `agentskills serve --check` without the checkout on `PYTHONPATH`. It also checks
+that only tools installs a console command and the removed MCP command is absent. It never publishes packages
 or alters the project virtualenv. Dependency installation needs access to a package index. PR CI
 runs this check on Linux and Windows.
 
+The fresh environment also runs the native client/server tests against the installed wheels,
+including actual stdio and loopback HTTP round trips and authorization rejection cases. These
+checks cover the resolved supported MCP SDK version, not an external production deployment.
+
 PR CI also checks all package versions and sibling dependency floors with
 `scripts/check_release_version.py` and verifies lock freshness with `poetry check --lock`.
+
+The installed-artifact job also imports all eleven package roots and the explicitly exported
+tools submodules (`cost`, `evals`, and `lint`), checking that declared exports exist and contain
+no duplicates. Azure's intentionally empty root is exempt from requiring
+an `__all__` declaration. Service-specific Azure classes remain in their optional modules.
+The [API audit](compatibility.md) includes additional documented submodule and behavioral contracts
+that this root-export check cannot freeze or validate by itself.
+
+### Release Checklist
+
+Before creating or pushing a release tag:
+
+1. Review the [API inventory and unresolved decisions](compatibility.md). Identify changes to
+  imports, signatures, provider capabilities, exception meanings, CLI flags, config, or schemas.
+2. Record each breaking change's rationale, affected users, migration steps, and regression tests.
+  Prepare a prominent release-note notice instead of relying on a conventional commit title.
+3. Align all package versions and sibling floors, validate the lockfile and dependency declarations,
+  and pass the required tests, coverage floors, strict docs, and clean installed-wheel jobs.
+4. Confirm new distribution names have the appropriate PyPI Trusted Publisher setup. Check the
+  workflow filename and environment name exactly, not the workflow display title.
+5. Use manual dispatch for a build-only rehearsal when needed. The publishing workflow uploads
+  only for valid release tag pushes and still requires its protected environment approval.
+
+After publication, verify each distribution's intended version and artifacts on PyPI, exercise
+fresh provider/service-extra installs, review the generated GitHub Release, and preserve its
+generated links when adding the prepared migration notice. Do not mark the release verified
+solely because an upstream build job succeeded.
+
+#### First-Time Projects With a Shared Publisher
+
+The current publisher identity is GitHub owner `pratikxpanda`, repository `agentskills-sdk`,
+workflow filename `publish.yml`, and environment `pypi`. Existing PyPI projects can trust this
+same identity. A renamed distribution is a different PyPI project and does not inherit the old
+project's publisher configuration.
+
+PyPI permits only one pending new-project publisher for an identical configuration at a time.
+For multiple new projects sharing the identity, register the first pending publisher in workflow
+publish order. After its first upload creates the project and converts the publisher, register
+the next pending project and rerun the failed publish job. Keep existing project publishers.
+The workflow uses `skip-existing` so already uploaded artifacts are not replaced. Each retry may
+require a new `pypi` environment approval.
+
+A failed upload is not automatically a missing-publisher problem. Inspect the failed step and
+diagnostic before retrying. Sigstore/Rekor failures, metadata rejection, and authentication
+failures need different responses. Check PyPI for partial uploads before changing anything.
+Retain the original release tag and build artifacts. Never move a tag or disable provenance and
+approval controls to get a partial release through.
 
 ### Coverage
 
@@ -261,9 +314,12 @@ All packages share the same version. Use the bump script to update all `pyprojec
 .\scripts\bump-version.ps1 -Bump minor -DryRun
 ```
 
-The script also rewrites each dependent's `agentskills-core` constraint to `>=<new>,<1.0`. The
-packages ship in lockstep, so a dependent must require the core it was released with:
-otherwise pip can resolve an older core against a newer dependent and fail at import.
+The scripts rewrite every sibling dependency, including optional ones. Before 1.0, they use
+the new version as a floor and the next minor as an exclusive ceiling, such as
+`>=0.9.0,<0.10.0`. Stable versions use a next-major ceiling. Run
+`python -m pytest scripts/tests/ -q` to exercise both script implementations in disposable
+manifest copies. The [compatibility policy](compatibility.md) explains the coordinated upgrade
+and future deprecation requirements. Validate the lockfile after every version change.
 
 ### 2. Commit and merge
 

@@ -69,7 +69,7 @@ from agentskills_tools.render import (
     render_text,
 )
 from agentskills_tools.scaffold import DEFAULT_DESCRIPTION, init_from, init_skill
-from agentskills_tools.serve import build_server
+from agentskills_tools.serve import build_server, serve_config
 from agentskills_tools.validate import validate_locations
 
 EXIT_OK = 0
@@ -247,10 +247,12 @@ def build_parser() -> argparse.ArgumentParser:
     serve = subparsers.add_parser(
         "serve",
         parents=[common],
-        help="Run an MCP server over a folder of skills.",
-        description="Run an MCP server over a folder of skills, with no config file.",
+        help="Run an MCP server from a skill folder or server configuration.",
+        description="Run an MCP server from a skill folder or a JSON/YAML configuration file.",
     )
-    serve.add_argument("path", type=Path, help="A skill folder or a folder of skills.")
+    source = serve.add_mutually_exclusive_group(required=True)
+    source.add_argument("path", nargs="?", type=Path, help="A skill folder or a folder of skills.")
+    source.add_argument("--config", type=Path, help="Path to a JSON or YAML server configuration.")
     serve.add_argument(
         "--check",
         action="store_true",
@@ -259,7 +261,6 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--max-file-bytes",
         type=int,
-        default=DEFAULT_SNAPSHOT_MAX_BYTES,
         metavar="N",
         help="Bound each source file (default: 16 MiB).",
     )
@@ -271,7 +272,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument(
         "--name",
-        default="Agent Skills",
         help="Display name advertised by the server.",
     )
     serve.add_argument(
@@ -510,13 +510,25 @@ def _run_eval(args: argparse.Namespace, out: TextIO) -> int:
 
 
 def _run_serve(args: argparse.Namespace, out: TextIO) -> int:
+    if args.config is not None:
+        if args.name is not None or args.max_file_bytes is not None or args.skill_prompts:
+            raise CliError(
+                "--config cannot be combined with --name, --max-file-bytes, or --skill-prompts. "
+                "Set these options in the server configuration."
+            )
+        serve_config(args.config, transport=args.transport, check=args.check, out=out)
+        return EXIT_OK
     root, locations = discover(args.path)
     server = asyncio.run(
         build_server(
             root,
             locations,
-            name=args.name,
-            max_file_bytes=args.max_file_bytes,
+            name=args.name if args.name is not None else "Agent Skills",
+            max_file_bytes=(
+                args.max_file_bytes
+                if args.max_file_bytes is not None
+                else DEFAULT_SNAPSHOT_MAX_BYTES
+            ),
             skill_prompt_shortcuts=args.skill_prompts,
         )
     )

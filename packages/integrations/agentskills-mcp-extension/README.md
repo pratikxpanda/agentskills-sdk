@@ -65,13 +65,14 @@ and authenticated remote HTTP deployment.
 ## Consume Skills
 
 Save the configuration example below as `server.json` and prepare its filesystem skill folder.
-Activate the environment where this package is installed so `agentskills-mcp` is on `PATH`.
+Run the client in the environment where this package and the filesystem provider are installed.
 This example uses the official SDK to start a stdio subprocess, create a session, and close it
 when finished. `McpSkillsClient` wraps that session and leaves transport ownership with the host:
 
 ```python
 import asyncio
 import os
+import sys
 
 from mcp import Client, StdioServerParameters
 
@@ -80,8 +81,8 @@ from agentskills_mcp_extension import McpSkillsClient
 
 async def main() -> None:
   parameters = StdioServerParameters(
-    command="agentskills-mcp",
-    args=["--config", "server.json"],
+    command=sys.executable,
+    args=["-m", "agentskills_mcp_extension", "--config", "server.json"],
     env={"PYTHONPATH": os.environ.get("PYTHONPATH", "")},
   )
   async with Client(parameters) as connection:
@@ -150,16 +151,17 @@ remains responsible for prompt approval and whether the returned skill content i
 ```
 
 ```bash
-agentskills-mcp --config server.json --check
-agentskills-mcp --config server.json
-agentskills-mcp --config server.json --transport streamable-http
+python -m agentskills_mcp_extension --config server.json --check
+python -m agentskills_mcp_extension --config server.json
+python -m agentskills_mcp_extension --config server.json --transport streamable-http
 ```
 
-The distribution installs the short `agentskills-mcp` command. The Python module entry point
-is equivalent when you need to select an interpreter explicitly:
+Starting with v0.9, this distribution does not install a console command. The module entry point
+selects the installed interpreter explicitly. For the unified console command, install
+`agentskills-tools[serve]` and use:
 
 ```bash
-python -m agentskills_mcp_extension --config server.json --check
+agentskills serve --config server.json --check
 ```
 
 JSON and YAML are supported. `${VAR}` placeholders resolve from the environment.
@@ -191,6 +193,61 @@ advertised. Nested skills require explicit publication and separate host approva
 Listed subsets never restrict direct lookup of a published skill. Supply only
 skills authorized for the server audience.
 
+### Additional Providers in v0.9
+
+Config-driven publication also accepts `git`, `azure-blob`, `azure-files`, and `oci`.
+Install the selected provider alongside this integration or `agentskills-tools[serve]`.
+The integration adds no automatic dependencies on these providers. Tools already depends on
+filesystem and Git. HTTP, Azure, and OCI source packages remain separate installs:
+
+| Provider | Install | Required options |
+| --- | --- | --- |
+| `git` | `pip install agentskills-git` | `repository`, `ref`, `cache_dir` |
+| `azure-blob` | `pip install "agentskills-azure[blob]"` | `account_url`, `container_name` |
+| `azure-files` | `pip install "agentskills-azure[files]"` | `account_url`, `share_name`, `token_intent: "backup"` |
+| `oci` | `pip install agentskills-oci` | `repository` |
+
+Git also accepts `subdirectory`, `refresh`, `max_cache_bytes`, and `max_total_cache_bytes`.
+The Git executable must be on `PATH`. Azure options include `prefix` and `max_file_bytes`.
+Azure Files additionally accepts `max_files` and `max_depth`. Both Azure providers use the
+default async Azure credential chain. Azure Files backup intent bypasses file ACLs and requires
+an authorized Azure RBAC role. It is never enabled implicitly.
+
+OCI accepts `insecure`, `tls_verify`, `auth_backend`, `max_files`, `max_file_bytes`, and
+`max_total_bytes`. TLS verification stays enabled by default, and ORAS handles registry
+authentication. The registry must contain the artifact format described in the
+[OCI provider guide](https://github.com/pratikxpanda/agentskills-sdk/blob/main/packages/providers/agentskills-oci/README.md).
+
+These four providers reject unknown options, runtime `client` or `credential` objects, and
+incorrect JSON types before construction. Use JSON booleans and numbers, not quoted strings.
+Environment substitution produces strings, so reserve `${VAR}` placeholders for string options.
+Provider-owned network clients and credentials are closed after snapshot capture or failure.
+Git retains its existing cache-lease lifetime behavior. No provider executes skill scripts.
+
+For example, after preparing a Git repository containing `skills/incident-response/SKILL.md`:
+
+```json
+{
+  "name": "Git Runbooks",
+  "skills": [
+    {
+      "id": "incident-response",
+      "provider": "git",
+      "options": {
+        "repository": "https://github.com/example/runbooks.git",
+        "ref": "main",
+        "cache_dir": ".cache/skills",
+        "subdirectory": "skills"
+      }
+    }
+  ]
+}
+```
+
+Replace the repository, ref, subdirectory, and skill ID with your source. Paths retain their
+current-working-directory semantics, not the configuration file's directory. The CLI captures
+the configured source once. Programmatic refresh requires keeping provider clients open.
+
 The package-specific `--check` option verifies local construction, manifests, and provider
 readiness without listening. It does not certify transport, authentication, or host behavior.
 
@@ -201,6 +258,16 @@ Streamable HTTP. CI also checks mcpc 0.7.0 discovery, aliases, pagination, and e
 resource bytes. Use SDK 2 `Client` for extension negotiation, not its older
 `ClientSession` compatibility API. Ordinary tools/resources connectivity does not
 establish Skills support.
+
+| Client | Evidence | Boundary |
+| --- | --- | --- |
+| MCP Python SDK 2.2.0 `Client` | Source tests exercise native discovery, lookup, composition, stdio, and loopback HTTP. The documentation check executes the client example above. | Minimum supported SDK. No host activation or model calls. |
+| Resolved supported Python SDK, currently 2.3.0 | Clean installed-wheel jobs run native client/server regressions and both CLI preflight modes. | Results apply to the resolved version, not all future 2.x releases. |
+| mcpc 0.7.0 | The dedicated SDK-floor CI job tests pagination, direct lookup, aliases, and exact original resource bytes. | Third-party native Skills client, not a framework lifecycle adapter. |
+
+Local secure-HTTP tests also cover accepted initialization and rejection of missing, invalid,
+expired, wrong-audience, and insufficient-scope credentials, plus invalid host/origin headers.
+Their in-process transport and controlled verifier do not certify a TLS gateway or identity service.
 
 Hosts own selection, manifest verification, origin visibility,
 per-skill consent, context injection, session tracking, image rendering, and

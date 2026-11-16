@@ -38,8 +38,8 @@ jobs:
 
       - name: Check CI helper scripts
         run: |
-          poetry run ruff check scripts/check_package_artifacts.py scripts/check_documentation_examples.py
-          poetry run ruff format --check scripts/check_package_artifacts.py scripts/check_documentation_examples.py
+          poetry run ruff check scripts/check_package_artifacts.py scripts/check_documentation_examples.py scripts/check_release_version.py scripts/tests/
+          poetry run ruff format --check scripts/check_package_artifacts.py scripts/check_documentation_examples.py scripts/check_release_version.py scripts/tests/
 
       # Every package shares one virtualenv here, so a missing declaration is
       # invisible until somebody installs a single package from PyPI.
@@ -48,6 +48,9 @@ jobs:
 
       - name: Check release version alignment
         run: poetry run python scripts/check_release_version.py
+
+      - name: Test release version policy
+        run: poetry run python -m pytest scripts/tests/ -q
 
       - name: Check lock freshness
         run: poetry check --lock

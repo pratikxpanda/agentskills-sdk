@@ -19,6 +19,7 @@ Each file covers one milestone, in the same order as the corresponding roadmap t
 | [v0.6: MCP-First Skills](./v0.6.md) | 7 | Included in v0.6.0. Deployment validation remains explicitly deferred. |
 | v0.7: Trust & Operability | 7 | Included in v0.7.0. See the [control contracts and validation boundaries](../trust-and-operability.md) and [roadmap](../ROADMAP.md#v07-trust-operability). |
 | [v0.8: Portable Distribution](./v0.8.md) | 5 | Git, lockfile, MCP client/composition, prompt, Azure Blob, and OCI acceptance criteria. Additional sources remain demand-gated. |
+| [v0.9: Compatibility and Production Readiness](./v0.9.md) | 7 | Unified CLI and provider configuration implemented locally. API policy, deployment, interoperability, and release gates remain open. |
 | v1.0: Stability | — | Not specified; see the [roadmap](../ROADMAP.md) |
 
 A milestone gets a specification once its items are concrete enough to have acceptance criteria.

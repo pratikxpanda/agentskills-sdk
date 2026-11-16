@@ -8,22 +8,26 @@ description: Publish native MCP Skills or use the framework-neutral Python APIs.
 The SDK is split into focused packages.
 
 - `agentskills-core` for registry and validation
-- One provider (`agentskills-fs` or `agentskills-http`); `agentskills-git` is under
-  development for v0.8
+- One provider, such as filesystem, HTTP, Git, Azure Blob, Azure Files, or OCI
 - `agentskills-mcp-extension` for native Skills delivery to a conforming host
 
 Install the native MCP server with the filesystem provider:
 
 ```bash
-pip install "agentskills-mcp-extension[fs]"
+pip install "agentskills-tools[serve]"
 ```
 
 ## Publish Skills
 
 ```bash
-agentskills-mcp --config examples/server-fs.json --check
-agentskills-mcp --config examples/server-fs.json
+agentskills serve --config examples/server-fs.json --check
+agentskills serve --config examples/server-fs.json
 ```
+
+Config-driven serving requires v0.9 or newer. MCP-only environments can install
+`agentskills-mcp-extension[fs]` and use `python -m agentskills_mcp_extension --config ...` instead.
+The v0.9 config resolver supports all six provider types. Install each selected source package
+separately. Azure Blob and Azure Files retain independent SDK extras.
 
 The server requires MCP SDK 2.2+ and protocol 2026-07-28. A host must support the
 Skills extension, verify manifests and content, and obtain approval before

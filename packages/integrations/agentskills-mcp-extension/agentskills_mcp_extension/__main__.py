@@ -2,11 +2,11 @@
 
 Usage::
 
-    agentskills-mcp --config server.json
-    agentskills-mcp --config server.yaml
-    agentskills-mcp --config server.json --transport streamable-http
+    python -m agentskills_mcp_extension --config server.json
+    python -m agentskills_mcp_extension --config server.yaml
+    python -m agentskills_mcp_extension --config server.json --transport streamable-http
 
-The equivalent Python module entry point is ``python -m agentskills_mcp_extension``.
+The tools distribution also provides ``agentskills serve --config server.json``.
 
 The config file is a JSON or YAML document conforming to
 :class:`~agentskills_mcp_extension.config.ServerConfig`.
@@ -40,8 +40,8 @@ out of the config file.
 MCP client integration (stdio transport)::
 
     {
-        "command": "agentskills-mcp",
-        "args": ["--config", "server.json"]
+        "command": "python",
+        "args": ["-m", "agentskills_mcp_extension", "--config", "server.json"]
     }
 
 MCP client integration (streamable-http transport)::
@@ -60,12 +60,13 @@ import sys
 from contextlib import AsyncExitStack
 from importlib.metadata import version
 from pathlib import Path
+from typing import TextIO
 
 
 def main() -> None:
     """Parse CLI arguments, load config, and start the MCP server."""
     parser = argparse.ArgumentParser(
-        prog="agentskills-mcp",
+        prog="python -m agentskills_mcp_extension",
         description="Start an Agent Skills MCP server from a config file.",
     )
     parser.add_argument(
@@ -87,29 +88,40 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # ------------------------------------------------------------------
-    # Load config file
-    # ------------------------------------------------------------------
-    config_path: Path = args.config
-    if not config_path.exists():
+    try:
+        run_config(args.config, transport=args.transport, check=args.check, out=sys.stdout)
+    except FileNotFoundError:
         print(
-            f"Error: config file not found: {config_path}",
+            f"Error: config file not found: {args.config}",
             file=sys.stderr,
         )
         sys.exit(1)
 
+
+def run_config(
+    config_path: Path,
+    *,
+    transport: str = "stdio",
+    check: bool = False,
+    out: TextIO | None = None,
+) -> None:
+    """Publish configured skills, closing owned providers before serving.
+
+    Args:
+        config_path: JSON or YAML server configuration path.
+        transport: Transport used when starting the server.
+        check: Report readiness without starting a listener.
+        out: Stream for the readiness report, defaulting to stdout.
+    """
     raw = config_path.read_text(encoding="utf-8")
 
     if config_path.suffix in (".yaml", ".yml"):
+        import yaml  # type: ignore[import-untyped]
+
         try:
-            import yaml  # type: ignore[import-untyped]
-        except ImportError:
-            print(
-                "Error: YAML config files require pyyaml. Install with:  pip install pyyaml",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        data = yaml.safe_load(raw)
+            data = yaml.safe_load(raw)
+        except yaml.YAMLError:
+            raise ValueError("Invalid YAML server configuration") from None
     else:
         data = json.loads(raw)
 
@@ -151,7 +163,7 @@ def main() -> None:
             )
 
     server = asyncio.run(_build())
-    if args.check:
+    if check:
         print(
             json.dumps(
                 {
@@ -169,10 +181,11 @@ def main() -> None:
                     "clientGuidance": "Requires a host implementing the native Skills extension.",
                 },
                 indent=2,
-            )
+            ),
+            file=out or sys.stdout,
         )
         return
-    server.run(transport=args.transport)
+    server.run(transport=transport)
 
 
 if __name__ == "__main__":

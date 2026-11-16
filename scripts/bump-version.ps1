@@ -89,6 +89,13 @@ if ($currentVersion -eq $newVersion) {
 
 Write-Host "`n  Version: $currentVersion -> $newVersion" -ForegroundColor Cyan
 
+$newParts = $newVersion.Split('.')
+$dependencyCeiling = if ([int]$newParts[0] -eq 0) {
+    "0.$([int]$newParts[1] + 1).0"
+} else {
+    "$([int]$newParts[0] + 1).0.0"
+}
+
 if ($DryRun) {
     Write-Host "`n  [DRY RUN] The following files would be updated:`n" -ForegroundColor Yellow
 }
@@ -104,7 +111,7 @@ foreach ($relPath in $pyprojectFiles) {
     $content = Get-Content $filePath -Raw
     $updated = $content -replace "version = `"$currentVersion`"", "version = `"$newVersion`""
     # These ship in lockstep, so a dependent must require the siblings it ships with.
-    $updated = $updated -replace '(agentskills-[a-z-]+ = \{?(?:version = )?)">=[^"]*"', ('${1}">=' + $newVersion + ',<1.0"')
+    $updated = $updated -replace '(agentskills-[a-z-]+ = \{?(?:version = )?)">=[^"]*"', ('${1}">=' + $newVersion + ',<' + $dependencyCeiling + '"')
     Set-Content -Path $filePath -Value $updated -NoNewline
     Write-Host "  Updated $relPath" -ForegroundColor Green
 }

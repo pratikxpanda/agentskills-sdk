@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import subprocess
 import sys
 import tempfile
@@ -77,6 +78,13 @@ def main() -> int:
                 "agentskills-testing",
             ):
                 _execute(_quick_start(packages[name]), work, name)
+            server_config = json.loads(_blocks(packages["agentskills-mcp-extension"], "json")[0])
+            (work / "server.json").write_text(json.dumps(server_config), encoding="utf-8")
+            _execute(
+                _quick_start(packages["agentskills-mcp-extension"]),
+                work,
+                "native MCP client over stdio",
+            )
             tests = _blocks(packages["agentskills-testing"], "python")
             test_file = work / "test_readme_examples.py"
             test_file.write_text("\n".join([tests[0], tests[1], tests[-1]]), encoding="utf-8")
