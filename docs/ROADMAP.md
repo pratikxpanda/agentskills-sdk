@@ -331,6 +331,8 @@ removed from the roadmap. Examples using those frameworks' MCP clients remain in
 Consolidate console ownership and complete declarative publication across the existing providers.
 Then audit the supported API and agree compatibility commitments before the v1.0 freeze. Detailed
 scope, acceptance criteria, and validation boundaries are in the [v0.9 specification](issues/v0.9.md).
+Version 0.9.0 has been published; the specification tracks external validation criteria that still
+need evidence or an explicit deferral.
 
 | Item | Scope |
 | --- | --- |
@@ -348,6 +350,9 @@ native framework adapters, and server-side federation remain outside this milest
 ---
 
 ## v1.0: Stability
+
+The proposed scope and acceptance criteria are in the [v1.0 specification](issues/v1.0.md).
+Resolve its open compatibility and v0.9 carryover decisions before claiming an API freeze.
 
 | Item | Notes |
 | --- | --- |

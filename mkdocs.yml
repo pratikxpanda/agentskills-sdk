@@ -42,6 +42,7 @@ nav:
   - Skills Directory: SKILLS-DIRECTORY.md
   - Issue plans:
       - Overview: issues/README.md
+      - v1.0 Stability: issues/v1.0.md
       - v0.9 Compatibility and Production Readiness: issues/v0.9.md
       - v0.8 Portable Distribution: issues/v0.8.md
       - v0.6 MCP-First Skills: issues/v0.6.md
