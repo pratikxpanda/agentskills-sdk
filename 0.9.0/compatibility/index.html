@@ -1,0 +1,2321 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Maintained API surfaces, tested compatibility boundaries, and unresolved decisions before the v1.0 freeze.">
+      
+      
+      
+        <link rel="canonical" href="https://pratikxpanda.github.io/agentskills-sdk/0.9.0/compatibility/">
+      
+      
+        <link rel="prev" href="../concepts/">
+      
+      
+        <link rel="next" href="../mcp-migration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Compatibility and API Inventory - Agent Skills SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#status" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Agent Skills SDK" class="md-header__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Skills SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Compatibility and API Inventory
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agent Skills SDK" class="md-nav__button md-logo" aria-label="Agent Skills SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agent Skills SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pratikxpanda/agentskills-sdk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pratikxpanda/agentskills-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility and API Scope
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility and API Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-and-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation and Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation Policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-roots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Roots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Package Roots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-and-data-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI and Data Contracts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remaining-decisions-before-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remaining Decisions Before Stability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release Review
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trust-and-operability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trust and Operability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/fs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/http/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/oci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OCI provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/mcp-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Skills extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/retrieval/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skill selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../packages/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-mcp-context-provider-packaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 MCP context provider packaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-optional-provider-capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 Optional provider capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-fully-async-provider-interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 Fully async provider interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-multi-package-lockstep-versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Lockstep versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-provider-caching-and-invalidation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 Provider caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0006-exception-taxonomy-not-found-vs-unavailable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 Exception taxonomy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0007-binary-resource-json-envelope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 Binary resource envelope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0008-logging-namespace-and-severity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 Logging conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0009-native-image-content/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 Native image content
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0010-native-skills-only/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 Native Skills only
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0011-publication-trust-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 Publication trust pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0012-pre-1-compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 Pre-1.0 compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SKILLS-DIRECTORY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Directory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issue plans
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Issue plans
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.9/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9 Compatibility and Production Readiness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.8 Portable Distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6 MCP-First Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5 Agent Effectiveness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 Developer Experience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../issues/v0.3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3 Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-and-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation and Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation Policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-roots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Roots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Package Roots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-and-data-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI and Data Contracts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remaining-decisions-before-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remaining Decisions Before Stability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release Review
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Compatibility and API Scope</h1>
+
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
+<p>This is the v0.9 development audit of the maintained eleven-package SDK. It records current
+exports and documented integration contracts. The maintainer approved the pre-1.0 dependency
+and deprecation policy below for v0.9. This does not claim a v1.0 API freeze.</p>
+<p>The audit compares package exports, documented submodules, source-based runtime signatures,
+provider contracts, CLI parsing, and existing tests. The installed-artifact check verifies that
+declared package-root exports resolve in a clean environment. It does not certify third-party
+hosts, cloud permissions, or production deployments.</p>
+<h2 id="installation-and-versions">Installation and Versions<a class="headerlink" href="#installation-and-versions" title="Permanent link">&para;</a></h2>
+<p>Distributions are independently installable but released in lockstep. Install the same release
+family for the maintained SDK packages you use. Core remains independent of providers and MCP.
+Provider-specific SDKs, publisher verification, and telemetry retain their optional dependencies.</p>
+<p>Current development manifests declare Python <code>&gt;=3.12,&lt;4.0</code>. Required CI tests Python 3.12, 3.13,
+and 3.14. A permitted interpreter version is not evidence that CI has tested it.</p>
+<p>The MCP integration requires SDK <code>&gt;=2.2,&lt;3</code> and native Skills protocol <code>2026-07-28</code>, using the
+<code>io.modelcontextprotocol/skills</code> extension. Tests cover the SDK 2.2.0 floor and installed-wheel
+preflight has also passed with SDK 2.3.0. The unlocked-dependency job is advisory, not a guarantee
+that every future dependency release will work.</p>
+<p>Starting with v0.9, sibling requirements use a release floor and the next minor as an exclusive
+ceiling. For example, 0.9.0 packages require siblings at <code>&gt;=0.9.0,&lt;0.10.0</code>. A 0.9.2 release raises
+the floor to 0.9.2 without admitting 0.10.0. Installers must not combine different pre-1.0 minor
+families. The same policy applies to optional integration dependencies when their extra is selected.
+Patch releases within a minor must preserve that minor's supported contracts. Before this change,
+the <code>&lt;1.0</code> ceiling admitted unverified mixed-minor combinations.
+See <a href="../adr/0004-multi-package-lockstep-versioning/">ADR 0004</a>.</p>
+<h2 id="deprecation-policy">Deprecation Policy<a class="headerlink" href="#deprecation-policy" title="Permanent link">&para;</a></h2>
+<p>Effective for new deprecations from v0.9, a supported API must remain available for at least one
+released minor with a deprecation notice before removal in a later minor. Deprecating in 0.10
+allows removal no earlier than 0.11, never in a 0.10 patch. The notice must identify the replacement,
+first deprecated version, earliest removal version, and migration steps.</p>
+<p>Python deprecations use caller-attributed <code>DeprecationWarning</code> on use and tests that assert the
+warning. CLI/config deprecations warn on stderr without corrupting machine-readable stdout or
+echoing credentials. Release notes and migration docs must carry the notice as well. Removing a
+flag, changing a required fixture contract, narrowing a capability, or changing an exception or
+schema meaning is reviewable even if Python signatures do not change.</p>
+<p>The separately approved v0.9 removal of <code>agentskills-mcp</code> is an explicit transition decision,
+not evidence that future removals can skip this window. The policy does not resurrect older
+retired packages or retroactively add console aliases. No new deprecations are introduced by this
+audit. Future 1.0 stability commitments remain a separate decision.</p>
+<p>See <a href="../adr/0012-pre-1-compatibility/">ADR 0012</a> for the approved rationale and consequences.</p>
+<h2 id="package-roots">Package Roots<a class="headerlink" href="#package-roots" title="Permanent link">&para;</a></h2>
+<p>Names listed in each package's <code>__all__</code> are intentional exports, including helpers and constants.
+An exported name is not made private merely because it looks low-level. Existing names are not
+removed by this audit. API pages document their signatures and behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Distribution</th>
+<th>Root namespace</th>
+<th>Declared root exports</th>
+<th>Additional contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agentskills-core</code></td>
+<td><code>agentskills_core</code></td>
+<td>46</td>
+<td>Documented trust, policy, refresh, and telemetry submodules</td>
+</tr>
+<tr>
+<td><code>agentskills-adapters</code></td>
+<td><code>agentskills_adapters</code></td>
+<td>4</td>
+<td>Imported skill data and source discovery</td>
+</tr>
+<tr>
+<td><code>agentskills-fs</code></td>
+<td><code>agentskills_fs</code></td>
+<td>1</td>
+<td>Provider methods and capabilities</td>
+</tr>
+<tr>
+<td><code>agentskills-git</code></td>
+<td><code>agentskills_git</code></td>
+<td>2</td>
+<td>Ref resolution, cache configuration, and provider error</td>
+</tr>
+<tr>
+<td><code>agentskills-http</code></td>
+<td><code>agentskills_http</code></td>
+<td>2</td>
+<td>Provider options, network policy, and client ownership</td>
+</tr>
+<tr>
+<td><code>agentskills-azure</code></td>
+<td><code>agentskills_azure</code></td>
+<td>No root exports</td>
+<td>Service classes in <code>blob</code> and <code>files</code></td>
+</tr>
+<tr>
+<td><code>agentskills-oci</code></td>
+<td><code>agentskills_oci</code></td>
+<td>1</td>
+<td>OCI artifact contract, authentication, and client ownership</td>
+</tr>
+<tr>
+<td><code>agentskills-mcp-extension</code></td>
+<td><code>agentskills_mcp_extension</code></td>
+<td>6</td>
+<td>Server result, client references, configuration, and module invocation</td>
+</tr>
+<tr>
+<td><code>agentskills-retrieval</code></td>
+<td><code>agentskills_retrieval</code></td>
+<td>20</td>
+<td>Selection and embedding protocols and result objects</td>
+</tr>
+<tr>
+<td><code>agentskills-tools</code></td>
+<td><code>agentskills_tools</code></td>
+<td>6</td>
+<td>Console commands, reports, lockfiles, and documented model protocol</td>
+</tr>
+<tr>
+<td><code>agentskills-testing</code></td>
+<td><code>agentskills_testing</code></td>
+<td>20</td>
+<td>Conformance fixture contract and pytest plugin</td>
+</tr>
+</tbody>
+</table>
+<p>Counts describe this audited development tree. They are an inventory, not a numerical API
+baseline: adding an export does not require keeping the count constant.</p>
+<h3 id="core">Core<a class="headerlink" href="#core" title="Permanent link">&para;</a></h3>
+<p>The root exposes <code>Skill</code>, <code>SkillRegistry</code>, <code>SkillProvider</code>, snapshot/file types and capture,
+validation/parsing, manifests, section and media helpers, fast-path helpers, shared logging,
+exceptions, and their declared constants. Prefer the root import when it supplies the name.</p>
+<p>The following documented submodule APIs also belong in compatibility review:</p>
+<ul>
+<li><code>agentskills_core.trust</code>: <code>TrustPolicy</code>, <code>DetachedSignature</code>, <code>ContentIdentity</code>,
+  <code>VerificationError</code>, <code>content_revision</code>, and <code>signature_payload</code></li>
+<li><code>agentskills_core.policy</code>: <code>ContentDecision</code>, <code>ContentRejectedError</code>, <code>Publication</code>, and
+  <code>publish_snapshot</code></li>
+<li><code>agentskills_core.refresh</code>: <code>SnapshotCatalog</code> and <code>CatalogGeneration</code></li>
+<li><code>agentskills_core.telemetry</code>: <code>DisclosureEvent</code>, <code>emit_event</code>, and <code>OpenTelemetryObserver</code></li>
+</ul>
+<p><code>SkillRegistry.register</code> and <code>register_all</code> validate metadata and body content. They are not
+metadata-only MCP discovery. <code>capture_skill</code> requires complete raw-file access and produces a
+bounded immutable snapshot. The root still exposes historical fast-path and encoding helpers
+for custom hosts. Native MCP publication does not automatically invoke them or activate skills.</p>
+<p>See the <a href="../packages/core/">core API</a> and <a href="../trust-and-operability/">trust contracts</a>.</p>
+<h3 id="adapters">Adapters<a class="headerlink" href="#adapters" title="Permanent link">&para;</a></h3>
+<p>The complete root export set is <code>ImportedSkill</code>, <code>adapt_path</code>, <code>discover_sources</code>, and
+<code>render_skill_md</code>. <code>adapt_path</code> returns an <code>ImportedSkill</code>, not a bare <code>Skill</code>. Its <code>skill</code>,
+<code>source</code>, and <code>skill_md</code> fields are part of the documented authoring path. Imported instruction
+formats do not create framework lifecycle integrations.</p>
+<p>See the <a href="../packages/adapters/">adapter API</a>.</p>
+<h3 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h3>
+<p>Root imports are <code>LocalFileSystemSkillProvider</code>, <code>GitSkillProvider</code>, <code>GitSkillProviderError</code>,
+<code>HTTPStaticFileSkillProvider</code>, <code>NetworkPolicyError</code>, and <code>OCISkillProvider</code> from their respective
+namespaces. Azure intentionally has no root reexports: import <code>AzureBlobSkillProvider</code> from
+<code>agentskills_azure.blob</code> or <code>AzureFilesSkillProvider</code> from <code>agentskills_azure.files</code> with the
+matching extra installed.</p>
+<p><code>SkillProvider</code> requires five async accessors: <code>get_metadata</code>, <code>get_body</code>, <code>get_script</code>,
+<code>get_asset</code>, and <code>get_reference</code>. Optional capabilities are separate contracts:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Methods</th>
+<th>Unsupported default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>supports_resource_listing</code></td>
+<td><code>list_resources</code></td>
+<td><code>ResourceListingNotSupportedError</code></td>
+</tr>
+<tr>
+<td><code>supports_discovery</code></td>
+<td><code>discover</code></td>
+<td><code>DiscoveryNotSupportedError</code></td>
+</tr>
+<tr>
+<td><code>supports_file_access</code></td>
+<td><code>list_files</code>, <code>read_file</code></td>
+<td><code>FileAccessNotSupportedError</code></td>
+</tr>
+</tbody>
+</table>
+<p>Flags can be instance-dependent. An unsupported capability raises rather than reporting an
+empty backend. Files and resources return original <code>bytes</code>. Unknown skills and resources,
+temporary source unavailability, and content drift remain distinguishable error cases.</p>
+<p>Constructor settings, public invalidation methods, limits, and documented client ownership
+also require compatibility review. HTTP, Azure, and OCI expose async cleanup. Git currently has
+no public <code>close</code> or <code>aclose</code> method and releases cache leases through its finalizer. Do not
+invent a uniform close method merely to make the providers look alike.</p>
+<p>Provider guides specify their source-specific prerequisites. A successful local fake-client test
+does not certify Azure RBAC, share ACL behavior, registry authentication, or deployed networks.</p>
+<h3 id="mcp-integration">MCP Integration<a class="headerlink" href="#mcp-integration" title="Permanent link">&para;</a></h3>
+<p>The root export set is <code>create_mcp_server</code>, <code>McpSkillIdentity</code>, <code>McpSkillReference</code>,
+<code>McpSkillsClient</code>, <code>McpSkillsClientError</code>, and <code>McpSkillsCollection</code>.</p>
+<p><code>create_mcp_server</code> is async. Its documented <code>NativeSkillsServer</code> result and methods, including
+<code>refresh</code>, <code>health</code>, <code>list_resources</code>, <code>read_resource</code>, and <code>secure_http_app</code>, are not excluded
+from review merely because the class is declared in <code>native</code> rather than the package root.
+Underlying MCP SDK transport APIs remain subject to the supported upstream SDK range.</p>
+<p><code>McpSkillsClient</code> accepts a caller-owned session and an explicit origin. Composition retains
+<code>(origin, URI)</code>, does not register remote content into a local registry, and does not forward or
+rehost servers. Callers own sessions, consent, activation, context, and execution policy.</p>
+<p><code>ServerConfig</code>, <code>SkillConfig</code>, and <code>TrustConfig</code> in <code>agentskills_mcp_extension.config</code> define
+documented deployment configuration. <code>resolve_env_vars</code> is an available configuration helper.
+The provider IDs, option meanings, defaults, trust settings, preflight report, and module launch
+arguments are reviewable contracts. Private option models and <code>_resolve_provider</code> are
+implementation details, not plugin extension points.</p>
+<p>See the <a href="../packages/mcp-extension/">MCP API</a> and <a href="../mcp-migration/">migration guide</a>.</p>
+<h3 id="retrieval">Retrieval<a class="headerlink" href="#retrieval" title="Permanent link">&para;</a></h3>
+<p>The root exports selector protocols and results (<code>SkillSelector</code>, <code>Selection</code>, <code>ScoredSkill</code>),
+<code>LexicalSelector</code>, <code>EmbeddingSelector</code>, <code>Embedder</code>, <code>EmbeddingCache</code>, <code>InMemoryEmbeddingCache</code>,
+<code>SkillDocument</code>, corpus/catalog helpers, <code>cosine</code>, <code>load_embedder</code>, <code>tokenize</code>, and declared
+selection constants. These are opt-in APIs. Selection is not activation or permission to run a
+skill, and the SDK does not promise a host injects catalog metadata on every turn.</p>
+<p>See the <a href="../packages/retrieval/">retrieval API</a>.</p>
+<h3 id="tools">Tools<a class="headerlink" href="#tools" title="Permanent link">&para;</a></h3>
+<p>The root exports <code>main</code>, <code>CliError</code>, <code>SkillLocation</code>, <code>discover</code>, <code>Finding</code>, and <code>SkillReport</code>.
+<code>main(argv=None, out=None)</code> returns an integer result for command dispatch. Parser usage errors
+still follow argparse's <code>SystemExit</code> behavior. Module and console launchers exit the process.</p>
+<p>The documented model extension contract is <code>agentskills_tools.evals.EvalModel</code>, including
+<code>model_id</code> and <code>complete(*, system, prompt)</code>, returning <code>ModelResponse</code>. Model and embedder
+factories configured as <code>module:factory</code> are application-owned code. Their documented resolution
+and invocation behavior is reviewable even when the factory is not a root export.</p>
+<p><code>agentskills_tools.cost</code> deliberately reexports <code>Section</code>, <code>split_sections</code>, and <code>PREAMBLE_TITLE</code>.
+<code>agentskills_tools.lint</code> reexports <code>estimate_tokens</code>. These compatibility imports are retained.
+The explicit <code>agentskills_tools.evals.__all__</code> also exports result types (<code>AssertionResult</code>,
+<code>AttemptResult</code>, <code>CaseResult</code>, <code>SuiteResult</code>, <code>VariantResult</code>), <code>CompletionCache</code>, <code>EvalRunner</code>,
+<code>check_deterministic</code>, <code>eval_exit_code</code>, <code>load_model</code>, <code>render_results_text</code>, <code>results_payload</code>,
+<code>run_suites</code>, <code>BASELINE_SYSTEM</code>, and <code>DEFAULT_CACHE_DIR</code>, as well as the model protocol and response.
+These names belong in review rather than being classified as private by omission.</p>
+<p>Other cost helpers and CLI implementation modules are not automatically made stable simply
+because they have non-underscore names. This audit removes no existing compatibility imports.</p>
+<p>See the <a href="../packages/tools/">tools API and command guide</a>.</p>
+<h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h3>
+<p>Root exports include the in-memory provider and skill, construction/render helpers, both
+conformance suites, <code>CONTRACT</code>, and declared fixture data constants. Installing the distribution
+registers <code>agentskills_testing.fixtures</code> through the <code>pytest11</code> entry point. The documented
+<code>sample_skill</code>, <code>skill_provider</code>, and <code>skill_registry</code> fixtures are part of the user-facing test kit.</p>
+<p>The conformance <code>provider</code> fixture contract is a downstream compatibility surface. Adding an
+inherited assertion that needs new fixture data is a breaking change even when no function
+signature changes. Separate opt-in suites remain the path for additional backend capabilities.</p>
+<p>See the <a href="../packages/testing/">testing API</a>.</p>
+<h2 id="cli-and-data-contracts">CLI and Data Contracts<a class="headerlink" href="#cli-and-data-contracts" title="Permanent link">&para;</a></h2>
+<p>Only tools installs the <code>agentskills</code> console in v0.9. Its commands are <code>init</code>, <code>validate</code>, <code>lint</code>,
+<code>inspect</code>, <code>eval</code>, <code>serve</code>, and <code>lock</code>. Folder serving and config serving remain distinct input
+modes. The MCP distribution retains <code>python -m agentskills_mcp_extension</code> and removes the
+<code>agentskills-mcp</code> executable without an alias.</p>
+<p>Command flags, defaults, exit codes, stdout/stderr routing, JSON fields, and GitHub annotation
+output require review. Existing exit distinctions are 0 for success, 1 for findings, and 2 for
+an invocation that cannot run. Config and folder preflight reports have different formats.</p>
+<p>Do not treat every JSON document as the same schema:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Current version boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Authoring/inspection/evaluation JSON reports</td>
+<td><code>schemaVersion: 1</code></td>
+</tr>
+<tr>
+<td>Git source lockfile</td>
+<td><code>lockVersion: 1</code></td>
+</tr>
+<tr>
+<td>MCP Skills messages and manifests</td>
+<td>Upstream protocol and extension contracts</td>
+</tr>
+<tr>
+<td>Server configuration</td>
+<td>No explicit schema-version field</td>
+</tr>
+<tr>
+<td>Config preflight JSON and server health</td>
+<td>No independent schema-version field</td>
+</tr>
+</tbody>
+</table>
+<p>Never silently repurpose fields or collapse distinct error meanings. Human-readable report
+whitespace is not a replacement for a machine-readable schema. An installed export check alone
+cannot detect changed signatures, data semantics, or a name deliberately removed from <code>__all__</code>.</p>
+<h2 id="remaining-decisions-before-stability">Remaining Decisions Before Stability<a class="headerlink" href="#remaining-decisions-before-stability" title="Permanent link">&para;</a></h2>
+<p>These are findings to resolve, not approved API changes:</p>
+<ol>
+<li>The tools-to-MCP <code>__main__.run_config</code> call remains an internal integration contract for 0.9.
+   Preserve it across the 0.9 patch family and keep the unified CLI regression tests. Direct Python
+   calls are not advertised as a stable general-purpose API. Review its final location before 1.0.</li>
+<li>Decide whether config, preflight, and health need their own schema-version fields before 1.0.
+   Adding a required field now would need migration analysis, not a documentation-only change.</li>
+<li>Keep existing filesystem/HTTP handling of unknown options through 0.9. The new Git/Azure/OCI
+   models are strict. Revisit consistency before 1.0 with migration review, not a silent tightening.</li>
+<li>Classify helper exports, returned-object methods, and documented submodule APIs explicitly
+   before freezing signatures. Nothing already documented is removed by omission from this page.</li>
+<li>Record supported client and deployment evidence separately. Local SDK tests cannot close the
+   production authorization, TLS, or third-party host validation gates.</li>
+</ol>
+<h2 id="release-review">Release Review<a class="headerlink" href="#release-review" title="Permanent link">&para;</a></h2>
+<p>Every intentional incompatible change needs a rationale, affected packages and surfaces, an
+upgrade path, regression coverage, and a release-note callout before tagging. For v0.9 the
+confirmed breaking changes are the MCP console removal and rejection of mixed-minor sibling
+installations. Distribution and Python namespace names remain unchanged. Other decisions above
+remain review items before the v1.0 freeze.</p>
+<p>See the <a href="../issues/v0.9/">0.9 acceptance criteria</a> and
+<a href="../DEVELOPMENT/#release-checklist">release checklist</a>.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
